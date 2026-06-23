@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import ast
 import hashlib
-import json
 import re
 import zipfile
 from datetime import datetime, timezone
@@ -34,14 +33,16 @@ from app.schemas.api import (
 )
 from app.services.file_rules import IGNORE_DIRS, detect_file_type, detect_language, is_secret_file, is_supported_file
 from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, RepositoryState, SymbolRecord
+from app.services.repository_store import RepositoryStore
 
 
 class CodebaseService:
     def __init__(self) -> None:
-        self.repositories: dict[str, RepositoryState] = {}
+        self.store = RepositoryStore()
+        self.repositories: dict[str, RepositoryState] = {
+            repository.id: repository for repository in self.store.list_repositories()
+        }
         self.evidence: dict[str, EvidenceDTO] = {}
-        settings.index_storage_dir.mkdir(parents=True, exist_ok=True)
-        self._load_indexes()
 
     def list_repositories(self) -> list[RepositoryDTO]:
         return [self._repository_dto(repository) for repository in self.repositories.values()]
@@ -59,6 +60,7 @@ class CodebaseService:
             source_path=source_path,
         )
         self.repositories[repository.id] = repository
+        self._persist_repository(repository)
         return RepositoryCreateResponse(
             repository_id=repository.id,
             name=repository.name,
@@ -232,8 +234,11 @@ class CodebaseService:
 
     def get_evidence(self, repository_id: str, evidence_id: str) -> EvidenceDTO:
         evidence = self.evidence.get(evidence_id)
+        if evidence is None:
+            evidence = self.store.get_evidence(evidence_id)
         if evidence is None or evidence.repository_id != repository_id:
             raise DomainError("EVIDENCE_NOT_FOUND", "Evidence not found.", 404, {"evidence_id": evidence_id})
+        self.evidence[evidence.evidence_id] = evidence
         return evidence
 
     def get_graph(self, repository_id: str) -> GraphResponse:
@@ -568,6 +573,7 @@ class CodebaseService:
             metadata={"chunk_type": chunk.chunk_type},
         )
         self.evidence[evidence_id] = evidence
+        self.store.save_evidence(evidence)
         return CitationDTO(
             evidence_id=evidence_id,
             file_path=chunk.file_path,
@@ -619,71 +625,7 @@ class CodebaseService:
         repository.graph_edges = []
 
     def _persist_repository(self, repository: RepositoryState) -> None:
-        payload = {
-            "id": repository.id,
-            "name": repository.name,
-            "source_type": repository.source_type,
-            "source_uri": repository.source_uri,
-            "source_path": str(repository.source_path),
-            "status": repository.status,
-            "files": [self._dataclass_dict(item, absolute_path=str(item.absolute_path)) for item in repository.files],
-            "symbols": [self._dataclass_dict(item) for item in repository.symbols],
-            "endpoints": [self._dataclass_dict(item) for item in repository.endpoints],
-            "chunks": [self._dataclass_dict(item, score=0.0) for item in repository.chunks],
-            "graph_nodes": [item.model_dump() for item in repository.graph_nodes],
-            "graph_edges": [item.model_dump() for item in repository.graph_edges],
-            "logs": repository.logs,
-            "warnings": repository.warnings,
-            "failed_files": repository.failed_files,
-            "current_step": repository.current_step,
-            "started_at": repository.started_at,
-            "finished_at": repository.finished_at,
-        }
-        (settings.index_storage_dir / f"{repository.id}.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-
-    def _load_indexes(self) -> None:
-        for path in settings.index_storage_dir.glob("repo_*.json"):
-            try:
-                payload = json.loads(path.read_text(encoding="utf-8"))
-                repository = RepositoryState(
-                    id=payload["id"],
-                    name=payload["name"],
-                    source_type=payload["source_type"],
-                    source_uri=payload.get("source_uri"),
-                    source_path=Path(payload["source_path"]),
-                    status=payload.get("status", "created"),
-                    files=[
-                        FileRecord(
-                            path=item["path"],
-                            absolute_path=Path(item["absolute_path"]),
-                            language=item["language"],
-                            file_type=item["file_type"],
-                            size_bytes=item["size_bytes"],
-                            content_hash=item["content_hash"],
-                            parse_status=item.get("parse_status", "parsed"),
-                        )
-                        for item in payload.get("files", [])
-                    ],
-                    symbols=[SymbolRecord(**item) for item in payload.get("symbols", [])],
-                    endpoints=[EndpointRecord(**item) for item in payload.get("endpoints", [])],
-                    chunks=[ChunkRecord(**item) for item in payload.get("chunks", [])],
-                    graph_nodes=[GraphNodeDTO(**item) for item in payload.get("graph_nodes", [])],
-                    graph_edges=[GraphEdgeDTO(**item) for item in payload.get("graph_edges", [])],
-                    logs=payload.get("logs", []),
-                    warnings=payload.get("warnings", []),
-                    failed_files=payload.get("failed_files", 0),
-                    current_step=payload.get("current_step", "created"),
-                    started_at=payload.get("started_at"),
-                    finished_at=payload.get("finished_at"),
-                )
-                self.repositories[repository.id] = repository
-            except (OSError, KeyError, TypeError, json.JSONDecodeError):
-                continue
-
-    def _dataclass_dict(self, item: object, **overrides: object) -> dict[str, object]:
-        payload = dict(item.__dict__)
-        payload.update(overrides)
-        return payload
+        self.store.save_repository(repository)
 
     def _repository_dto(self, repository: RepositoryState) -> RepositoryDTO:
         return RepositoryDTO(
