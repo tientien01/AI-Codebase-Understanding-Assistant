@@ -30,6 +30,11 @@ class RepositoryCreateResponse(BaseModel):
     source_type: str
 
 
+class RepositoryDeleteResponse(BaseModel):
+    deleted: bool
+    repository_id: str
+
+
 class IndexRequest(BaseModel):
     force_reindex: bool = False
 

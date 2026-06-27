@@ -24,11 +24,13 @@ export function DashboardPage({
   onNewProject,
   onOpen,
   onReindex,
+  onDelete,
 }: {
   repositories: Repository[]
   onNewProject: () => void
   onOpen: (id: string) => void
   onReindex: (id: string) => void
+  onDelete: (id: string) => void
 }) {
   const indexed = repositories.filter((repository) => repository.status === 'indexed').length
   const indexing = repositories.filter((repository) => repository.status === 'indexing').length
@@ -101,6 +103,7 @@ export function DashboardPage({
                       <button className="primary" disabled={repository.status !== 'indexed'} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
                     )}
                     <button className="secondary" onClick={() => onReindex(repository.id)}><Icon name="refresh" />Re-index</button>
+                    <button className="danger" onClick={() => onDelete(repository.id)}><Icon name="warning" />Delete</button>
                     <button className="more-button" aria-label="More actions"><Icon name="more" /></button>
                   </div>
                 </article>

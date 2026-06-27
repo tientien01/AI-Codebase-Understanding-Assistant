@@ -169,6 +169,13 @@ class RepositoryStore:
                 return None
             return self._indexing_job_record(row)
 
+    def delete_repository(self, repository_id: str) -> None:
+        with SessionLocal.begin() as session:
+            self._delete_index_records(session, repository_id)
+            for model in (IndexingJobORM, EvidenceORM):
+                session.execute(delete(model).where(model.repository_id == repository_id))
+            session.execute(delete(RepositoryORM).where(RepositoryORM.id == repository_id))
+
     def save_evidence(self, evidence: EvidenceDTO) -> None:
         with SessionLocal.begin() as session:
             session.merge(

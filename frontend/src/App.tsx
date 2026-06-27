@@ -247,6 +247,27 @@ function App() {
     setPage('indexing')
   }
 
+  async function deleteRepository(repositoryId: string) {
+    const repository = repositories.find((item) => item.id === repositoryId)
+    const label = repository?.name ?? repositoryId
+    if (!window.confirm(`Delete project "${label}" from AI Codebase Assistant? Source folders imported by local path will not be removed.`)) {
+      return
+    }
+    await request(`${API_V1}/repositories/${repositoryId}`, { method: 'DELETE' })
+    if (selectedRepositoryId === repositoryId) {
+      setSelectedRepositoryId('')
+      setOverview(null)
+      setIndexStatus(null)
+      setGraph(null)
+      setFileTree([])
+      setSelectedFilePath('')
+      setFileContent(null)
+      setSelectedEvidence(null)
+      setPage('dashboard')
+    }
+    await loadRepositories()
+  }
+
   async function openWorkspace(repositoryId: string) {
     setSelectedRepositoryId(repositoryId)
     await loadWorkspaceData(repositoryId)
@@ -333,6 +354,7 @@ function App() {
           onNewProject={() => setPage('import')}
           onOpen={openWorkspace}
           onReindex={reindexRepository}
+          onDelete={deleteRepository}
         />
       )
     }

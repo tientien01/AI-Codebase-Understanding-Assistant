@@ -14,6 +14,7 @@ from app.schemas.api import (
     IndexStatusResponse,
     OverviewResponse,
     RepositoryCreateResponse,
+    RepositoryDeleteResponse,
     RepositoryDTO,
     RepositoryImportRequest,
     SearchResponse,
@@ -26,6 +27,11 @@ router = APIRouter(prefix="/repositories", tags=["repositories"])
 @router.get("", response_model=list[RepositoryDTO])
 def list_repositories() -> list[RepositoryDTO]:
     return codebase_service.list_repositories()
+
+
+@router.delete("/{repository_id}", response_model=RepositoryDeleteResponse)
+def delete_repository(repository_id: str) -> RepositoryDeleteResponse:
+    return codebase_service.delete_repository(repository_id)
 
 
 @router.post("/import-local", response_model=RepositoryCreateResponse)

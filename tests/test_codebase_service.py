@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from app.core.errors import DomainError
 from app.services.codebase_service import CodebaseService
 
 
@@ -78,3 +81,27 @@ def test_force_reindex_replaces_index_records_without_duplicates() -> None:
     assert second_overview.stats["files"] == first_overview.stats["files"]
     assert second_overview.stats["endpoints"] == first_overview.stats["endpoints"]
     assert second_overview.stats["chunks"] == first_overview.stats["chunks"]
+
+
+def test_delete_repository_removes_project_records_without_deleting_local_source() -> None:
+    service = CodebaseService()
+    created = service.import_local("fixture-delete-test", str(FIXTURE_REPO))
+    service.start_indexing(created.repository_id, force_reindex=True)
+    chat = service.chat(created.repository_id, "login flow")
+    evidence_id = chat.citations[0].evidence_id
+
+    deleted = service.delete_repository(created.repository_id)
+
+    assert deleted.deleted
+    assert deleted.repository_id == created.repository_id
+    assert FIXTURE_REPO.exists()
+    assert all(repository.id != created.repository_id for repository in service.list_repositories())
+    with pytest.raises(DomainError) as overview_error:
+        service.get_overview(created.repository_id)
+    assert overview_error.value.code == "REPOSITORY_NOT_FOUND"
+    with pytest.raises(DomainError) as evidence_error:
+        service.get_evidence(created.repository_id, evidence_id)
+    assert evidence_error.value.code == "EVIDENCE_NOT_FOUND"
+
+    restarted = CodebaseService()
+    assert all(repository.id != created.repository_id for repository in restarted.list_repositories())

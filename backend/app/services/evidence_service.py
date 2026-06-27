@@ -23,6 +23,13 @@ class EvidenceService:
         self.cache[evidence.evidence_id] = evidence
         return evidence
 
+    def clear_repository(self, repository_id: str) -> None:
+        self.cache = {
+            evidence_id: evidence
+            for evidence_id, evidence in self.cache.items()
+            if evidence.repository_id != repository_id
+        }
+
     def chunk_to_citation(self, repository: RepositoryState, chunk: ChunkRecord, retrieval_source: str) -> CitationDTO:
         evidence_id = f"ev_{uuid4().hex[:10]}"
         evidence = EvidenceDTO(

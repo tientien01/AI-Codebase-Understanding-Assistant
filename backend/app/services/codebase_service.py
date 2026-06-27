@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import zipfile
 from pathlib import Path
 from uuid import uuid4
@@ -21,6 +22,7 @@ from app.schemas.api import (
     ModuleDTO,
     OverviewResponse,
     RepositoryCreateResponse,
+    RepositoryDeleteResponse,
     RepositoryDTO,
     SearchResponse,
     SearchResultDTO,
@@ -52,6 +54,14 @@ class CodebaseService:
 
     def list_repositories(self) -> list[RepositoryDTO]:
         return [self._repository_dto(repository) for repository in self.repositories.values()]
+
+    def delete_repository(self, repository_id: str) -> RepositoryDeleteResponse:
+        repository = self._get_repository(repository_id)
+        self.store.delete_repository(repository_id)
+        self.repositories.pop(repository_id, None)
+        self._delete_managed_storage(repository)
+        self.evidence.clear_repository(repository_id)
+        return RepositoryDeleteResponse(deleted=True, repository_id=repository_id)
 
     def import_local(self, name: str, local_path: str) -> RepositoryCreateResponse:
         source_path = Path(local_path).expanduser().resolve()
@@ -320,6 +330,25 @@ class CodebaseService:
             status=repository.status,
             source_type=repository.source_type,
         )
+
+    def _delete_managed_storage(self, repository: RepositoryState) -> None:
+        repository_root = (settings.repository_storage_dir / repository.id).resolve()
+        storage_root = settings.repository_storage_dir.resolve()
+        if repository_root.exists() and self._is_relative_to(repository_root, storage_root):
+            shutil.rmtree(repository_root)
+
+        if repository.source_type == "upload_zip" and repository.source_uri:
+            upload_path = Path(repository.source_uri).resolve()
+            upload_root = settings.upload_storage_dir.resolve()
+            if upload_path.exists() and upload_path.is_file() and self._is_relative_to(upload_path, upload_root):
+                upload_path.unlink()
+
+    def _is_relative_to(self, path: Path, parent: Path) -> bool:
+        try:
+            path.relative_to(parent)
+        except ValueError:
+            return False
+        return True
 
     def _index_repository(self, repository: RepositoryState, job: IndexingJobRecord) -> None:
         repository.status = "indexing"
