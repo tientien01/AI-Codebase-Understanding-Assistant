@@ -23,6 +23,28 @@ class RepositoryORM(Base):
     finished_at: Mapped[str | None] = mapped_column(String)
 
 
+class IndexingJobORM(Base):
+    __tablename__ = "indexing_jobs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    current_step: Mapped[str] = mapped_column(String, default="queued")
+    total_files: Mapped[int] = mapped_column(Integer, default=0)
+    processed_files: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_files: Mapped[int] = mapped_column(Integer, default=0)
+    failed_files: Mapped[int] = mapped_column(Integer, default=0)
+    total_chunks: Mapped[int] = mapped_column(Integer, default=0)
+    total_graph_nodes: Mapped[int] = mapped_column(Integer, default=0)
+    total_graph_edges: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[str | None] = mapped_column(String)
+    finished_at: Mapped[str | None] = mapped_column(String)
+    logs_json: Mapped[str] = mapped_column(Text, default="[]")
+    warnings_json: Mapped[str] = mapped_column(Text, default="[]")
+    error_code: Mapped[str | None] = mapped_column(String)
+    error_message: Mapped[str | None] = mapped_column(Text)
+
+
 class FileRecordORM(Base):
     __tablename__ = "file_records"
 

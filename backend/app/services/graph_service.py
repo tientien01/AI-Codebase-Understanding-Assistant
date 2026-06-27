@@ -9,8 +9,8 @@ from app.services.text_utils import node_id, normalize_route
 
 class GraphService:
     def build_graph(self, repository: RepositoryState) -> None:
-        nodes: dict[str, GraphNodeDTO] = {}
-        edges: list[GraphEdgeDTO] = []
+        nodes: dict[str, GraphNodeDTO] = {node.id: node for node in repository.graph_nodes}
+        edges: list[GraphEdgeDTO] = list(repository.graph_edges)
 
         for file_record in repository.files:
             file_id = node_id("file", file_record.path)
@@ -49,5 +49,5 @@ class GraphService:
             endpoint_id = node_id("endpoint", f"{endpoint.method}:{endpoint.path}")
             edges.append(GraphEdgeDTO(source=graph_node.id, target=endpoint_id, type="calls_api", confidence=0.72))
 
-        repository.graph_nodes = list(nodes.values()) + repository.graph_nodes
+        repository.graph_nodes = list(nodes.values())
         repository.graph_edges = edges

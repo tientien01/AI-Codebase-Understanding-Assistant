@@ -31,6 +31,12 @@ class RetrievalService:
         for chunk in repository.chunks:
             haystack = f"{chunk.file_path} {chunk.symbol_name or ''} {chunk.content}".lower()
             score = sum(1.0 for term in terms if term in haystack)
+            if chunk.symbol_name and chunk.symbol_name.lower() in query.lower():
+                score += 2
+            if chunk.file_path.lower() in query.lower():
+                score += 2
+            if chunk.chunk_type == "endpoint" and any(term in haystack for term in terms):
+                score += 1
             if "login" in query.lower() and ("login" in haystack or "auth" in haystack):
                 score += 3
             if any(token in query.lower() for token in ["overview", "kien truc", "architecture"]) and chunk.chunk_type in {"doc_section", "file_summary"}:

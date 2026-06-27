@@ -9,6 +9,7 @@ from app.services.index_models import EndpointRecord, FileRecord, RepositoryStat
 from app.services.parser_service import ParserService
 from app.services.retrieval_service import RetrievalService
 from app.services.scanner_service import ScannerService
+from app.services.text_utils import node_id
 
 
 def test_scanner_skips_secret_and_dependency_files(tmp_path: Path) -> None:
@@ -35,8 +36,11 @@ def test_parser_extracts_fastapi_endpoint_and_symbol(tmp_path: Path) -> None:
     source.write_text(
         "from fastapi import APIRouter\n\n"
         "router = APIRouter()\n\n"
+        "def helper():\n"
+        "    return True\n\n"
         "@router.post('/login')\n"
         "async def login():\n"
+        "    helper()\n"
         "    return {'ok': True}\n",
         encoding="utf-8",
     )
@@ -63,6 +67,8 @@ def test_parser_extracts_fastapi_endpoint_and_symbol(tmp_path: Path) -> None:
     assert any(symbol.name == "login" for symbol in repository.symbols)
     assert any(endpoint.path == "/login" and endpoint.method == "POST" for endpoint in repository.endpoints)
     assert any(chunk.chunk_type == "endpoint" for chunk in repository.chunks)
+    assert any(edge.type == "imports" and edge.target == node_id("module", "fastapi") for edge in repository.graph_edges)
+    assert any(edge.type == "calls" and edge.target == node_id("symbol", "routes.py:helper") for edge in repository.graph_edges)
 
 
 def test_graph_links_frontend_api_call_to_matching_endpoint(tmp_path: Path) -> None:
@@ -104,8 +110,9 @@ def test_retrieval_classifies_and_scores_login_queries(tmp_path: Path) -> None:
     ChunkingService().add_chunk(repository, "backend/auth.py", "function", "def authenticate_user(): pass", 1, 1, "authenticate_user")
 
     retrieval = RetrievalService()
-    results = retrieval.search_chunks(repository, "login flow", limit=3)
+    results = retrieval.search_chunks(repository, "backend/auth.py authenticate_user login flow", limit=3)
 
     assert retrieval.classify_question("login flow hoat dong nhu the nao?") == "flow_tracing"
     assert results
     assert results[0].file_path == "backend/auth.py"
+    assert results[0].symbol_name == "authenticate_user"

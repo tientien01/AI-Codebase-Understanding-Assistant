@@ -7,6 +7,27 @@ from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
 
 
 @dataclass
+class IndexingJobRecord:
+    id: str
+    repository_id: str
+    status: str
+    current_step: str = "queued"
+    total_files: int = 0
+    processed_files: int = 0
+    skipped_files: int = 0
+    failed_files: int = 0
+    total_chunks: int = 0
+    total_graph_nodes: int = 0
+    total_graph_edges: int = 0
+    started_at: str | None = None
+    finished_at: str | None = None
+    logs: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+@dataclass
 class FileRecord:
     path: str
     absolute_path: Path

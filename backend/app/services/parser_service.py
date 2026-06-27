@@ -4,10 +4,10 @@ import ast
 import re
 from uuid import uuid4
 
-from app.schemas.api import GraphNodeDTO
+from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
 from app.services.chunking_service import ChunkingService
 from app.services.index_models import EndpointRecord, FileRecord, RepositoryState, SymbolRecord
-from app.services.text_utils import read_text
+from app.services.text_utils import node_id, read_text
 
 
 class ParserService:
@@ -15,6 +15,7 @@ class ParserService:
         self.chunking = chunking or ChunkingService()
         self.function_pattern = re.compile(r"(?:function\s+([A-Z_a-z][\w]*)|const\s+([A-Z_a-z][\w]*)\s*=\s*(?:async\s*)?\(?[^=]*\)?\s*=>)")
         self.api_pattern = re.compile(r"(axios\.(get|post|put|delete|patch)|fetch)\s*\(\s*['\"]([^'\"]+)['\"]", re.IGNORECASE)
+        self.import_pattern = re.compile(r"^\s*import\s+(?:.+?\s+from\s+)?['\"]([^'\"]+)['\"]")
 
     def parse_files(self, repository: RepositoryState) -> None:
         for file_record in repository.files:
@@ -45,6 +46,7 @@ class ParserService:
             return
 
         lines = text.splitlines()
+        self._extract_python_imports(repository, file_record, tree)
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 continue
@@ -87,10 +89,16 @@ class ParserService:
                     end_line,
                     node.name,
                 )
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                self._extract_python_calls(repository, file_record, node)
 
     def _parse_js_ts(self, repository: RepositoryState, file_record: FileRecord, text: str) -> None:
         lines = text.splitlines()
         for index, line in enumerate(lines, start=1):
+            import_match = self.import_pattern.search(line)
+            if import_match:
+                self._add_import_relation(repository, file_record.path, import_match.group(1), 0.75)
+
             function_match = self.function_pattern.search(line)
             if function_match:
                 name = function_match.group(1) or function_match.group(2)
@@ -123,6 +131,42 @@ class ParserService:
                 repository.graph_nodes.append(
                     GraphNodeDTO(id=f"api_call_{uuid4().hex[:8]}", type="api_call", label=f"{method} {route_path}", file_path=file_record.path)
                 )
+
+    def _extract_python_imports(self, repository: RepositoryState, file_record: FileRecord, tree: ast.AST) -> None:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    self._add_import_relation(repository, file_record.path, alias.name, 0.95)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                self._add_import_relation(repository, file_record.path, node.module, 0.95)
+
+    def _extract_python_calls(self, repository: RepositoryState, file_record: FileRecord, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        source = node_id("symbol", f"{file_record.path}:{node.name}")
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Call):
+                continue
+            call_name = self._call_name(child.func)
+            if not call_name:
+                continue
+            target = node_id("symbol", f"{file_record.path}:{call_name}")
+            repository.graph_edges.append(GraphEdgeDTO(source=source, target=target, type="calls", confidence=0.62))
+
+    def _call_name(self, node: ast.AST) -> str | None:
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            return node.attr
+        return None
+
+    def _add_import_relation(self, repository: RepositoryState, file_path: str, module: str, confidence: float) -> None:
+        module_ref = module.strip()
+        if not module_ref:
+            return
+        module_node = node_id("module", module_ref)
+        repository.graph_nodes.append(GraphNodeDTO(id=module_node, type="module", label=module_ref, file_path=None))
+        repository.graph_edges.append(
+            GraphEdgeDTO(source=node_id("file", file_path), target=module_node, type="imports", confidence=confidence)
+        )
 
     def _parse_markdown(self, repository: RepositoryState, file_record: FileRecord, text: str) -> None:
         lines = text.splitlines()

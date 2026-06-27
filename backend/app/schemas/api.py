@@ -42,16 +42,21 @@ class IndexResponse(BaseModel):
 
 class IndexStatusResponse(BaseModel):
     repository_id: str
+    job_id: str | None = None
     status: str
     current_step: str
     total_files: int
     processed_files: int
+    skipped_files: int = 0
     failed_files: int
     progress: int
+    stats: dict[str, int] = Field(default_factory=dict)
     started_at: str | None = None
     finished_at: str | None = None
     logs: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    error_code: str | None = None
+    error_message: str | None = None
 
 
 class ImportantFileDTO(BaseModel):

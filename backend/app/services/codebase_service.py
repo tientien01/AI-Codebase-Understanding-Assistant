@@ -29,7 +29,7 @@ from app.services.chunking_service import ChunkingService
 from app.services.evidence_service import EvidenceService
 from app.services.file_rules import IGNORE_DIRS, is_secret_file, is_supported_file
 from app.services.graph_service import GraphService
-from app.services.index_models import RepositoryState
+from app.services.index_models import IndexingJobRecord, RepositoryState
 from app.services.parser_service import ParserService
 from app.services.repository_store import RepositoryStore
 from app.services.retrieval_service import RetrievalService
@@ -131,29 +131,65 @@ class CodebaseService:
         repository = self._get_repository(repository_id)
         if repository.status == "indexing":
             raise DomainError("INDEXING_ALREADY_RUNNING", "Repository indexing is already running.", 409)
+        job = IndexingJobRecord(
+            id=f"job_{uuid4().hex[:10]}",
+            repository_id=repository.id,
+            status="running",
+            started_at=utc_now(),
+        )
+        self.store.save_indexing_job(job)
         if force_reindex:
             self._clear_index(repository)
-        self._index_repository(repository)
+        try:
+            self._index_repository(repository, job)
+        except Exception as exc:
+            repository.status = "failed"
+            repository.current_step = job.current_step
+            repository.failed_files = job.failed_files
+            repository.warnings = job.warnings
+            repository.logs = job.logs
+            repository.finished_at = utc_now()
+            job.status = "failed"
+            job.error_code = "INDEXING_FAILED"
+            job.error_message = str(exc)
+            job.finished_at = repository.finished_at
+            self.store.save_indexing_job(job)
+            self._persist_repository(repository)
+            raise
         self._persist_repository(repository)
-        return {"indexing_job_id": f"job_{uuid4().hex[:10]}", "repository_id": repository.id, "status": "completed"}
+        return {"indexing_job_id": job.id, "repository_id": repository.id, "status": job.status}
 
     def get_index_status(self, repository_id: str) -> IndexStatusResponse:
         repository = self._get_repository(repository_id)
-        total = len(repository.files)
-        processed = total if repository.status == "indexed" else 0
-        progress = 100 if repository.status == "indexed" else 0
+        job = self.store.get_latest_indexing_job(repository.id)
+        total = job.total_files if job else len(repository.files)
+        processed = job.processed_files if job else (total if repository.status == "indexed" else 0)
+        progress = 100 if total == 0 and repository.status == "indexed" else int((processed / max(total, 1)) * 100)
+        if repository.status == "indexed":
+            progress = 100
         return IndexStatusResponse(
             repository_id=repository.id,
-            status=repository.status,
-            current_step=repository.current_step,
+            job_id=job.id if job else None,
+            status=job.status if job else repository.status,
+            current_step=job.current_step if job else repository.current_step,
             total_files=total,
             processed_files=processed,
-            failed_files=repository.failed_files,
+            skipped_files=job.skipped_files if job else 0,
+            failed_files=job.failed_files if job else repository.failed_files,
             progress=progress,
-            started_at=repository.started_at,
-            finished_at=repository.finished_at,
-            logs=repository.logs[-25:],
-            warnings=repository.warnings[-10:],
+            stats={
+                "symbols": len(repository.symbols),
+                "endpoints": len(repository.endpoints),
+                "chunks": len(repository.chunks),
+                "graph_nodes": len(repository.graph_nodes),
+                "graph_edges": len(repository.graph_edges),
+            },
+            started_at=job.started_at if job else repository.started_at,
+            finished_at=job.finished_at if job else repository.finished_at,
+            logs=(job.logs if job else repository.logs)[-25:],
+            warnings=(job.warnings if job else repository.warnings)[-10:],
+            error_code=job.error_code if job else None,
+            error_message=job.error_message if job else None,
         )
 
     def get_overview(self, repository_id: str) -> OverviewResponse:
@@ -285,9 +321,9 @@ class CodebaseService:
             source_type=repository.source_type,
         )
 
-    def _index_repository(self, repository: RepositoryState) -> None:
+    def _index_repository(self, repository: RepositoryState, job: IndexingJobRecord) -> None:
         repository.status = "indexing"
-        repository.started_at = utc_now()
+        repository.started_at = job.started_at or utc_now()
         repository.logs = []
         repository.warnings = []
         repository.failed_files = 0
@@ -303,20 +339,42 @@ class CodebaseService:
         ]
         for step in steps:
             repository.current_step = step
-            repository.logs.append(f"{utc_now()} {step}")
+            job.current_step = step
+            log_line = f"{utc_now()} {step}"
+            repository.logs.append(log_line)
+            job.logs.append(log_line)
             if step == "scan_repository_files":
                 repository.files = self.scanner.scan_files(repository)
+                job.total_files = len(repository.files)
             elif step == "parse_source_code":
                 self.parser.parse_files(repository)
+                job.processed_files = len(repository.files)
+                job.failed_files = repository.failed_files
+                job.warnings = list(repository.warnings)
             elif step == "create_chunks":
                 self.chunking.create_file_summary_chunks(repository)
+                job.total_chunks = len(repository.chunks)
             elif step == "build_code_graph":
                 self.graph.build_graph(repository)
+                job.total_graph_nodes = len(repository.graph_nodes)
+                job.total_graph_edges = len(repository.graph_edges)
+            self.store.save_indexing_job(job)
 
         repository.status = "indexed"
         repository.current_step = "completed"
         repository.finished_at = utc_now()
         repository.logs.append(f"{repository.finished_at} completed")
+        repository.failed_files = job.failed_files
+        repository.warnings = job.warnings
+        job.status = "completed"
+        job.current_step = "completed"
+        job.processed_files = len(repository.files)
+        job.total_chunks = len(repository.chunks)
+        job.total_graph_nodes = len(repository.graph_nodes)
+        job.total_graph_edges = len(repository.graph_edges)
+        job.finished_at = repository.finished_at
+        job.logs.append(f"{repository.finished_at} completed")
+        self.store.save_indexing_job(job)
 
     def _safe_extract_zip(self, zip_path: Path, target_dir: Path) -> None:
         with zipfile.ZipFile(zip_path) as archive:

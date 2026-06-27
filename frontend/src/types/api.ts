@@ -30,14 +30,19 @@ export type Repository = {
 
 export type IndexStatus = {
   repository_id: string
+  job_id?: string
   status: string
   current_step: string
   total_files: number
   processed_files: number
+  skipped_files: number
   failed_files: number
   progress: number
+  stats: Record<string, number>
   logs: string[]
   warnings: string[]
+  error_code?: string
+  error_message?: string
 }
 
 export type Overview = {

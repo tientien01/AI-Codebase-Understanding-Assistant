@@ -12,12 +12,13 @@ from app.db.models import (
     FileRecordORM,
     GraphEdgeORM,
     GraphNodeORM,
+    IndexingJobORM,
     RepositoryORM,
     SymbolRecordORM,
 )
 from app.db.session import SessionLocal, init_db
 from app.schemas.api import EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
-from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, RepositoryState, SymbolRecord
+from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, IndexingJobRecord, RepositoryState, SymbolRecord
 
 
 class RepositoryStore:
@@ -132,6 +133,41 @@ class RepositoryStore:
                     for edge in repository.graph_edges
                 ]
             )
+
+    def save_indexing_job(self, job: IndexingJobRecord) -> None:
+        with SessionLocal.begin() as session:
+            session.merge(
+                IndexingJobORM(
+                    id=job.id,
+                    repository_id=job.repository_id,
+                    status=job.status,
+                    current_step=job.current_step,
+                    total_files=job.total_files,
+                    processed_files=job.processed_files,
+                    skipped_files=job.skipped_files,
+                    failed_files=job.failed_files,
+                    total_chunks=job.total_chunks,
+                    total_graph_nodes=job.total_graph_nodes,
+                    total_graph_edges=job.total_graph_edges,
+                    started_at=job.started_at,
+                    finished_at=job.finished_at,
+                    logs_json=json.dumps(job.logs),
+                    warnings_json=json.dumps(job.warnings),
+                    error_code=job.error_code,
+                    error_message=job.error_message,
+                )
+            )
+
+    def get_latest_indexing_job(self, repository_id: str) -> IndexingJobRecord | None:
+        with SessionLocal() as session:
+            row = session.scalars(
+                select(IndexingJobORM)
+                .where(IndexingJobORM.repository_id == repository_id)
+                .order_by(IndexingJobORM.started_at.desc(), IndexingJobORM.id.desc())
+            ).first()
+            if row is None:
+                return None
+            return self._indexing_job_record(row)
 
     def save_evidence(self, evidence: EvidenceDTO) -> None:
         with SessionLocal.begin() as session:
@@ -254,4 +290,25 @@ class RepositoryStore:
             current_step=repository.current_step,
             started_at=repository.started_at,
             finished_at=repository.finished_at,
+        )
+
+    def _indexing_job_record(self, row: IndexingJobORM) -> IndexingJobRecord:
+        return IndexingJobRecord(
+            id=row.id,
+            repository_id=row.repository_id,
+            status=row.status,
+            current_step=row.current_step,
+            total_files=row.total_files,
+            processed_files=row.processed_files,
+            skipped_files=row.skipped_files,
+            failed_files=row.failed_files,
+            total_chunks=row.total_chunks,
+            total_graph_nodes=row.total_graph_nodes,
+            total_graph_edges=row.total_graph_edges,
+            started_at=row.started_at,
+            finished_at=row.finished_at,
+            logs=json.loads(row.logs_json or "[]"),
+            warnings=json.loads(row.warnings_json or "[]"),
+            error_code=row.error_code,
+            error_message=row.error_message,
         )

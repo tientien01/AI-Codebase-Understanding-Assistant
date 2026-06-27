@@ -39,3 +39,42 @@ def test_service_file_tree_and_content_are_available_after_index() -> None:
     assert tree
     assert content.language == "python"
     assert "FastAPI" in content.content
+
+
+def test_indexing_job_persists_and_status_survives_service_restart() -> None:
+    service = CodebaseService()
+    created = service.import_local("fixture-job-test", str(FIXTURE_REPO))
+
+    result = service.start_indexing(created.repository_id, force_reindex=True)
+    status = service.get_index_status(created.repository_id)
+
+    assert result["indexing_job_id"] == status.job_id
+    assert status.status == "completed"
+    assert status.progress == 100
+    assert status.stats["chunks"] > 0
+
+    restarted = CodebaseService()
+    restarted_status = restarted.get_index_status(created.repository_id)
+
+    assert restarted_status.job_id == status.job_id
+    assert restarted_status.status == "completed"
+    assert restarted_status.total_files == status.total_files
+
+
+def test_force_reindex_replaces_index_records_without_duplicates() -> None:
+    service = CodebaseService()
+    created = service.import_local("fixture-reindex-test", str(FIXTURE_REPO))
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    first_overview = service.get_overview(created.repository_id)
+    first_status = service.get_index_status(created.repository_id)
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    second_overview = service.get_overview(created.repository_id)
+    second_status = service.get_index_status(created.repository_id)
+
+    assert second_status.job_id != first_status.job_id
+    assert second_status.status == "completed"
+    assert second_overview.stats["files"] == first_overview.stats["files"]
+    assert second_overview.stats["endpoints"] == first_overview.stats["endpoints"]
+    assert second_overview.stats["chunks"] == first_overview.stats["chunks"]
