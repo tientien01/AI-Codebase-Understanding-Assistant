@@ -16,7 +16,6 @@ from app.schemas.api import (
     RepositoryCreateResponse,
     RepositoryDeleteResponse,
     RepositoryDTO,
-    RepositoryImportRequest,
     SearchResponse,
 )
 from app.services.codebase_service import codebase_service
@@ -32,11 +31,6 @@ def list_repositories() -> list[RepositoryDTO]:
 @router.delete("/{repository_id}", response_model=RepositoryDeleteResponse)
 def delete_repository(repository_id: str) -> RepositoryDeleteResponse:
     return codebase_service.delete_repository(repository_id)
-
-
-@router.post("/import-local", response_model=RepositoryCreateResponse)
-def import_local_repository(request: RepositoryImportRequest) -> RepositoryCreateResponse:
-    return codebase_service.import_local(request.name, request.local_path)
 
 
 @router.post("/upload", response_model=RepositoryCreateResponse)

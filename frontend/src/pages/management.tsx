@@ -1,21 +1,6 @@
 import type { FormEvent } from 'react'
 import { Icon } from '../components/common/Icon'
-import {
-  Activity,
-  Checklist,
-  EmptyState,
-  LanguageBar,
-  ListRow,
-  Metric,
-  PageTitle,
-  Panel,
-  PreviewLine,
-  ProfileCard,
-  Progress,
-  SourceCard,
-  StatCell,
-  WizardSteps,
-} from '../components/common/ui'
+import { Activity, Checklist, EmptyState, LanguageBar, ListRow, Metric, PageTitle, Panel, PreviewLine, ProfileCard, Progress, SourceCard, StatCell, WizardSteps } from '../components/common/ui'
 import { pipelineSteps } from '../config/navigation'
 import type { ImportMode, IndexStatus, Repository } from '../types/api'
 
@@ -67,50 +52,39 @@ export function DashboardPage({
                         <h3>{repository.name}</h3>
                         <button className="star-button" aria-label="Favorite"><Icon name="star" /></button>
                       </div>
-                      <p>{repository.source_uri || repository.source_type}</p>
+                      <p title={repository.source_label || repository.source_type}>{formatReadableRepositorySource(repository)}</p>
                     </div>
                     <span className={`badge ${repository.status === 'indexed' ? 'green' : repository.status === 'failed' ? 'red' : 'blue'}`}>{repository.status}</span>
-                    <button className="more-button" aria-label="More actions"><Icon name="more" /></button>
+                    <details className="project-menu">
+                      <summary aria-label={`Actions for ${repository.name}`}><Icon name="more" /></summary>
+                      <div className="project-menu-list">
+                        <button onClick={() => onReindex(repository.id)}><Icon name="refresh" />Re-index</button>
+                        <button disabled={repository.status !== 'indexed'} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
+                        <button className="danger-text" onClick={() => onDelete(repository.id)}><Icon name="warning" />Delete</button>
+                      </div>
+                    </details>
                   </div>
-                  <div className="tech-row">
-                    <span><Icon name="code" />Python</span>
-                    <span><Icon name="check" />FastAPI</span>
-                    <span><Icon name="nodes" />React</span>
-                    <span>+2</span>
+                  <div className="project-stack" aria-label={`Detected stack for ${repository.name}`}>
+                    {repository.detected_stack.length ? (
+                      repository.detected_stack.map((item) => <span key={item}>{item}</span>)
+                    ) : (
+                      <span>Stack available after indexing</span>
+                    )}
                   </div>
                   <div className="project-stats">
                     <StatCell label="Files" value={repository.total_files} />
-                    <StatCell label="Functions" value={repository.symbols} />
-                    <StatCell label="Classes" value={Math.max(0, Math.round(repository.symbols / 6))} />
+                    <StatCell label="API routes" value={repository.endpoints} />
+                    <StatCell label="Functions/classes" value={repository.symbols} />
                   </div>
-                  <div className="project-health-grid">
-                    <div>
-                      <span>Last scan</span>
-                      <strong>{repository.last_indexed_at ? 'indexed' : 'not scanned'}</strong>
-                    </div>
-                    <div>
-                      <span>{repository.status === 'indexing' ? 'Progress' : repository.status === 'failed' ? 'Errors' : 'Index Health'}</span>
-                      <strong>{repository.status === 'indexed' ? '98%' : repository.status === 'indexing' ? '74%' : repository.status === 'failed' ? '14' : repository.status}</strong>
-                      <Progress value={repository.status === 'indexed' ? 98 : repository.status === 'indexing' ? 74 : repository.status === 'failed' ? 62 : 0} />
-                    </div>
-                  </div>
+                  <p className="project-meta-line">Last indexed: {formatLastIndexed(repository.last_indexed_at)}</p>
                   <div className="card-actions">
-                    {repository.status === 'indexing' ? (
-                      <button className="primary" onClick={() => onReindex(repository.id)}><Icon name="pause" />Pause Indexing</button>
-                    ) : repository.status === 'failed' ? (
-                      <button className="danger"><Icon name="warning" />View Errors</button>
-                    ) : (
-                      <button className="primary" disabled={repository.status !== 'indexed'} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
-                    )}
-                    <button className="secondary" onClick={() => onReindex(repository.id)}><Icon name="refresh" />Re-index</button>
-                    <button className="danger" onClick={() => onDelete(repository.id)}><Icon name="warning" />Delete</button>
-                    <button className="more-button" aria-label="More actions"><Icon name="more" /></button>
+                    <button className="primary" disabled={repository.status !== 'indexed'} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
                   </div>
                 </article>
               ))}
               <button className="import-tile" onClick={onNewProject}>
                 <strong>Import New Repository</strong>
-                <span>Connect GitHub, upload zip, upload folder, or use local path.</span>
+                <span>Upload a folder, upload a zip, or connect GitHub when available.</span>
               </button>
             </div>
           )}
@@ -139,16 +113,53 @@ export function DashboardPage({
   )
 }
 
+function formatRepositorySource(repository: Repository) {
+  if (repository.source_type === 'upload_folder') return 'Uploaded folder'
+  if (repository.source_type === 'upload_zip') return `Uploaded ZIP${repository.source_label ? ` - ${repository.source_label}` : ''}`
+  if (repository.source_type === 'local_path') return 'Imported folder'
+  if (repository.source_type === 'github_url') return repository.source_label ?? repository.source_uri ?? 'GitHub repository'
+  return repository.source_type
+}
+
+function formatReadableRepositorySource(repository: Repository) {
+  if (repository.source_type === 'upload_folder') return sourceTypeLabel(repository.source_type)
+  if (repository.source_type === 'upload_zip') return `${sourceTypeLabel(repository.source_type)}${repository.source_label ? ` - ${repository.source_label}` : ''}`
+  if (repository.source_type === 'local_path') return sourceTypeLabel(repository.source_type)
+  if (repository.source_type === 'github_url') return repository.source_label ?? repository.source_uri ?? sourceTypeLabel(repository.source_type)
+  return formatRepositorySource(repository)
+}
+
+function sourceTypeLabel(sourceType: string) {
+  const labels: Record<string, string> = {
+    upload_folder: 'Uploaded folder',
+    upload_zip: 'Uploaded ZIP',
+    local_path: 'Imported folder',
+    github_url: 'GitHub',
+  }
+  return labels[sourceType] ?? sourceType
+}
+
+function formatLastIndexed(value?: string) {
+  if (!value) return 'Not indexed yet'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Indexed'
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function ImportPage({
   mode,
   projectName,
-  localPath,
   githubUrl,
   folderCount,
   zipFileName,
   onModeChange,
   onNameChange,
-  onPathChange,
   onGithubUrlChange,
   onFolderFiles,
   onZipFile,
@@ -156,13 +167,11 @@ export function ImportPage({
 }: {
   mode: ImportMode
   projectName: string
-  localPath: string
   githubUrl: string
   folderCount: number
   zipFileName: string
   onModeChange: (mode: ImportMode) => void
   onNameChange: (value: string) => void
-  onPathChange: (value: string) => void
   onGithubUrlChange: (value: string) => void
   onFolderFiles: (files: File[]) => void
   onZipFile: (file: File | null) => void
@@ -179,7 +188,6 @@ export function ImportPage({
               <SourceCard label="Upload ZIP" active={mode === 'zip'} onClick={() => onModeChange('zip')} detail="Upload a .zip file" />
               <SourceCard label="GitHub URL" active={mode === 'github'} onClick={() => onModeChange('github')} detail="Import from GitHub" />
               <SourceCard label="Local Folder" active={mode === 'folder'} onClick={() => onModeChange('folder')} detail="Use browser folder upload" />
-              <SourceCard label="Local Path" active={mode === 'local'} onClick={() => onModeChange('local')} detail="Trusted backend path" />
             </div>
             <div className="form-grid">
               {mode === 'github' && (
@@ -187,13 +195,6 @@ export function ImportPage({
                   Repository URL
                   <input value={githubUrl} onChange={(event) => onGithubUrlChange(event.target.value)} />
                   <span>GitHub URL import is dang phat trien in backend.</span>
-                </label>
-              )}
-              {mode === 'local' && (
-                <label>
-                  Local path
-                  <input value={localPath} onChange={(event) => onPathChange(event.target.value)} />
-                  <span>Use a path the backend can read.</span>
                 </label>
               )}
               {mode === 'folder' && (

@@ -11,6 +11,7 @@ class IndexingJobRecord:
     id: str
     repository_id: str
     status: str
+    index_version: int = 0
     current_step: str = "queued"
     total_files: int = 0
     processed_files: int = 0
@@ -79,7 +80,9 @@ class RepositoryState:
     source_type: str
     source_uri: str | None
     source_path: Path
+    source_label: str | None = None
     status: str = "created"
+    current_index_version: int = 0
     files: list[FileRecord] = field(default_factory=list)
     symbols: list[SymbolRecord] = field(default_factory=list)
     endpoints: list[EndpointRecord] = field(default_factory=list)

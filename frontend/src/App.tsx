@@ -58,7 +58,6 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('login auth token')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [projectName, setProjectName] = useState('fastapi-react-sample')
-  const [localPath, setLocalPath] = useState('../tests/fixtures/fastapi_react_sample')
   const [githubUrl, setGithubUrl] = useState('https://github.com/username/awesome-project')
   const [importMode, setImportMode] = useState<ImportMode>('folder')
   const [folderFiles, setFolderFiles] = useState<File[]>([])
@@ -170,7 +169,7 @@ function App() {
   async function submitImport(event: FormEvent) {
     event.preventDefault()
     if (importMode === 'github') {
-      setApiError('GitHub URL import is dang phat trien. Use Upload Folder, Upload ZIP, or Local Path for this frontend pass.')
+      setApiError('GitHub URL import is dang phat trien. Use Upload Folder or Upload ZIP for this baseline.')
       return
     }
     if (importMode === 'zip') {
@@ -181,12 +180,6 @@ function App() {
       await uploadFolderRepository()
       return
     }
-    const result = await request<{ repository_id: string }>(`${API_V1}/repositories/import-local`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: projectName, local_path: localPath }),
-    })
-    await indexRepository(result.repository_id)
   }
 
   async function uploadZipRepository() {
@@ -250,7 +243,7 @@ function App() {
   async function deleteRepository(repositoryId: string) {
     const repository = repositories.find((item) => item.id === repositoryId)
     const label = repository?.name ?? repositoryId
-    if (!window.confirm(`Delete project "${label}" from AI Codebase Assistant? Source folders imported by local path will not be removed.`)) {
+    if (!window.confirm(`Delete project "${label}" from AI Codebase Assistant? Uploaded source and index data will be removed.`)) {
       return
     }
     await request(`${API_V1}/repositories/${repositoryId}`, { method: 'DELETE' })
@@ -363,13 +356,11 @@ function App() {
         <ImportPage
           mode={importMode}
           projectName={projectName}
-          localPath={localPath}
           githubUrl={githubUrl}
           folderCount={folderFiles.length}
           zipFileName={zipFile?.name ?? ''}
           onModeChange={setImportMode}
           onNameChange={setProjectName}
-          onPathChange={setLocalPath}
           onGithubUrlChange={setGithubUrl}
           onFolderFiles={setFolderFiles}
           onZipFile={setZipFile}
@@ -881,6 +872,8 @@ function EvidencePage({ evidence }: { evidence: Evidence | null }) {
             <PreviewLine label="Source type" value={evidence.source_type} />
             <PreviewLine label="File" value={evidence.file_path} />
             <PreviewLine label="Lines" value={`${evidence.start_line}-${evidence.end_line}`} />
+            <PreviewLine label="Index version" value={String(evidence.index_version ?? 0)} />
+            <PreviewLine label="Stale" value={evidence.is_stale ? 'Yes' : 'No'} />
             <PreviewLine label="Confidence" value={String(evidence.confidence_score)} />
             <PreviewLine label="Retrieval" value={evidence.retrieval_source} />
           </Panel>
@@ -922,7 +915,7 @@ function SettingsPage({ isWorkspace }: { isWorkspace: boolean }) {
       <div className="settings-grid">
         <Panel title="Project Settings">
           <ConfigRow label="Default indexing profile" value="Balanced" />
-          <ConfigRow label="Local path import" value="Enabled for trusted paths" />
+          <ConfigRow label="Repository import" value="Folder and ZIP uploads enabled" />
         </Panel>
         <Panel title="Indexing Settings">
           <ConfigRow label="Ignore folders" value="node_modules, .venv, dist, build" />

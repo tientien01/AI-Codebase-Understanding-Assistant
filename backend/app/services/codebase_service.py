@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import zipfile
+from copy import deepcopy
 from pathlib import Path
 from uuid import uuid4
 
@@ -63,20 +64,6 @@ class CodebaseService:
         self.evidence.clear_repository(repository_id)
         return RepositoryDeleteResponse(deleted=True, repository_id=repository_id)
 
-    def import_local(self, name: str, local_path: str) -> RepositoryCreateResponse:
-        source_path = Path(local_path).expanduser().resolve()
-        if not source_path.exists() or not source_path.is_dir():
-            raise DomainError("REPOSITORY_NOT_FOUND", "Local repository path does not exist.", 404, {"local_path": local_path})
-
-        repository = RepositoryState(
-            id=f"repo_{uuid4().hex[:10]}",
-            name=name,
-            source_type="local_path",
-            source_uri=str(source_path),
-            source_path=source_path,
-        )
-        return self._create_repository(repository)
-
     async def upload_zip(self, file: UploadFile, name: str | None) -> RepositoryCreateResponse:
         if not file.filename or not file.filename.endswith(".zip"):
             raise DomainError("INVALID_ARCHIVE", "Only .zip repositories are supported.", 400)
@@ -87,18 +74,25 @@ class CodebaseService:
         upload_dir.mkdir(parents=True, exist_ok=True)
         source_dir.mkdir(parents=True, exist_ok=True)
         zip_path = upload_dir / f"{repository_id}.zip"
-        zip_path.write_bytes(await file.read())
+        upload_bytes = await file.read()
+        max_upload_size = settings.max_upload_size_mb * 1024 * 1024
+        if len(upload_bytes) > max_upload_size:
+            raise DomainError("FILE_TOO_LARGE", "Uploaded archive is larger than the configured limit.", 413)
+        zip_path.write_bytes(upload_bytes)
 
         try:
-            self._safe_extract_zip(zip_path, source_dir)
+            extracted_files = self._safe_extract_zip(zip_path, source_dir)
         except zipfile.BadZipFile as exc:
             raise DomainError("INVALID_ARCHIVE", "Uploaded file is not a valid zip archive.", 400) from exc
+        if extracted_files == 0:
+            raise DomainError("NO_SUPPORTED_FILES", "Archive contains no supported non-secret files.", 400)
 
         repository = RepositoryState(
             id=repository_id,
             name=name or Path(file.filename).stem,
             source_type="upload_zip",
             source_uri=str(zip_path),
+            source_label=file.filename,
             source_path=source_dir,
         )
         return self._create_repository(repository)
@@ -119,10 +113,13 @@ class CodebaseService:
             if safe_path is None:
                 continue
             target = (source_dir / safe_path).resolve()
-            if not str(target).startswith(str(source_dir.resolve())):
+            if not self._is_relative_to(target, source_dir.resolve()):
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(await upload.read())
+            content = await upload.read()
+            if len(content) > settings.max_file_size_mb * 1024 * 1024:
+                continue
+            target.write_bytes(content)
             saved_files += 1
 
         if saved_files == 0:
@@ -133,11 +130,12 @@ class CodebaseService:
             name=name or Path(relative_paths[0]).parts[0],
             source_type="upload_folder",
             source_uri=str(source_dir),
+            source_label=name or Path(relative_paths[0]).parts[0],
             source_path=source_dir,
         )
         return self._create_repository(repository)
 
-    def start_indexing(self, repository_id: str, force_reindex: bool = False) -> dict[str, str]:
+    def start_indexing(self, repository_id: str, force_reindex: bool = False) -> dict[str, str | int]:
         repository = self._get_repository(repository_id)
         if repository.status == "indexing":
             raise DomainError("INDEXING_ALREADY_RUNNING", "Repository indexing is already running.", 409)
@@ -145,29 +143,36 @@ class CodebaseService:
             id=f"job_{uuid4().hex[:10]}",
             repository_id=repository.id,
             status="running",
+            index_version=repository.current_index_version + 1,
             started_at=utc_now(),
         )
         self.store.save_indexing_job(job)
-        if force_reindex:
-            self._clear_index(repository)
+        working_repository = deepcopy(repository)
         try:
-            self._index_repository(repository, job)
+            self._index_repository(working_repository, job)
         except Exception as exc:
-            repository.status = "failed"
-            repository.current_step = job.current_step
-            repository.failed_files = job.failed_files
-            repository.warnings = job.warnings
-            repository.logs = job.logs
-            repository.finished_at = utc_now()
+            if repository.status != "indexed":
+                repository.status = "failed"
+                repository.current_step = job.current_step
+                repository.failed_files = job.failed_files
+                repository.warnings = job.warnings
+                repository.logs = job.logs
+                repository.finished_at = utc_now()
+            else:
+                repository.current_step = "index_failed_previous_index_retained"
+                repository.warnings = [*repository.warnings, "Latest indexing job failed; previous index was retained."]
             job.status = "failed"
             job.error_code = "INDEXING_FAILED"
             job.error_message = str(exc)
-            job.finished_at = repository.finished_at
+            job.finished_at = utc_now()
             self.store.save_indexing_job(job)
             self._persist_repository(repository)
             raise
+        self._replace_repository_index(repository, working_repository)
         self._persist_repository(repository)
-        return {"indexing_job_id": job.id, "repository_id": repository.id, "status": job.status}
+        self.store.mark_stale_evidence(repository.id, repository.current_index_version)
+        self.evidence.clear_repository(repository.id)
+        return {"indexing_job_id": job.id, "repository_id": repository.id, "status": job.status, "index_version": job.index_version}
 
     def get_index_status(self, repository_id: str) -> IndexStatusResponse:
         repository = self._get_repository(repository_id)
@@ -182,6 +187,7 @@ class CodebaseService:
             job_id=job.id if job else None,
             status=job.status if job else repository.status,
             current_step=job.current_step if job else repository.current_step,
+            index_version=job.index_version if job else repository.current_index_version,
             total_files=total,
             processed_files=processed,
             skipped_files=job.skipped_files if job else 0,
@@ -296,6 +302,7 @@ class CodebaseService:
                     symbol_name=symbol.name,
                     start_line=symbol.start_line,
                     end_line=symbol.end_line,
+                    index_version=repository.current_index_version,
                 )
                 for symbol in repository.symbols
                 if symbol.file_path == file_record.path
@@ -390,6 +397,7 @@ class CodebaseService:
             self.store.save_indexing_job(job)
 
         repository.status = "indexed"
+        repository.current_index_version = job.index_version
         repository.current_step = "completed"
         repository.finished_at = utc_now()
         repository.logs.append(f"{repository.finished_at} completed")
@@ -405,13 +413,51 @@ class CodebaseService:
         job.logs.append(f"{repository.finished_at} completed")
         self.store.save_indexing_job(job)
 
-    def _safe_extract_zip(self, zip_path: Path, target_dir: Path) -> None:
+    def _safe_extract_zip(self, zip_path: Path, target_dir: Path) -> int:
+        target_root = target_dir.resolve()
+        max_uncompressed_size = settings.max_upload_size_mb * 1024 * 1024
+        max_file_size = settings.max_file_size_mb * 1024 * 1024
+        extracted_files = 0
         with zipfile.ZipFile(zip_path) as archive:
+            total_uncompressed = sum(member.file_size for member in archive.infolist())
+            if total_uncompressed > max_uncompressed_size:
+                raise DomainError("REPOSITORY_TOO_LARGE", "Archive content is larger than the configured limit.", 413)
+
             for member in archive.infolist():
-                destination = (target_dir / member.filename).resolve()
-                if not str(destination).startswith(str(target_dir.resolve())):
-                    raise DomainError("INVALID_ARCHIVE", "Zip archive contains unsafe paths.", 400)
-            archive.extractall(target_dir)
+                self._safe_zip_member_path(member, target_root)
+
+            for member in archive.infolist():
+                relative_path = self._safe_zip_member_path(member, target_root)
+                if member.is_dir() or relative_path is None:
+                    continue
+                if member.file_size > max_file_size:
+                    continue
+                destination = target_root / relative_path
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(member) as source, destination.open("wb") as target:
+                    shutil.copyfileobj(source, target)
+                extracted_files += 1
+        return extracted_files
+
+    def _safe_zip_member_path(self, member: zipfile.ZipInfo, target_root: Path) -> Path | None:
+        normalized = member.filename.replace("\\", "/").strip("/")
+        if not normalized:
+            return None
+        relative_path = Path(normalized)
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            raise DomainError("ARCHIVE_PATH_TRAVERSAL", "Zip archive contains unsafe paths.", 400)
+        destination = (target_root / relative_path).resolve()
+        if not self._is_relative_to(destination, target_root):
+            raise DomainError("ARCHIVE_PATH_TRAVERSAL", "Zip archive contains unsafe paths.", 400)
+        if member.is_dir():
+            return None
+        if any(part in IGNORE_DIRS for part in relative_path.parts):
+            return None
+        if is_secret_file(relative_path.name):
+            return None
+        if not is_supported_file(relative_path):
+            return None
+        return relative_path
 
     def _clear_index(self, repository: RepositoryState) -> None:
         repository.files = []
@@ -424,13 +470,32 @@ class CodebaseService:
     def _persist_repository(self, repository: RepositoryState) -> None:
         self.store.save_repository(repository)
 
+    def _replace_repository_index(self, repository: RepositoryState, indexed_repository: RepositoryState) -> None:
+        repository.status = indexed_repository.status
+        repository.current_index_version = indexed_repository.current_index_version
+        repository.files = indexed_repository.files
+        repository.symbols = indexed_repository.symbols
+        repository.endpoints = indexed_repository.endpoints
+        repository.chunks = indexed_repository.chunks
+        repository.graph_nodes = indexed_repository.graph_nodes
+        repository.graph_edges = indexed_repository.graph_edges
+        repository.logs = indexed_repository.logs
+        repository.warnings = indexed_repository.warnings
+        repository.failed_files = indexed_repository.failed_files
+        repository.current_step = indexed_repository.current_step
+        repository.started_at = indexed_repository.started_at
+        repository.finished_at = indexed_repository.finished_at
+
     def _repository_dto(self, repository: RepositoryState) -> RepositoryDTO:
         return RepositoryDTO(
             id=repository.id,
             name=repository.name,
             source_type=repository.source_type,
-            source_uri=repository.source_uri,
+            source_label=repository.source_label,
+            source_uri=None,
             status=repository.status,
+            current_index_version=repository.current_index_version,
+            detected_stack=self._detect_stack(repository),
             total_files=len(repository.files),
             indexed_files=len(repository.files) if repository.status == "indexed" else 0,
             symbols=len(repository.symbols),
@@ -476,8 +541,12 @@ class CodebaseService:
         stack: set[str] = set()
         if any(file.language == "python" for file in repository.files):
             stack.add("Python")
-        if any(file.language in {"javascript", "typescript"} for file in repository.files):
-            stack.add("React/JS")
+        if any(file.language == "typescript" for file in repository.files):
+            stack.add("TypeScript")
+        if any(file.language == "javascript" for file in repository.files):
+            stack.add("JavaScript")
+        if any(Path(file.path).suffix.lower() in {".tsx", ".jsx"} for file in repository.files):
+            stack.add("React")
         if repository.endpoints:
             stack.add("FastAPI")
         if any(file.language == "markdown" for file in repository.files):

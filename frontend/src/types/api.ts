@@ -17,8 +17,11 @@ export type Repository = {
   id: string
   name: string
   source_type: string
+  source_label?: string
   source_uri?: string
   status: string
+  current_index_version?: number
+  detected_stack: string[]
   total_files: number
   indexed_files: number
   symbols: number
@@ -33,6 +36,7 @@ export type IndexStatus = {
   job_id?: string
   status: string
   current_step: string
+  index_version?: number
   total_files: number
   processed_files: number
   skipped_files: number
@@ -62,6 +66,8 @@ export type Citation = {
   symbol_name?: string
   start_line: number
   end_line: number
+  index_version?: number
+  is_stale?: boolean
 }
 
 export type Evidence = Citation & {
@@ -111,7 +117,7 @@ export type FileContent = {
   symbols: Citation[]
 }
 
-export type ImportMode = 'github' | 'folder' | 'zip' | 'local'
+export type ImportMode = 'github' | 'folder' | 'zip'
 
 export type IconName =
   | 'home'
