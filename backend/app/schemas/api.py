@@ -7,8 +7,11 @@ class RepositoryDTO(BaseModel):
     id: str
     name: str
     source_type: str
+    source_label: str | None = None
     source_uri: str | None = None
     status: str
+    current_index_version: int = 0
+    detected_stack: list[str] = Field(default_factory=list)
     total_files: int = 0
     indexed_files: int = 0
     symbols: int = 0
@@ -16,11 +19,6 @@ class RepositoryDTO(BaseModel):
     chunks: int = 0
     graph_nodes: int = 0
     last_indexed_at: str | None = None
-
-
-class RepositoryImportRequest(BaseModel):
-    name: str
-    local_path: str
 
 
 class RepositoryCreateResponse(BaseModel):
@@ -43,6 +41,7 @@ class IndexResponse(BaseModel):
     indexing_job_id: str
     repository_id: str
     status: str
+    index_version: int = 0
 
 
 class IndexStatusResponse(BaseModel):
@@ -50,6 +49,7 @@ class IndexStatusResponse(BaseModel):
     job_id: str | None = None
     status: str
     current_step: str
+    index_version: int = 0
     total_files: int
     processed_files: int
     skipped_files: int = 0
@@ -107,6 +107,8 @@ class CitationDTO(BaseModel):
     symbol_name: str | None = None
     start_line: int
     end_line: int
+    index_version: int = 0
+    is_stale: bool = False
 
 
 class ChatResponse(BaseModel):
@@ -122,6 +124,7 @@ class ChatResponse(BaseModel):
 class EvidenceDTO(BaseModel):
     evidence_id: str
     repository_id: str
+    index_version: int = 0
     source_type: str
     file_path: str
     symbol_name: str | None = None
@@ -131,6 +134,7 @@ class EvidenceDTO(BaseModel):
     relevance_reason: str
     confidence_score: float
     retrieval_source: str
+    is_stale: bool = False
     metadata: dict[str, str] = Field(default_factory=dict)
 
 

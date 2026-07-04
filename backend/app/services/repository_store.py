@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from app.db.models import (
     ChunkRecordORM,
@@ -38,8 +38,10 @@ class RepositoryStore:
                     name=repository.name,
                     source_type=repository.source_type,
                     source_uri=repository.source_uri,
+                    source_label=repository.source_label,
                     source_path=str(repository.source_path),
                     status=repository.status,
+                    current_index_version=repository.current_index_version,
                     logs_json=json.dumps(repository.logs),
                     warnings_json=json.dumps(repository.warnings),
                     failed_files=repository.failed_files,
@@ -53,6 +55,7 @@ class RepositoryStore:
                 [
                     FileRecordORM(
                         repository_id=repository.id,
+                        index_version=repository.current_index_version,
                         path=file.path,
                         absolute_path=str(file.absolute_path),
                         language=file.language,
@@ -69,6 +72,7 @@ class RepositoryStore:
                     SymbolRecordORM(
                         id=symbol.id,
                         repository_id=repository.id,
+                        index_version=repository.current_index_version,
                         name=symbol.name,
                         symbol_type=symbol.symbol_type,
                         file_path=symbol.file_path,
@@ -83,6 +87,7 @@ class RepositoryStore:
                 [
                     EndpointRecordORM(
                         repository_id=repository.id,
+                        index_version=repository.current_index_version,
                         method=endpoint.method,
                         path=endpoint.path,
                         handler=endpoint.handler,
@@ -98,6 +103,7 @@ class RepositoryStore:
                     ChunkRecordORM(
                         id=chunk.id,
                         repository_id=repository.id,
+                        index_version=repository.current_index_version,
                         file_path=chunk.file_path,
                         chunk_type=chunk.chunk_type,
                         content=chunk.content,
@@ -114,6 +120,7 @@ class RepositoryStore:
                     GraphNodeORM(
                         id=f"{repository.id}:{node.id}",
                         repository_id=repository.id,
+                        index_version=repository.current_index_version,
                         type=node.type,
                         label=node.label,
                         file_path=node.file_path,
@@ -125,6 +132,7 @@ class RepositoryStore:
                 [
                     GraphEdgeORM(
                         repository_id=repository.id,
+                        index_version=repository.current_index_version,
                         source=edge.source,
                         target=edge.target,
                         type=edge.type,
@@ -140,6 +148,7 @@ class RepositoryStore:
                 IndexingJobORM(
                     id=job.id,
                     repository_id=job.repository_id,
+                    index_version=job.index_version,
                     status=job.status,
                     current_step=job.current_step,
                     total_files=job.total_files,
@@ -176,12 +185,22 @@ class RepositoryStore:
                 session.execute(delete(model).where(model.repository_id == repository_id))
             session.execute(delete(RepositoryORM).where(RepositoryORM.id == repository_id))
 
+    def mark_stale_evidence(self, repository_id: str, current_index_version: int) -> None:
+        with SessionLocal.begin() as session:
+            session.execute(
+                update(EvidenceORM)
+                .where(EvidenceORM.repository_id == repository_id)
+                .where(EvidenceORM.index_version < current_index_version)
+                .values(is_stale=1)
+            )
+
     def save_evidence(self, evidence: EvidenceDTO) -> None:
         with SessionLocal.begin() as session:
             session.merge(
                 EvidenceORM(
                     evidence_id=evidence.evidence_id,
                     repository_id=evidence.repository_id,
+                    index_version=evidence.index_version,
                     source_type=evidence.source_type,
                     file_path=evidence.file_path,
                     symbol_name=evidence.symbol_name,
@@ -191,6 +210,7 @@ class RepositoryStore:
                     relevance_reason=evidence.relevance_reason,
                     confidence_score=evidence.confidence_score,
                     retrieval_source=evidence.retrieval_source,
+                    is_stale=1 if evidence.is_stale else 0,
                     metadata_json=json.dumps(evidence.metadata),
                 )
             )
@@ -203,6 +223,7 @@ class RepositoryStore:
             return EvidenceDTO(
                 evidence_id=row.evidence_id,
                 repository_id=row.repository_id,
+                index_version=row.index_version,
                 source_type=row.source_type,
                 file_path=row.file_path,
                 symbol_name=row.symbol_name,
@@ -212,6 +233,7 @@ class RepositoryStore:
                 relevance_reason=row.relevance_reason,
                 confidence_score=row.confidence_score,
                 retrieval_source=row.retrieval_source,
+                is_stale=bool(row.is_stale),
                 metadata=json.loads(row.metadata_json or "{}"),
             )
 
@@ -231,8 +253,10 @@ class RepositoryStore:
             name=repository.name,
             source_type=repository.source_type,
             source_uri=repository.source_uri,
+            source_label=repository.source_label,
             source_path=Path(repository.source_path),
             status=repository.status,
+            current_index_version=repository.current_index_version,
             files=[
                 FileRecord(
                     path=file.path,
@@ -303,6 +327,7 @@ class RepositoryStore:
         return IndexingJobRecord(
             id=row.id,
             repository_id=row.repository_id,
+            index_version=row.index_version,
             status=row.status,
             current_step=row.current_step,
             total_files=row.total_files,

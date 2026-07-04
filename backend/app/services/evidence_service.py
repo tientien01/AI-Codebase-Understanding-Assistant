@@ -40,10 +40,12 @@ class EvidenceService:
             symbol_name=chunk.symbol_name,
             start_line=chunk.start_line,
             end_line=chunk.end_line,
+            index_version=repository.current_index_version,
             content_preview=preview(chunk.content),
             relevance_reason=f"Matched by {retrieval_source} for {chunk.chunk_type}",
             confidence_score=round(max(0.5, chunk.score), 2),
             retrieval_source=retrieval_source,
+            is_stale=False,
             metadata={"chunk_type": chunk.chunk_type},
         )
         self.cache[evidence_id] = evidence
@@ -54,4 +56,6 @@ class EvidenceService:
             symbol_name=chunk.symbol_name,
             start_line=chunk.start_line,
             end_line=chunk.end_line,
+            index_version=repository.current_index_version,
+            is_stale=False,
         )

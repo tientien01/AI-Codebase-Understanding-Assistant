@@ -13,8 +13,10 @@ class RepositoryORM(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     source_type: Mapped[str] = mapped_column(String, nullable=False)
     source_uri: Mapped[str | None] = mapped_column(Text)
+    source_label: Mapped[str | None] = mapped_column(Text)
     source_path: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
+    current_index_version: Mapped[int] = mapped_column(Integer, default=0)
     logs_json: Mapped[str] = mapped_column(Text, default="[]")
     warnings_json: Mapped[str] = mapped_column(Text, default="[]")
     failed_files: Mapped[int] = mapped_column(Integer, default=0)
@@ -28,6 +30,7 @@ class IndexingJobORM(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String, nullable=False)
     current_step: Mapped[str] = mapped_column(String, default="queued")
     total_files: Mapped[int] = mapped_column(Integer, default=0)
@@ -50,6 +53,7 @@ class FileRecordORM(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     path: Mapped[str] = mapped_column(Text, nullable=False)
     absolute_path: Mapped[str] = mapped_column(Text, nullable=False)
     language: Mapped[str] = mapped_column(String, nullable=False)
@@ -64,6 +68,7 @@ class SymbolRecordORM(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     name: Mapped[str] = mapped_column(String, nullable=False)
     symbol_type: Mapped[str] = mapped_column(String, nullable=False)
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
@@ -77,6 +82,7 @@ class EndpointRecordORM(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     method: Mapped[str] = mapped_column(String, nullable=False)
     path: Mapped[str] = mapped_column(Text, nullable=False)
     handler: Mapped[str] = mapped_column(String, nullable=False)
@@ -90,6 +96,7 @@ class ChunkRecordORM(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     chunk_type: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -104,6 +111,7 @@ class GraphNodeORM(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     type: Mapped[str] = mapped_column(String, nullable=False)
     label: Mapped[str] = mapped_column(String, nullable=False)
     file_path: Mapped[str | None] = mapped_column(Text)
@@ -114,6 +122,7 @@ class GraphEdgeORM(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[str] = mapped_column(String, nullable=False)
     target: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(String, nullable=False)
@@ -125,6 +134,7 @@ class EvidenceORM(Base):
 
     evidence_id: Mapped[str] = mapped_column(String, primary_key=True)
     repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, default=0)
     source_type: Mapped[str] = mapped_column(String, nullable=False)
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     symbol_name: Mapped[str | None] = mapped_column(String)
@@ -134,4 +144,5 @@ class EvidenceORM(Base):
     relevance_reason: Mapped[str] = mapped_column(Text, nullable=False)
     confidence_score: Mapped[float] = mapped_column(Float, nullable=False)
     retrieval_source: Mapped[str] = mapped_column(String, nullable=False)
+    is_stale: Mapped[int] = mapped_column(Integer, default=0)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}")

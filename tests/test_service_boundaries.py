@@ -21,7 +21,7 @@ def test_scanner_skips_secret_and_dependency_files(tmp_path: Path) -> None:
     repository = RepositoryState(
         id="repo_test",
         name="test",
-        source_type="local_path",
+        source_type="upload_folder",
         source_uri=str(tmp_path),
         source_path=tmp_path,
     )
@@ -47,7 +47,7 @@ def test_parser_extracts_fastapi_endpoint_and_symbol(tmp_path: Path) -> None:
     repository = RepositoryState(
         id="repo_test",
         name="test",
-        source_type="local_path",
+        source_type="upload_folder",
         source_uri=str(tmp_path),
         source_path=tmp_path,
         files=[
@@ -75,7 +75,7 @@ def test_graph_links_frontend_api_call_to_matching_endpoint(tmp_path: Path) -> N
     repository = RepositoryState(
         id="repo_test",
         name="test",
-        source_type="local_path",
+        source_type="upload_folder",
         source_uri=str(tmp_path),
         source_path=tmp_path,
         files=[
@@ -103,7 +103,7 @@ def test_retrieval_classifies_and_scores_login_queries(tmp_path: Path) -> None:
     repository = RepositoryState(
         id="repo_test",
         name="test",
-        source_type="local_path",
+        source_type="upload_folder",
         source_uri=str(tmp_path),
         source_path=tmp_path,
     )
