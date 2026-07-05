@@ -71,6 +71,34 @@ def test_parser_extracts_fastapi_endpoint_and_symbol(tmp_path: Path) -> None:
     assert any(edge.type == "calls" and edge.target == node_id("symbol", "routes.py:helper") for edge in repository.graph_edges)
 
 
+def test_parser_creates_chunks_for_new_source_languages(tmp_path: Path) -> None:
+    source = tmp_path / "main.go"
+    source.write_text("package main\n\nfunc Login() bool {\n    return true\n}\n", encoding="utf-8")
+    repository = RepositoryState(
+        id="repo_test",
+        name="test",
+        source_type="upload_folder",
+        source_uri=str(tmp_path),
+        source_path=tmp_path,
+        files=[
+            FileRecord(
+                path="main.go",
+                absolute_path=source,
+                language="go",
+                file_type="source",
+                size_bytes=source.stat().st_size,
+                content_hash="hash",
+            )
+        ],
+    )
+
+    ParserService(ChunkingService()).parse_files(repository)
+
+    assert repository.chunks
+    assert repository.chunks[0].file_path == "main.go"
+    assert any(symbol.name == "Login" and symbol.symbol_type == "function" for symbol in repository.symbols)
+
+
 def test_graph_links_frontend_api_call_to_matching_endpoint(tmp_path: Path) -> None:
     repository = RepositoryState(
         id="repo_test",

@@ -21,6 +21,7 @@ from app.schemas.api import (
     SymbolListResponse,
 )
 from app.services.index_models import RepositoryState
+from app.services.language_registry import LANGUAGE_DEFINITIONS
 from app.services.repositories.repository_store import RepositoryStore
 from app.services.text_utils import read_text
 
@@ -130,20 +131,21 @@ class RepositoryService:
 
     def detect_stack(self, repository: RepositoryState) -> list[str]:
         stack: set[str] = set()
-        if any(file.language == "python" for file in repository.files):
-            stack.add("Python")
+        display_by_language = {
+            definition.language: definition.display_name
+            for definition in LANGUAGE_DEFINITIONS
+            if definition.language != "config"
+        }
+        for file in repository.files:
+            display_name = display_by_language.get(file.language)
+            if display_name:
+                stack.add(display_name)
         if any(file.language == "python" and self._file_contains(file.absolute_path, "fastapi") for file in repository.files):
             stack.add("FastAPI")
-        if any(file.language == "typescript" for file in repository.files):
-            stack.add("TypeScript")
-        if any(file.language == "javascript" for file in repository.files):
-            stack.add("JavaScript")
         if any(Path(file.path).suffix.lower() in {".tsx", ".jsx"} for file in repository.files):
             stack.add("React")
         if repository.endpoints:
             stack.add("FastAPI")
-        if any(file.language == "markdown" for file in repository.files):
-            stack.add("Markdown docs")
         return sorted(stack)
 
     def documentation_gaps(self, repository: RepositoryState) -> list[str]:

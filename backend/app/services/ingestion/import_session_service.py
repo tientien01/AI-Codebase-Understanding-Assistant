@@ -306,10 +306,14 @@ class ImportSessionService:
 
     def _import_file_statistics(self, repository: RepositoryState) -> ImportFileStatisticsDTO:
         total_files = sum(1 for path in repository.source_path.rglob("*") if path.is_file())
+        language_files: dict[str, int] = {}
+        for file in repository.files:
+            language_files[file.language] = language_files.get(file.language, 0) + 1
         return ImportFileStatisticsDTO(
             total_files=total_files,
             supported_files=len(repository.files),
             skipped_files=max(0, total_files - len(repository.files)),
+            language_files=language_files,
             python_files=len([file for file in repository.files if file.language == "python"]),
             javascript_files=len([file for file in repository.files if file.language == "javascript"]),
             typescript_files=len([file for file in repository.files if file.language == "typescript"]),

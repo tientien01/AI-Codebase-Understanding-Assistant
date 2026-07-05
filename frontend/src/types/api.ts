@@ -142,6 +142,7 @@ export type ImportPreview = {
     total_files: number
     supported_files: number
     skipped_files: number
+    language_files?: Record<string, number>
     python_files: number
     javascript_files: number
     typescript_files: number

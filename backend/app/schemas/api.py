@@ -50,6 +50,7 @@ class ImportFileStatisticsDTO(BaseModel):
     total_files: int = 0
     supported_files: int = 0
     skipped_files: int = 0
+    language_files: dict[str, int] = Field(default_factory=dict)
     python_files: int = 0
     javascript_files: int = 0
     typescript_files: int = 0
