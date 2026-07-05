@@ -162,6 +162,8 @@ class RepositoryStore:
                     finished_at=job.finished_at,
                     logs_json=json.dumps(job.logs),
                     warnings_json=json.dumps(job.warnings),
+                    skipped_files_json=json.dumps(job.skipped_file_records),
+                    failed_files_json=json.dumps(job.failed_file_records),
                     error_code=job.error_code,
                     error_message=job.error_message,
                 )
@@ -175,6 +177,22 @@ class RepositoryStore:
                 .order_by(IndexingJobORM.started_at.desc(), IndexingJobORM.id.desc())
             ).first()
             if row is None:
+                return None
+            return self._indexing_job_record(row)
+
+    def list_indexing_jobs(self, repository_id: str) -> list[IndexingJobRecord]:
+        with SessionLocal() as session:
+            rows = session.scalars(
+                select(IndexingJobORM)
+                .where(IndexingJobORM.repository_id == repository_id)
+                .order_by(IndexingJobORM.started_at.desc(), IndexingJobORM.id.desc())
+            ).all()
+            return [self._indexing_job_record(row) for row in rows]
+
+    def get_indexing_job(self, repository_id: str, job_id: str) -> IndexingJobRecord | None:
+        with SessionLocal() as session:
+            row = session.get(IndexingJobORM, job_id)
+            if row is None or row.repository_id != repository_id:
                 return None
             return self._indexing_job_record(row)
 
@@ -341,6 +359,8 @@ class RepositoryStore:
             finished_at=row.finished_at,
             logs=json.loads(row.logs_json or "[]"),
             warnings=json.loads(row.warnings_json or "[]"),
+            skipped_file_records=json.loads(row.skipped_files_json or "[]"),
+            failed_file_records=json.loads(row.failed_files_json or "[]"),
             error_code=row.error_code,
             error_message=row.error_message,
         )

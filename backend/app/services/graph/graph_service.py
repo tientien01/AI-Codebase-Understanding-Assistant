@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
+from app.schemas.api import GraphEdgeDTO, GraphNodeDTO, GraphResponse
 from app.services.index_models import RepositoryState
 from app.services.text_utils import node_id, normalize_route
 
 
 class GraphService:
+    def get_graph(self, repository: RepositoryState) -> GraphResponse:
+        return GraphResponse(nodes=repository.graph_nodes, edges=repository.graph_edges)
+
     def build_graph(self, repository: RepositoryState) -> None:
         nodes: dict[str, GraphNodeDTO] = {node.id: node for node in repository.graph_nodes}
         edges: list[GraphEdgeDTO] = list(repository.graph_edges)

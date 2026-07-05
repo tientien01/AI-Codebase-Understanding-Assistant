@@ -44,6 +44,8 @@ class IndexingJobORM(Base):
     finished_at: Mapped[str | None] = mapped_column(String)
     logs_json: Mapped[str] = mapped_column(Text, default="[]")
     warnings_json: Mapped[str] = mapped_column(Text, default="[]")
+    skipped_files_json: Mapped[str] = mapped_column(Text, default="[]")
+    failed_files_json: Mapped[str] = mapped_column(Text, default="[]")
     error_code: Mapped[str | None] = mapped_column(String)
     error_message: Mapped[str | None] = mapped_column(Text)
 

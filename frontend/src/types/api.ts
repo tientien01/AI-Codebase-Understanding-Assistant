@@ -100,6 +100,15 @@ export type SearchResult = {
   start_line: number
   end_line: number
   score: number
+  index_version?: number
+  is_stale?: boolean
+}
+
+export type EvidenceValidationItem = {
+  evidence_id: string
+  is_valid: boolean
+  is_stale: boolean
+  reason?: string
 }
 
 export type FileTreeNode = {
@@ -118,6 +127,33 @@ export type FileContent = {
 }
 
 export type ImportMode = 'github' | 'folder' | 'zip'
+
+export type ImportPreview = {
+  import_session_id: string
+  status: string
+  project_summary: {
+    suggested_name: string
+    source_type: string
+    repository_size_bytes: number
+    estimated_index_time_seconds: number
+  }
+  detected_stack: string[]
+  file_statistics: {
+    total_files: number
+    supported_files: number
+    skipped_files: number
+    python_files: number
+    javascript_files: number
+    typescript_files: number
+    markdown_files: number
+    config_files: number
+  }
+  folder_preview: string[]
+  ignore_summary: { pattern: string; skipped_count: number; reason: string }[]
+  security_warnings: { file_path: string; risk_type: string; action: string }[]
+  indexing_plan: string[]
+  possible_duplicates: { repository_id: string; name: string; match_reason: string }[]
+}
 
 export type IconName =
   | 'home'

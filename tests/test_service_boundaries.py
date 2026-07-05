@@ -4,11 +4,11 @@ from pathlib import Path
 
 from app.schemas.api import GraphNodeDTO
 from app.services.chunking_service import ChunkingService
-from app.services.graph_service import GraphService
+from app.services.graph.graph_service import GraphService
 from app.services.index_models import EndpointRecord, FileRecord, RepositoryState, SymbolRecord
-from app.services.parser_service import ParserService
-from app.services.retrieval_service import RetrievalService
-from app.services.scanner_service import ScannerService
+from app.services.parsing.parser_service import ParserService
+from app.services.retrieval.retrieval_service import RetrievalService
+from app.services.scanning.scanner_service import ScannerService
 from app.services.text_utils import node_id
 
 

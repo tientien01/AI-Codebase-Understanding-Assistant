@@ -21,10 +21,19 @@ class ParserService:
         for file_record in repository.files:
             try:
                 text = read_text(file_record.absolute_path)
-            except UnicodeDecodeError:
+            except OSError:
                 repository.failed_files += 1
                 file_record.parse_status = "failed"
-                repository.warnings.append(f"Encoding error: {file_record.path}")
+                repository.warnings.append(f"Read error: {file_record.path}")
+                repository.failed_file_records.append(
+                    {
+                        "file_path": file_record.path,
+                        "stage": "reading_files",
+                        "error_code": "READ_ERROR",
+                        "message": "Could not read file safely.",
+                        "line": None,
+                    }
+                )
                 continue
 
             if file_record.language == "python":
@@ -41,56 +50,95 @@ class ParserService:
             tree = ast.parse(text)
         except SyntaxError as exc:
             repository.failed_files += 1
+            file_record.parse_status = "failed"
             repository.warnings.append(f"Python parse error: {file_record.path}:{exc.lineno}")
+            repository.failed_file_records.append(
+                {
+                    "file_path": file_record.path,
+                    "stage": "parsing_files",
+                    "error_code": "PARSER_ERROR",
+                    "message": "Python syntax error. File was skipped by the AST parser.",
+                    "line": exc.lineno,
+                }
+            )
             self.chunking.add_chunk(repository, file_record.path, "file_summary", text, 1, max(1, len(text.splitlines())))
             return
 
         lines = text.splitlines()
         self._extract_python_imports(repository, file_record, tree)
-        for node in ast.walk(tree):
-            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                continue
+        self._parse_python_body(repository, file_record, lines, tree.body)
 
-            symbol_type = "class" if isinstance(node, ast.ClassDef) else "function"
-            start_line = node.lineno
-            end_line = getattr(node, "end_lineno", node.lineno)
-            repository.symbols.append(
-                SymbolRecord(
-                    id=f"symbol_{uuid4().hex[:10]}",
-                    name=node.name,
-                    symbol_type=symbol_type,
-                    file_path=file_record.path,
-                    start_line=start_line,
-                    end_line=end_line,
-                    signature=self._python_signature(node),
-                )
-            )
+    def _parse_python_body(
+        self,
+        repository: RepositoryState,
+        file_record: FileRecord,
+        lines: list[str],
+        body: list[ast.stmt],
+        parent_class: str | None = None,
+    ) -> None:
+        for node in body:
+            if isinstance(node, ast.ClassDef):
+                symbol_type = self._python_class_type(node)
+                self._add_python_symbol(repository, file_record, lines, node, symbol_type)
+                self._parse_python_body(repository, file_record, lines, node.body, node.name)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                symbol_type = "method" if parent_class else "function"
+                self._add_python_symbol(repository, file_record, lines, node, symbol_type)
 
-            chunk_type = "class" if symbol_type == "class" else "function"
-            self.chunking.add_chunk(
-                repository,
-                file_record.path,
-                chunk_type,
-                "\n".join(lines[start_line - 1 : end_line]),
-                start_line,
-                end_line,
-                node.name,
-            )
-
-            endpoint = self._extract_fastapi_endpoint(node, file_record.path)
-            if endpoint:
-                repository.endpoints.append(endpoint)
-                self.chunking.add_chunk(
-                    repository,
-                    file_record.path,
-                    "endpoint",
-                    "\n".join(lines[start_line - 1 : end_line]),
-                    start_line,
-                    end_line,
-                    node.name,
-                )
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                endpoint = self._extract_fastapi_endpoint(node, file_record.path)
+                if endpoint:
+                    repository.endpoints.append(endpoint)
+                    start_line = getattr(node, "lineno", 1)
+                    end_line = getattr(node, "end_lineno", start_line)
+                    self.chunking.add_chunk(
+                        repository,
+                        file_record.path,
+                        "endpoint",
+                        "\n".join(lines[start_line - 1 : end_line]),
+                        start_line,
+                        end_line,
+                        node.name,
+                    )
                 self._extract_python_calls(repository, file_record, node)
+
+    def _add_python_symbol(
+        self,
+        repository: RepositoryState,
+        file_record: FileRecord,
+        lines: list[str],
+        node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef,
+        symbol_type: str,
+    ) -> None:
+        start_line = node.lineno
+        end_line = getattr(node, "end_lineno", node.lineno)
+        repository.symbols.append(
+            SymbolRecord(
+                id=f"symbol_{uuid4().hex[:10]}",
+                name=node.name,
+                symbol_type=symbol_type,
+                file_path=file_record.path,
+                start_line=start_line,
+                end_line=end_line,
+                signature=self._python_signature(node),
+            )
+        )
+        self.chunking.add_chunk(
+            repository,
+            file_record.path,
+            symbol_type,
+            "\n".join(lines[start_line - 1 : end_line]),
+            start_line,
+            end_line,
+            node.name,
+        )
+
+    def _python_class_type(self, node: ast.ClassDef) -> str:
+        base_names = {self._call_name(base) or getattr(base, "id", "") for base in node.bases}
+        if "BaseModel" in base_names:
+            return "schema"
+        if "Base" in base_names:
+            return "model"
+        return "class"
 
     def _parse_js_ts(self, repository: RepositoryState, file_record: FileRecord, text: str) -> None:
         lines = text.splitlines()

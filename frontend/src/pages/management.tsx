@@ -2,7 +2,7 @@ import type { FormEvent } from 'react'
 import { Icon } from '../components/common/Icon'
 import { Activity, Checklist, EmptyState, LanguageBar, ListRow, Metric, PageTitle, Panel, PreviewLine, ProfileCard, Progress, SourceCard, StatCell, WizardSteps } from '../components/common/ui'
 import { pipelineSteps } from '../config/navigation'
-import type { ImportMode, IndexStatus, Repository } from '../types/api'
+import type { ImportMode, ImportPreview, IndexStatus, Repository } from '../types/api'
 
 export function DashboardPage({
   repositories,
@@ -17,7 +17,7 @@ export function DashboardPage({
   onReindex: (id: string) => void
   onDelete: (id: string) => void
 }) {
-  const indexed = repositories.filter((repository) => repository.status === 'indexed').length
+  const indexed = repositories.filter((repository) => isRepositoryUsable(repository)).length
   const indexing = repositories.filter((repository) => repository.status === 'indexing').length
   const failed = repositories.filter((repository) => repository.status === 'failed').length
 
@@ -31,7 +31,7 @@ export function DashboardPage({
             <span className="tab">Indexed {indexed}</span>
             <span className="tab">Indexing {indexing}</span>
             <span className="tab">Errors {failed}</span>
-            <span className="tab">Not Indexed {repositories.filter((item) => item.status !== 'indexed').length}</span>
+            <span className="tab">Not Indexed {repositories.filter((item) => !isRepositoryUsable(item)).length}</span>
             <div className="dashboard-tools">
               <button className="tool-button active"><Icon name="grid" /></button>
               <button className="tool-button"><Icon name="list" /></button>
@@ -54,12 +54,12 @@ export function DashboardPage({
                       </div>
                       <p title={repository.source_label || repository.source_type}>{formatReadableRepositorySource(repository)}</p>
                     </div>
-                    <span className={`badge ${repository.status === 'indexed' ? 'green' : repository.status === 'failed' ? 'red' : 'blue'}`}>{repository.status}</span>
+                    <span className={`badge ${isRepositoryUsable(repository) ? 'green' : repository.status === 'failed' ? 'red' : 'blue'}`}>{repository.status}</span>
                     <details className="project-menu">
                       <summary aria-label={`Actions for ${repository.name}`}><Icon name="more" /></summary>
                       <div className="project-menu-list">
                         <button onClick={() => onReindex(repository.id)}><Icon name="refresh" />Re-index</button>
-                        <button disabled={repository.status !== 'indexed'} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
+                        <button disabled={!isRepositoryUsable(repository)} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
                         <button className="danger-text" onClick={() => onDelete(repository.id)}><Icon name="warning" />Delete</button>
                       </div>
                     </details>
@@ -78,7 +78,7 @@ export function DashboardPage({
                   </div>
                   <p className="project-meta-line">Last indexed: {formatLastIndexed(repository.last_indexed_at)}</p>
                   <div className="card-actions">
-                    <button className="primary" disabled={repository.status !== 'indexed'} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
+                    <button className="primary" disabled={!isRepositoryUsable(repository)} onClick={() => onOpen(repository.id)}><Icon name="git" />Open Workspace</button>
                   </div>
                 </article>
               ))}
@@ -158,6 +158,7 @@ export function ImportPage({
   githubUrl,
   folderCount,
   zipFileName,
+  preview,
   onModeChange,
   onNameChange,
   onGithubUrlChange,
@@ -170,6 +171,7 @@ export function ImportPage({
   githubUrl: string
   folderCount: number
   zipFileName: string
+  preview: ImportPreview | null
   onModeChange: (mode: ImportMode) => void
   onNameChange: (value: string) => void
   onGithubUrlChange: (value: string) => void
@@ -260,38 +262,59 @@ export function ImportPage({
         <aside className="preview-column">
           <Panel title="Import Preview">
             <h3>Repository</h3>
-            <PreviewLine label="Repository" value={mode === 'github' ? githubUrl : projectName} />
+            <PreviewLine label="Repository" value={preview?.project_summary.suggested_name ?? (mode === 'github' ? githubUrl : projectName)} />
             <PreviewLine label="Branch" value="main" />
             <PreviewLine label="Commit" value="pending" />
             <h3>Estimated Size</h3>
-            <PreviewLine label="Files" value={String(folderCount || 128)} />
+            <PreviewLine label="Files" value={String(preview?.file_statistics.total_files ?? folderCount)} />
+            <PreviewLine label="Indexable" value={String(preview?.file_statistics.supported_files ?? 0)} />
+            <PreviewLine label="Skipped" value={String(preview?.file_statistics.skipped_files ?? 0)} />
             <PreviewLine label="LOC" value="estimated after scan" />
-            <PreviewLine label="Size" value="calculated on import" />
+            <PreviewLine label="Size" value={preview ? `${Math.round(preview.project_summary.repository_size_bytes / 1024)} KB` : 'calculated on preview'} />
             <h3>Detected Languages</h3>
-            <LanguageBar label="Python" value={47} />
-            <LanguageBar label="TypeScript" value={25} />
-            <LanguageBar label="JavaScript" value={15} />
-            <LanguageBar label="Others" value={13} />
+            <LanguageBar label="Python" value={previewPercent(preview?.file_statistics.python_files ?? 0, preview?.file_statistics.supported_files ?? 0)} />
+            <LanguageBar label="TypeScript" value={previewPercent(preview?.file_statistics.typescript_files ?? 0, preview?.file_statistics.supported_files ?? 0)} />
+            <LanguageBar label="JavaScript" value={previewPercent(preview?.file_statistics.javascript_files ?? 0, preview?.file_statistics.supported_files ?? 0)} />
+            <LanguageBar label="Docs/config" value={previewPercent((preview?.file_statistics.markdown_files ?? 0) + (preview?.file_statistics.config_files ?? 0), preview?.file_statistics.supported_files ?? 0)} />
             <h3>Excluded Patterns</h3>
             <div className="setting-chips">
-              <span>.git/</span>
-              <span>node_modules/</span>
-              <span>venv/</span>
-              <span>__pycache__/</span>
+              {(preview?.ignore_summary.length ? preview.ignore_summary : [
+                { pattern: '.git/', skipped_count: 0, reason: 'default' },
+                { pattern: 'node_modules/', skipped_count: 0, reason: 'default' },
+                { pattern: 'venv/', skipped_count: 0, reason: 'default' },
+                { pattern: '__pycache__/', skipped_count: 0, reason: 'default' },
+              ]).map((item) => <span key={`${item.pattern}-${item.reason}`}>{item.pattern} {item.skipped_count ? `(${item.skipped_count})` : ''}</span>)}
             </div>
+            {preview?.security_warnings.length ? (
+              <>
+                <h3>Security Warnings</h3>
+                {preview.security_warnings.slice(0, 4).map((warning) => (
+                  <PreviewLine key={warning.file_path} label={warning.risk_type} value={`${warning.file_path} ${warning.action}`} />
+                ))}
+              </>
+            ) : null}
             <h3>Estimated Indexing</h3>
             <PreviewLine label="Chunks" value="calculated after scan" />
             <PreviewLine label="Embeddings" value="dang phat trien" />
-            <PreviewLine label="Estimated time" value="1-3 min" />
+            <PreviewLine label="Estimated time" value={preview ? `${preview.project_summary.estimated_index_time_seconds}s` : 'available after preview'} />
           </Panel>
           <div className="footer-actions">
             <button type="button" className="secondary">Cancel</button>
-            <button type="submit" className="primary">Start Indexing</button>
+            <button type="submit" className="primary">{preview ? 'Start Indexing' : 'Preview Project'}</button>
           </div>
         </aside>
       </div>
     </form>
   )
+}
+
+function previewPercent(value: number, total: number) {
+  if (!total) return 0
+  return Math.round((value / total) * 100)
+}
+
+function isRepositoryUsable(repository?: Repository) {
+  return Boolean(repository && ['indexed', 'indexed_with_warnings'].includes(repository.status))
 }
 
 export function IndexingPage({
@@ -303,7 +326,7 @@ export function IndexingPage({
   status: IndexStatus | null
   onOpen: () => void
 }) {
-  const progress = status?.progress ?? (repository?.status === 'indexed' ? 100 : 0)
+  const progress = status?.progress ?? (isRepositoryUsable(repository) ? 100 : 0)
 
   return (
     <div>
@@ -320,14 +343,14 @@ export function IndexingPage({
         <div className="header-actions">
           <button className="secondary" disabled>Pause</button>
           <button className="secondary" disabled>Cancel</button>
-          <button className="primary" disabled={repository?.status !== 'indexed'} onClick={onOpen}>Open Workspace</button>
+          <button className="primary" disabled={!isRepositoryUsable(repository)} onClick={onOpen}>Open Workspace</button>
         </div>
       </div>
       <div className="indexing-grid">
         <Panel title="Indexing Pipeline">
           <ol className="pipeline">
             {pipelineSteps.map((step, index) => {
-              const done = repository?.status === 'indexed' || index < Math.floor((progress / 100) * pipelineSteps.length)
+              const done = isRepositoryUsable(repository) || index < Math.floor((progress / 100) * pipelineSteps.length)
               const active = !done && index === Math.floor((progress / 100) * pipelineSteps.length)
               return (
                 <li key={step} className={done ? 'done' : active ? 'active' : ''}>

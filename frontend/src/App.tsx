@@ -27,6 +27,7 @@ import type {
   FileContent,
   FileTreeNode,
   GraphData,
+  ImportPreview,
   ImportMode,
   IndexStatus,
   Overview,
@@ -62,6 +63,8 @@ function App() {
   const [importMode, setImportMode] = useState<ImportMode>('folder')
   const [folderFiles, setFolderFiles] = useState<File[]>([])
   const [zipFile, setZipFile] = useState<File | null>(null)
+  const [importSessionId, setImportSessionId] = useState('')
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [apiError, setApiError] = useState('')
 
   const selectedRepository = useMemo(
@@ -80,7 +83,7 @@ function App() {
   useEffect(() => {
     if (!selectedRepository) return
     void loadIndexStatus(selectedRepository.id)
-    if (selectedRepository.status === 'indexed') {
+    if (isRepositoryUsable(selectedRepository)) {
       void loadWorkspaceData(selectedRepository.id)
     }
     // Reload when active repository changes.
@@ -166,8 +169,17 @@ function App() {
     setFileContent(content)
   }
 
+  function clearImportPreview() {
+    setImportSessionId('')
+    setImportPreview(null)
+  }
+
   async function submitImport(event: FormEvent) {
     event.preventDefault()
+    if (importSessionId && importPreview) {
+      await confirmImportSession(importSessionId)
+      return
+    }
     if (importMode === 'github') {
       setApiError('GitHub URL import is dang phat trien. Use Upload Folder or Upload ZIP for this baseline.')
       return
@@ -190,11 +202,11 @@ function App() {
     const formData = new FormData()
     formData.append('file', zipFile)
     formData.append('name', projectName || zipFile.name.replace(/\.zip$/i, ''))
-    const result = await request<{ repository_id: string }>(`${API_V1}/repositories/upload`, {
+    const session = await request<{ import_session_id: string }>(`${API_V1}/import-sessions/upload-zip`, {
       method: 'POST',
       body: formData,
     })
-    await indexRepository(result.repository_id)
+    await loadImportPreview(session.import_session_id)
   }
 
   async function uploadFolderRepository() {
@@ -209,22 +221,35 @@ function App() {
       formData.append('relative_paths', uploadFile.webkitRelativePath || file.name)
     }
     formData.append('name', projectName || folderFiles[0].name)
-    const result = await request<{ repository_id: string }>(`${API_V1}/repositories/upload-folder`, {
+    const session = await request<{ import_session_id: string }>(`${API_V1}/import-sessions/upload-folder`, {
       method: 'POST',
       body: formData,
     })
-    await indexRepository(result.repository_id)
+    await loadImportPreview(session.import_session_id)
   }
 
-  async function indexRepository(repositoryId: string) {
-    setSelectedRepositoryId(repositoryId)
-    await request(`${API_V1}/repositories/${repositoryId}/index`, {
+  async function loadImportPreview(nextImportSessionId: string) {
+    const preview = await request<ImportPreview>(`${API_V1}/import-sessions/${nextImportSessionId}/preview`)
+    setImportSessionId(nextImportSessionId)
+    setImportPreview(preview)
+  }
+
+  async function confirmImportSession(importSessionId: string) {
+    const result = await request<{ repository_id: string }>(`${API_V1}/import-sessions/${importSessionId}/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ force_reindex: true }),
+      body: JSON.stringify({
+        name: projectName,
+        start_indexing: true,
+        index_profile: 'balanced',
+        duplicate_action: 'import_as_new',
+      }),
     })
+    setSelectedRepositoryId(result.repository_id)
+    setImportSessionId('')
+    setImportPreview(null)
     await loadRepositories()
-    await loadIndexStatus(repositoryId)
+    await loadIndexStatus(result.repository_id)
     setPage('indexing')
   }
 
@@ -359,11 +384,21 @@ function App() {
           githubUrl={githubUrl}
           folderCount={folderFiles.length}
           zipFileName={zipFile?.name ?? ''}
-          onModeChange={setImportMode}
+          preview={importPreview}
+          onModeChange={(mode) => {
+            setImportMode(mode)
+            clearImportPreview()
+          }}
           onNameChange={setProjectName}
           onGithubUrlChange={setGithubUrl}
-          onFolderFiles={setFolderFiles}
-          onZipFile={setZipFile}
+          onFolderFiles={(files) => {
+            setFolderFiles(files)
+            clearImportPreview()
+          }}
+          onZipFile={(file) => {
+            setZipFile(file)
+            clearImportPreview()
+          }}
           onSubmit={submitImport}
         />
       )
@@ -417,6 +452,10 @@ function App() {
     if (page === 'evaluation') return <WorkspacePage main={<EvaluationPage />} side={<InDevelopmentPanel title="Evaluation runner" detail="Requires evaluation datasets, runs, and metrics APIs." />} />
     return <SettingsPage isWorkspace={isWorkspacePage} />
   }
+}
+
+function isRepositoryUsable(repository?: Repository) {
+  return Boolean(repository && ['indexed', 'indexed_with_warnings'].includes(repository.status))
 }
 
 function ManagementShell({
@@ -487,11 +526,11 @@ function WorkspaceShell({
         ))}
       </nav>
       <SideInfo title="Index Status">
-        <span className={`badge ${repository?.status === 'indexed' ? 'green' : 'blue'}`}>{repository?.status ?? 'empty'}</span>
+        <span className={`badge ${isRepositoryUsable(repository) ? 'green' : 'blue'}`}>{repository?.status ?? 'empty'}</span>
         <PreviewLine label="Files indexed" value={String(repository?.indexed_files ?? 0)} />
         <PreviewLine label="Chunks" value={String(repository?.chunks ?? 0)} />
         <PreviewLine label="Step" value={status?.current_step ?? 'completed'} />
-        <Progress value={status?.progress ?? (repository?.status === 'indexed' ? 100 : 0)} />
+        <Progress value={status?.progress ?? (isRepositoryUsable(repository) ? 100 : 0)} />
         <button className="secondary wide" disabled={!repository} onClick={onReindex}>Re-index Project</button>
       </SideInfo>
     </aside>
@@ -531,7 +570,7 @@ function TopBar({
         <>
           <div className="select-pill">{repository?.name ?? 'No repository'}</div>
           <div className="select-pill">main</div>
-          <div className={`status-pill ${repository?.status === 'indexed' ? 'green' : ''}`}>{repository?.status ?? 'not indexed'}</div>
+          <div className={`status-pill ${isRepositoryUsable(repository) ? 'green' : ''}`}>{repository?.status ?? 'not indexed'}</div>
         </>
       ) : (
         <div className="topbar-title">{mode === 'management' ? 'Project Management' : 'Workspace'}</div>
@@ -554,7 +593,7 @@ function TopBar({
           <button className="ghost-icon" aria-label="Help"><Icon name="help" /></button>
           <button className="ghost-icon" aria-label="Notifications"><Icon name="bell" /></button>
           <div className="avatar">JD<span /></div>
-          <div className="topbar-meta">Indexing {status?.progress ?? (repository?.status === 'indexed' ? 100 : 0)}%</div>
+          <div className="topbar-meta">Indexing {status?.progress ?? (isRepositoryUsable(repository) ? 100 : 0)}%</div>
         </>
       )}
     </header>
@@ -842,12 +881,15 @@ function SearchPage({
                   symbol_name: result.title,
                   start_line: result.start_line,
                   end_line: result.end_line,
+                  index_version: result.index_version,
+                  is_stale: result.is_stale,
                 })
               }
             >
               <span>{result.file_path}</span>
               <strong>{result.title}</strong>
               <p>{result.preview}</p>
+              {result.is_stale && <span className="badge amber">Stale evidence</span>}
               <em>{result.score}</em>
             </button>
           ))
@@ -1013,7 +1055,7 @@ function findFirstFile(nodes: FileTreeNode[]): FileTreeNode | null {
 }
 
 function canChat(repository?: Repository) {
-  return Boolean(repository && repository.status === 'indexed')
+  return isRepositoryUsable(repository)
 }
 
 function isManagementNavActive(page: Page, label: string) {

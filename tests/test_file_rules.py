@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.services.file_rules import detect_language, is_secret_file, is_supported_file
+from app.services.scanning.file_rules import detect_language, is_secret_file, is_supported_file
 
 
 def test_secret_file_rules_skip_real_credentials() -> None:

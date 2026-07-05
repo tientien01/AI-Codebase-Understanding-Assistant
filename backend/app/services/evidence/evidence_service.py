@@ -3,10 +3,10 @@ from __future__ import annotations
 from uuid import uuid4
 
 from app.core.errors import DomainError
-from app.schemas.api import CitationDTO, EvidenceDTO
+from app.schemas.api import CitationDTO, EvidenceDTO, EvidenceValidationItemDTO, EvidenceValidationResponse
 from app.services.index_models import ChunkRecord, RepositoryState
-from app.services.repository_store import RepositoryStore
-from app.services.text_utils import preview
+from app.services.repositories.repository_store import RepositoryStore
+from app.services.text_utils import preview, read_text
 
 
 class EvidenceService:
@@ -29,6 +29,11 @@ class EvidenceService:
             for evidence_id, evidence in self.cache.items()
             if evidence.repository_id != repository_id
         }
+
+    def validate_evidence(self, repository: RepositoryState, evidence_ids: list[str]) -> EvidenceValidationResponse:
+        return EvidenceValidationResponse(
+            items=[self._validate_evidence_id(repository, evidence_id) for evidence_id in evidence_ids]
+        )
 
     def chunk_to_citation(self, repository: RepositoryState, chunk: ChunkRecord, retrieval_source: str) -> CitationDTO:
         evidence_id = f"ev_{uuid4().hex[:10]}"
@@ -59,3 +64,31 @@ class EvidenceService:
             index_version=repository.current_index_version,
             is_stale=False,
         )
+
+    def _validate_evidence_id(self, repository: RepositoryState, evidence_id: str) -> EvidenceValidationItemDTO:
+        try:
+            evidence = self.get_evidence(repository.id, evidence_id)
+        except DomainError:
+            return EvidenceValidationItemDTO(evidence_id=evidence_id, is_valid=False, reason="evidence_not_found")
+
+        if evidence.index_version != repository.current_index_version or evidence.is_stale:
+            return EvidenceValidationItemDTO(
+                evidence_id=evidence_id,
+                is_valid=False,
+                is_stale=True,
+                reason="stale_index_version",
+            )
+
+        file_record = next((item for item in repository.files if item.path == evidence.file_path), None)
+        if file_record is None:
+            return EvidenceValidationItemDTO(evidence_id=evidence_id, is_valid=False, reason="file_not_in_current_index")
+
+        try:
+            line_count = len(read_text(file_record.absolute_path).splitlines())
+        except OSError:
+            return EvidenceValidationItemDTO(evidence_id=evidence_id, is_valid=False, reason="source_file_missing")
+
+        if evidence.start_line < 1 or evidence.end_line < evidence.start_line or evidence.end_line > line_count:
+            return EvidenceValidationItemDTO(evidence_id=evidence_id, is_valid=False, reason="line_range_out_of_bounds")
+
+        return EvidenceValidationItemDTO(evidence_id=evidence_id, is_valid=True, is_stale=False, reason=None)

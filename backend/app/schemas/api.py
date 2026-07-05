@@ -33,6 +33,80 @@ class RepositoryDeleteResponse(BaseModel):
     repository_id: str
 
 
+class ImportSessionCreateResponse(BaseModel):
+    import_session_id: str
+    status: str
+    source_type: str
+
+
+class ImportProjectSummaryDTO(BaseModel):
+    suggested_name: str
+    source_type: str
+    repository_size_bytes: int = 0
+    estimated_index_time_seconds: int = 0
+
+
+class ImportFileStatisticsDTO(BaseModel):
+    total_files: int = 0
+    supported_files: int = 0
+    skipped_files: int = 0
+    python_files: int = 0
+    javascript_files: int = 0
+    typescript_files: int = 0
+    markdown_files: int = 0
+    config_files: int = 0
+
+
+class ImportIgnoreSummaryDTO(BaseModel):
+    pattern: str
+    skipped_count: int
+    reason: str
+
+
+class ImportSecurityWarningDTO(BaseModel):
+    file_path: str
+    risk_type: str
+    action: str
+
+
+class ImportDuplicateCandidateDTO(BaseModel):
+    repository_id: str
+    name: str
+    match_reason: str
+
+
+class ImportPreviewResponse(BaseModel):
+    import_session_id: str
+    status: str
+    project_summary: ImportProjectSummaryDTO
+    detected_stack: list[str] = Field(default_factory=list)
+    file_statistics: ImportFileStatisticsDTO
+    folder_preview: list[str] = Field(default_factory=list)
+    ignore_summary: list[ImportIgnoreSummaryDTO] = Field(default_factory=list)
+    security_warnings: list[ImportSecurityWarningDTO] = Field(default_factory=list)
+    indexing_plan: list[str] = Field(default_factory=list)
+    possible_duplicates: list[ImportDuplicateCandidateDTO] = Field(default_factory=list)
+
+
+class ImportConfirmRequest(BaseModel):
+    name: str | None = None
+    start_indexing: bool = True
+    index_profile: str = "balanced"
+    duplicate_action: str = "import_as_new"
+
+
+class ImportConfirmResponse(BaseModel):
+    repository_id: str
+    indexing_job_id: str | None = None
+    status: str
+    index_version: int | None = None
+
+
+class ImportCancelResponse(BaseModel):
+    cancelled: bool
+    import_session_id: str
+
+
 class IndexRequest(BaseModel):
     force_reindex: bool = False
 
@@ -62,6 +136,71 @@ class IndexStatusResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     error_code: str | None = None
     error_message: str | None = None
+
+
+class IndexJobSummaryDTO(BaseModel):
+    id: str
+    repository_id: str
+    status: str
+    index_version: int = 0
+    total_files: int = 0
+    processed_files: int = 0
+    skipped_files: int = 0
+    failed_files: int = 0
+    started_at: str | None = None
+    finished_at: str | None = None
+
+
+class IndexJobListResponse(BaseModel):
+    items: list[IndexJobSummaryDTO]
+    next_cursor: str | None = None
+
+
+class IndexWarningDTO(BaseModel):
+    file_path: str | None = None
+    warning_type: str = "warning"
+    message: str
+    line: int | None = None
+    severity: str = "warning"
+
+
+class IndexWarningsResponse(BaseModel):
+    items: list[IndexWarningDTO]
+    next_cursor: str | None = None
+
+
+class SkippedFileDTO(BaseModel):
+    file_path: str
+    reason: str
+    matched_pattern: str | None = None
+
+
+class SkippedFilesResponse(BaseModel):
+    items: list[SkippedFileDTO]
+    next_cursor: str | None = None
+
+
+class FailedFileDTO(BaseModel):
+    file_path: str
+    stage: str
+    error_code: str
+    message: str
+    line: int | None = None
+
+
+class FailedFilesResponse(BaseModel):
+    items: list[FailedFileDTO]
+    next_cursor: str | None = None
+
+
+class StalenessResponse(BaseModel):
+    repository_id: str
+    is_stale: bool
+    current_index_version: int = 0
+    last_indexed_at: str | None = None
+    stale_reason: str | None = None
+    changed_files_count: int = 0
+    recommended_action: str | None = None
 
 
 class ImportantFileDTO(BaseModel):
@@ -95,10 +234,38 @@ class OverviewResponse(BaseModel):
     stats: dict[str, int]
 
 
+class ReadingPathSignalDTO(BaseModel):
+    type: str
+    detail: str
+    line: int | None = None
+
+
+class ReadingPathItemDTO(BaseModel):
+    rank: int
+    file_path: str
+    title: str
+    reason: str
+    confidence: str
+    signals: list[ReadingPathSignalDTO] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class ReadingPathResponse(BaseModel):
+    repository_id: str
+    index_version: int = 0
+    items: list[ReadingPathItemDTO]
+
+
 class ChatRequest(BaseModel):
     conversation_id: str | None = None
     message: str
     options: dict[str, int] = Field(default_factory=dict)
+
+
+class SearchAskWithEvidenceRequest(BaseModel):
+    conversation_id: str | None = None
+    message: str
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class CitationDTO(BaseModel):
@@ -138,6 +305,21 @@ class EvidenceDTO(BaseModel):
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
+class EvidenceValidationRequest(BaseModel):
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class EvidenceValidationItemDTO(BaseModel):
+    evidence_id: str
+    is_valid: bool
+    is_stale: bool = False
+    reason: str | None = None
+
+
+class EvidenceValidationResponse(BaseModel):
+    items: list[EvidenceValidationItemDTO]
+
+
 class GraphNodeDTO(BaseModel):
     id: str
     type: str
@@ -165,10 +347,33 @@ class SearchResultDTO(BaseModel):
     start_line: int
     end_line: int
     score: float
+    index_version: int = 0
+    is_stale: bool = False
 
 
 class SearchResponse(BaseModel):
     results: list[SearchResultDTO]
+
+
+class SymbolDTO(BaseModel):
+    symbol_id: str
+    file_path: str
+    symbol_type: str
+    name: str
+    start_line: int
+    end_line: int
+    signature: str = ""
+    index_version: int = 0
+
+
+class SymbolListResponse(BaseModel):
+    items: list[SymbolDTO]
+    next_cursor: str | None = None
+
+
+class EndpointListResponse(BaseModel):
+    items: list[EndpointDTO]
+    next_cursor: str | None = None
 
 
 class FileTreeNodeDTO(BaseModel):
@@ -184,3 +389,15 @@ class FileContentResponse(BaseModel):
     content: str
     lines: list[str]
     symbols: list[CitationDTO] = Field(default_factory=list)
+
+
+class SettingsResponse(BaseModel):
+    indexing: dict[str, str | int | bool]
+    providers: dict[str, str | bool]
+    security: dict[str, bool]
+
+
+class IgnorePatternsResponse(BaseModel):
+    default_patterns: list[str]
+    user_patterns: list[str] = Field(default_factory=list)
+    effective_patterns: list[str]

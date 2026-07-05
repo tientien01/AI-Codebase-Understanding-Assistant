@@ -35,7 +35,11 @@ def _ensure_sqlite_columns() -> None:
             "source_label": "TEXT",
             "current_index_version": "INTEGER DEFAULT 0",
         },
-        "indexing_jobs": {"index_version": "INTEGER DEFAULT 0"},
+        "indexing_jobs": {
+            "index_version": "INTEGER DEFAULT 0",
+            "skipped_files_json": "TEXT DEFAULT '[]'",
+            "failed_files_json": "TEXT DEFAULT '[]'",
+        },
         "file_records": {"index_version": "INTEGER DEFAULT 0"},
         "symbol_records": {"index_version": "INTEGER DEFAULT 0"},
         "endpoint_records": {"index_version": "INTEGER DEFAULT 0"},

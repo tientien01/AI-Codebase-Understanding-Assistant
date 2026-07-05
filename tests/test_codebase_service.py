@@ -15,7 +15,7 @@ from app.services.codebase_service import CodebaseService
 FIXTURE_REPO = Path(__file__).resolve().parent / "fixtures" / "fastapi_react_sample"
 
 
-def import_fixture_folder(service: CodebaseService, name: str):
+def fixture_upload_files():
     files: list[UploadFile] = []
     relative_paths: list[str] = []
     for path in FIXTURE_REPO.rglob("*"):
@@ -23,6 +23,11 @@ def import_fixture_folder(service: CodebaseService, name: str):
             continue
         files.append(UploadFile(BytesIO(path.read_bytes()), filename=path.name))
         relative_paths.append(path.relative_to(FIXTURE_REPO).as_posix())
+    return files, relative_paths
+
+
+def import_fixture_folder(service: CodebaseService, name: str):
+    files, relative_paths = fixture_upload_files()
     return asyncio.run(service.upload_folder(files, relative_paths, name))
 
 
@@ -72,6 +77,39 @@ def test_service_file_tree_and_content_are_available_after_index() -> None:
     assert tree
     assert content.language == "python"
     assert "FastAPI" in content.content
+
+
+def test_import_session_preview_and_confirm_creates_indexed_repository() -> None:
+    service = CodebaseService()
+    files, relative_paths = fixture_upload_files()
+
+    session = asyncio.run(service.create_folder_import_session(files, relative_paths, "fixture-import-session-test"))
+    preview_response = service.get_import_preview(session.import_session_id)
+    confirmed = service.confirm_import_session(session.import_session_id, None, True)
+
+    assert session.status == "created"
+    assert session.source_type == "upload_folder"
+    assert preview_response.status == "preview_ready"
+    assert preview_response.file_statistics.supported_files >= 8
+    assert "FastAPI" in preview_response.detected_stack
+    assert confirmed.repository_id in service.repositories
+    assert confirmed.indexing_job_id
+    assert confirmed.status == "indexed"
+    assert confirmed.index_version == 1
+
+
+def test_import_session_cancel_removes_temporary_source() -> None:
+    service = CodebaseService()
+    files, relative_paths = fixture_upload_files()
+
+    session = asyncio.run(service.create_folder_import_session(files, relative_paths, "fixture-cancel-session-test"))
+    source_path = service.import_sessions[session.import_session_id].source_path
+    cancelled = service.cancel_import_session(session.import_session_id)
+
+    assert cancelled.cancelled
+    assert cancelled.import_session_id == session.import_session_id
+    assert session.import_session_id not in service.import_sessions
+    assert not source_path.exists()
 
 
 def test_indexing_job_persists_and_status_survives_service_restart() -> None:
@@ -183,6 +221,64 @@ def test_reindex_marks_existing_evidence_as_stale() -> None:
     assert evidence.index_version == 1
     assert stale_evidence.index_version == 1
     assert stale_evidence.is_stale
+
+
+def test_search_results_include_current_evidence_metadata() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-search-metadata-test")
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    response = service.search(created.repository_id, "login")
+
+    assert response.results
+    assert response.results[0].index_version == 1
+    assert not response.results[0].is_stale
+
+
+def test_validate_evidence_reports_valid_and_stale_items() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-validate-evidence-test")
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    search = service.search(created.repository_id, "login")
+    evidence_id = search.results[0].evidence_id
+
+    valid_response = service.validate_evidence(created.repository_id, [evidence_id, "ev_missing"])
+    valid_by_id = {item.evidence_id: item for item in valid_response.items}
+
+    assert valid_by_id[evidence_id].is_valid
+    assert not valid_by_id[evidence_id].is_stale
+    assert not valid_by_id["ev_missing"].is_valid
+    assert valid_by_id["ev_missing"].reason == "evidence_not_found"
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    stale_response = service.validate_evidence(created.repository_id, [evidence_id])
+
+    assert not stale_response.items[0].is_valid
+    assert stale_response.items[0].is_stale
+    assert stale_response.items[0].reason == "stale_index_version"
+
+
+def test_ask_with_selected_evidence_requires_valid_evidence() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-ask-with-evidence-test")
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    search = service.search(created.repository_id, "login")
+    evidence_id = search.results[0].evidence_id
+
+    answer = service.ask_with_evidence(created.repository_id, "Explain this login evidence.", [evidence_id], "conv_test")
+
+    assert answer.conversation_id == "conv_test"
+    assert answer.evidence_sufficient
+    assert answer.citations[0].evidence_id == evidence_id
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    stale_answer = service.ask_with_evidence(created.repository_id, "Explain stale evidence.", [evidence_id], None)
+
+    assert not stale_answer.evidence_sufficient
+    assert stale_answer.citations == []
+    assert any("stale_index_version" in item for item in stale_answer.missing_evidence)
 
 
 def test_delete_repository_removes_project_records_and_managed_source() -> None:

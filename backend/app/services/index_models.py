@@ -24,8 +24,25 @@ class IndexingJobRecord:
     finished_at: str | None = None
     logs: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    skipped_file_records: list[dict[str, str | None]] = field(default_factory=list)
+    failed_file_records: list[dict[str, str | int | None]] = field(default_factory=list)
     error_code: str | None = None
     error_message: str | None = None
+
+
+@dataclass
+class ImportSessionRecord:
+    id: str
+    name: str
+    source_type: str
+    source_uri: str | None
+    source_path: Path
+    source_label: str | None = None
+    status: str = "created"
+    created_at: str | None = None
+    confirmed_repository_id: str | None = None
+    skipped_file_records: list[dict[str, str | None]] = field(default_factory=list)
+    security_warning_records: list[dict[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -91,6 +108,8 @@ class RepositoryState:
     graph_edges: list[GraphEdgeDTO] = field(default_factory=list)
     logs: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    skipped_file_records: list[dict[str, str | None]] = field(default_factory=list)
+    failed_file_records: list[dict[str, str | int | None]] = field(default_factory=list)
     failed_files: int = 0
     current_step: str = "created"
     started_at: str | None = None
