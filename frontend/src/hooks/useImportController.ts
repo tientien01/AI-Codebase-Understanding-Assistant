@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { uploadFormData } from '../api/upload'
 import type { ImportMode, ImportPreview, Page } from '../types/api'
 
 type ImportControllerDeps = {
@@ -28,10 +29,12 @@ export function useImportController({
   const [zipFile, setZipFile] = useState<File | null>(null)
   const [importSessionId, setImportSessionId] = useState('')
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   function clearImportPreview() {
     setImportSessionId('')
     setImportPreview(null)
+    setUploadProgress(0)
   }
 
   async function submitImport(event: FormEvent) {
@@ -59,7 +62,7 @@ export function useImportController({
     const formData = new FormData()
     formData.append('file', zipFile)
     formData.append('name', projectName || zipFile.name.replace(/\.zip$/i, ''))
-    const session = await request<{ import_session_id: string }>(`${apiV1}/import-sessions/upload-zip`, { method: 'POST', body: formData })
+    const session = await uploadWithErrorHandling(`${apiV1}/import-sessions/upload-zip`, formData)
     await loadImportPreview(session.import_session_id)
   }
 
@@ -75,7 +78,7 @@ export function useImportController({
       formData.append('relative_paths', uploadFile.webkitRelativePath || file.name)
     }
     formData.append('name', projectName || folderFiles[0].name)
-    const session = await request<{ import_session_id: string }>(`${apiV1}/import-sessions/upload-folder`, { method: 'POST', body: formData })
+    const session = await uploadWithErrorHandling(`${apiV1}/import-sessions/upload-folder`, formData)
     await loadImportPreview(session.import_session_id)
   }
 
@@ -99,6 +102,20 @@ export function useImportController({
     setPage('indexing')
   }
 
+  async function uploadWithErrorHandling(url: string, formData: FormData) {
+    try {
+      return await uploadFormData<{ import_session_id: string }>({
+        url,
+        formData,
+        onProgress: setUploadProgress,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Upload failed'
+      setApiError(message)
+      throw error
+    }
+  }
+
   return {
     projectName,
     githubUrl,
@@ -106,6 +123,7 @@ export function useImportController({
     folderFiles,
     zipFile,
     importPreview,
+    uploadProgress,
     setProjectName,
     setGithubUrl,
     setImportMode,

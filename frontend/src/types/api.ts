@@ -88,8 +88,16 @@ export type ChatMessage = {
 }
 
 export type GraphData = {
-  nodes: { id: string; type: string; label: string; file_path?: string }[]
-  edges: { source: string; target: string; type: string; confidence: number }[]
+  nodes: {
+    id: string
+    type: string
+    label: string
+    file_path?: string
+    coverage?: 'mapped' | 'analyzing' | 'deep_indexed' | 'skipped' | 'failed'
+    scope_path?: string
+    role?: string
+  }[]
+  edges: { source: string; target: string; type: string; confidence: number; evidence_level?: 'map' | 'deep' | 'inferred' }[]
 }
 
 export type SearchResult = {

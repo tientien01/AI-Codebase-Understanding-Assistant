@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react'
-import { LanguageBar, PageTitle, Panel, PreviewLine, ProfileCard, SourceCard, WizardSteps } from '../../components/common/ui'
+import { LanguageBar, PageTitle, Panel, PreviewLine, ProfileCard, Progress, SourceCard, WizardSteps } from '../../components/common/ui'
 import type { ImportMode, ImportPreview } from '../../types/api'
 
 export function ImportPage({
@@ -9,6 +9,7 @@ export function ImportPage({
   folderCount,
   zipFileName,
   preview,
+  uploadProgress,
   onModeChange,
   onNameChange,
   onGithubUrlChange,
@@ -22,6 +23,7 @@ export function ImportPage({
   folderCount: number
   zipFileName: string
   preview: ImportPreview | null
+  uploadProgress: number
   onModeChange: (mode: ImportMode) => void
   onNameChange: (value: string) => void
   onGithubUrlChange: (value: string) => void
@@ -106,6 +108,12 @@ export function ImportPage({
           <Panel title="Import Preview">
             <h3>Repository</h3>
             <PreviewLine label="Repository" value={preview?.project_summary.suggested_name ?? (mode === 'github' ? githubUrl : projectName)} />
+            {uploadProgress > 0 && uploadProgress < 100 ? (
+              <>
+                <PreviewLine label="Upload" value={`${uploadProgress}%`} />
+                <Progress value={uploadProgress} />
+              </>
+            ) : null}
             <PreviewLine label="Branch" value="main" />
             <PreviewLine label="Commit" value="pending" />
             <h3>Estimated Size</h3>
@@ -173,7 +181,9 @@ function languageLabel(language: string) {
   const labels: Record<string, string> = {
     csharp: 'C#',
     cpp: 'C++',
+    css: 'CSS',
     go: 'Go',
+    html: 'HTML',
     java: 'Java',
     javascript: 'JavaScript',
     kotlin: 'Kotlin',

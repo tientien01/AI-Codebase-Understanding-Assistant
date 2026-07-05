@@ -43,6 +43,14 @@ def make_zip(entries: dict[str, str]) -> bytes:
     return buffer.getvalue()
 
 
+def make_zip_with_duplicate_path() -> bytes:
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("project/app.py", "print('first')\n")
+        archive.writestr("project/app.py", "print('second')\n")
+    return buffer.getvalue()
+
+
 def test_service_indexes_fixture_and_answers_with_evidence() -> None:
     service = CodebaseService()
     created = import_fixture_folder(service, "fixture-service-test")
@@ -205,6 +213,29 @@ def test_upload_zip_rejects_path_traversal() -> None:
         upload_zip_bytes(service, "unsafe.zip", content, None)
 
     assert error.value.code == "ARCHIVE_PATH_TRAVERSAL"
+
+
+def test_upload_zip_rejects_duplicate_paths() -> None:
+    service = CodebaseService()
+
+    with pytest.raises(DomainError) as error:
+        upload_zip_bytes(service, "duplicate.zip", make_zip_with_duplicate_path(), None)
+
+    assert error.value.code == "DUPLICATE_ARCHIVE_PATH"
+
+
+def test_upload_zip_reports_nested_archive_as_skipped() -> None:
+    service = CodebaseService()
+    nested = make_zip({"nested/app.py": "print('nested')\n"})
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("project/app.py", "print('ok')\n")
+        archive.writestr("project/vendor.zip", nested)
+
+    session = asyncio.run(service.create_zip_import_session(UploadFile(BytesIO(buffer.getvalue()), filename="nested.zip"), "nested-archive-test"))
+    preview = service.get_import_preview(session.import_session_id)
+
+    assert any(item.reason == "nested_archive" for item in preview.ignore_summary)
 
 
 def test_reindex_marks_existing_evidence_as_stale() -> None:

@@ -117,6 +117,9 @@ class GraphNodeORM(Base):
     type: Mapped[str] = mapped_column(String, nullable=False)
     label: Mapped[str] = mapped_column(String, nullable=False)
     file_path: Mapped[str | None] = mapped_column(Text)
+    coverage: Mapped[str] = mapped_column(String, default="deep_indexed")
+    scope_path: Mapped[str | None] = mapped_column(Text)
+    role: Mapped[str | None] = mapped_column(String)
 
 
 class GraphEdgeORM(Base):
@@ -129,6 +132,7 @@ class GraphEdgeORM(Base):
     target: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(String, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    evidence_level: Mapped[str] = mapped_column(String, default="deep")
 
 
 class EvidenceORM(Base):

@@ -124,6 +124,9 @@ class RepositoryStore:
                         type=node.type,
                         label=node.label,
                         file_path=node.file_path,
+                        coverage=node.coverage,
+                        scope_path=node.scope_path,
+                        role=node.role,
                     )
                     for node in repository.graph_nodes
                 ]
@@ -137,6 +140,7 @@ class RepositoryStore:
                         target=edge.target,
                         type=edge.type,
                         confidence=edge.confidence,
+                        evidence_level=edge.evidence_level,
                     )
                     for edge in repository.graph_edges
                 ]
@@ -329,10 +333,22 @@ class RepositoryStore:
                     type=node.type,
                     label=node.label,
                     file_path=node.file_path,
+                    coverage=node.coverage or "deep_indexed",
+                    scope_path=node.scope_path,
+                    role=node.role,
                 )
                 for node in graph_nodes
             ],
-            graph_edges=[GraphEdgeDTO(source=edge.source, target=edge.target, type=edge.type, confidence=edge.confidence) for edge in graph_edges],
+            graph_edges=[
+                GraphEdgeDTO(
+                    source=edge.source,
+                    target=edge.target,
+                    type=edge.type,
+                    confidence=edge.confidence,
+                    evidence_level=edge.evidence_level or "deep",
+                )
+                for edge in graph_edges
+            ],
             logs=json.loads(repository.logs_json or "[]"),
             warnings=json.loads(repository.warnings_json or "[]"),
             failed_files=repository.failed_files,

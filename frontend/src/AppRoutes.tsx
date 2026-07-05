@@ -56,6 +56,7 @@ type AppRoutesProps = {
   folderFiles: File[]
   zipFile: File | null
   importPreview: ImportPreview | null
+  uploadProgress: number
   setPage: (page: Page) => void
   setChatInput: (value: string) => void
   setSearchQuery: (value: string) => void
@@ -73,6 +74,7 @@ type AppRoutesProps = {
   sendChatMessage: (event?: FormEvent) => void
   openEvidence: (citation: Citation) => void
   runSearch: (event?: FormEvent) => void
+  analyzeGraphArea: (scopePath: string) => void
   isWorkspacePage: boolean
 }
 
@@ -98,6 +100,7 @@ export function AppRoutes(props: AppRoutesProps) {
     folderFiles,
     zipFile,
     importPreview,
+    uploadProgress,
     isWorkspacePage,
   } = props
 
@@ -113,6 +116,7 @@ export function AppRoutes(props: AppRoutesProps) {
         folderCount={folderFiles.length}
         zipFileName={zipFile?.name ?? ''}
         preview={importPreview}
+        uploadProgress={uploadProgress}
         onModeChange={(mode) => {
           props.setImportMode(mode)
           props.clearImportPreview()
@@ -145,7 +149,7 @@ export function AppRoutes(props: AppRoutesProps) {
       />
     )
   }
-  if (page === 'graph') return <WorkspacePage main={<GraphPage graph={graph} overview={overview} />} side={<GraphDetails graph={graph} />} />
+  if (page === 'graph') return <WorkspacePage main={<GraphPage graph={graph} overview={overview} onAnalyzeArea={props.analyzeGraphArea} />} side={<GraphDetails graph={graph} />} />
   if (page === 'api') return <WorkspacePage main={<ApiExplorerPage overview={overview} />} side={<ApiDetails overview={overview} />} />
   if (page === 'assistant') {
     return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />

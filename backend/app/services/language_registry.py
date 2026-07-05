@@ -16,6 +16,8 @@ class LanguageDefinition:
 
 LANGUAGE_DEFINITIONS: tuple[LanguageDefinition, ...] = (
     LanguageDefinition("python", "Python", (".py",), tree_sitter_language="python"),
+    LanguageDefinition("html", "HTML", (".html", ".htm"), tree_sitter_language="html"),
+    LanguageDefinition("css", "CSS", (".css",), tree_sitter_language="css"),
     LanguageDefinition("javascript", "JavaScript", (".js", ".jsx"), tree_sitter_language="javascript"),
     LanguageDefinition("typescript", "TypeScript", (".ts", ".tsx"), tree_sitter_language="typescript"),
     LanguageDefinition("go", "Go", (".go",), tree_sitter_language="go"),
@@ -66,4 +68,3 @@ def supported_extensions() -> set[str]:
 
 def supported_file_names() -> set[str]:
     return set(LANGUAGES_BY_FILE_NAME)
-

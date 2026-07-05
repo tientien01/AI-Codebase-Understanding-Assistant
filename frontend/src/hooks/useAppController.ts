@@ -206,6 +206,18 @@ export function useAppController() {
     setSearchResults(response.results)
   }
 
+  async function analyzeGraphArea(scopePath: string) {
+    if (!selectedRepository || !scopePath) return
+    await request(`${API_V1}/repositories/${selectedRepository.id}/graph/expand`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scope_path: scopePath }),
+    })
+    await loadRepositories()
+    await loadIndexStatus(selectedRepository.id)
+    await loadGraph(selectedRepository.id)
+  }
+
   const importController = useImportController({
     request,
     apiV1: API_V1,
@@ -244,5 +256,6 @@ export function useAppController() {
     sendChatMessage,
     openEvidence,
     runSearch,
+    analyzeGraphArea,
   }
 }

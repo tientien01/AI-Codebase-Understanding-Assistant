@@ -326,6 +326,9 @@ class GraphNodeDTO(BaseModel):
     type: str
     label: str
     file_path: str | None = None
+    coverage: str = "deep_indexed"
+    scope_path: str | None = None
+    role: str | None = None
 
 
 class GraphEdgeDTO(BaseModel):
@@ -333,11 +336,23 @@ class GraphEdgeDTO(BaseModel):
     target: str
     type: str
     confidence: float
+    evidence_level: str = "deep"
 
 
 class GraphResponse(BaseModel):
     nodes: list[GraphNodeDTO]
     edges: list[GraphEdgeDTO]
+
+
+class GraphExpansionRequest(BaseModel):
+    scope_path: str
+
+
+class GraphExpansionResponse(BaseModel):
+    job_id: str | None = None
+    status: str
+    scope_path: str
+    message: str
 
 
 class SearchResultDTO(BaseModel):

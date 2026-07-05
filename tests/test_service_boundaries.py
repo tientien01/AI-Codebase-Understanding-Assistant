@@ -125,6 +125,8 @@ def test_graph_links_frontend_api_call_to_matching_endpoint(tmp_path: Path) -> N
 
     assert any(edge.type == "exposes_endpoint" for edge in repository.graph_edges)
     assert any(edge.type == "calls_api" and edge.source == "api_call_login" for edge in repository.graph_edges)
+    assert any(node.type == "folder" and node.coverage == "mapped" for node in repository.graph_nodes)
+    assert any(node.type == "file" and node.coverage == "deep_indexed" for node in repository.graph_nodes)
 
 
 def test_retrieval_classifies_and_scores_login_queries(tmp_path: Path) -> None:

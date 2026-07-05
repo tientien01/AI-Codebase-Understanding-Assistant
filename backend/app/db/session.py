@@ -51,6 +51,14 @@ def _ensure_sqlite_columns() -> None:
             "is_stale": "INTEGER DEFAULT 0",
         },
     }
+    columns_by_table["graph_nodes"].update(
+        {
+            "coverage": "TEXT DEFAULT 'deep_indexed'",
+            "scope_path": "TEXT",
+            "role": "TEXT",
+        }
+    )
+    columns_by_table["graph_edges"].update({"evidence_level": "TEXT DEFAULT 'deep'"})
 
     with engine.begin() as connection:
         for table_name, required_columns in columns_by_table.items():

@@ -12,6 +12,8 @@ from app.schemas.api import (
     FailedFilesResponse,
     FileContentResponse,
     FileTreeNodeDTO,
+    GraphExpansionRequest,
+    GraphExpansionResponse,
     GraphResponse,
     IgnorePatternsResponse,
     ImportCancelResponse,
@@ -175,6 +177,11 @@ def validate_evidence(repository_id: str, request: EvidenceValidationRequest) ->
 @router.get("/{repository_id}/graph", response_model=GraphResponse)
 def get_graph(repository_id: str) -> GraphResponse:
     return codebase_service.get_graph(repository_id)
+
+
+@router.post("/{repository_id}/graph/expand", response_model=GraphExpansionResponse)
+def expand_graph_area(repository_id: str, request: GraphExpansionRequest) -> GraphExpansionResponse:
+    return codebase_service.expand_graph_area(repository_id, request.scope_path)
 
 
 @router.get("/{repository_id}/search", response_model=SearchResponse)

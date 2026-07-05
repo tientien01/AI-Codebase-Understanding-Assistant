@@ -808,6 +808,9 @@ textarea {
   border-radius: 12px;
   padding: 12px;
   background: #111f4e;
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
 }
 
 .graph-node span {
@@ -815,6 +818,40 @@ textarea {
   margin-top: 4px;
   color: #a5b1c3;
   font-size: 12px;
+}
+
+.graph-node em {
+  display: inline-block;
+  margin-top: 8px;
+  color: #dbeafe;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.graph-node.active,
+.graph-node:hover {
+  border-color: #f8fafc;
+}
+
+.coverage-mapped {
+  border-color: #94a3b8;
+  background: #1e293b;
+}
+
+.coverage-analyzing {
+  border-color: #38bdf8;
+  background: #0c4a6e;
+}
+
+.coverage-skipped {
+  border-color: #64748b;
+  background: #334155;
+  opacity: 0.7;
+}
+
+.coverage-failed {
+  border-color: #f87171;
+  background: #7f1d1d;
 }
 
 .type-function,

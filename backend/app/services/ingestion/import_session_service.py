@@ -22,6 +22,7 @@ from app.schemas.api import (
 from app.services.index_models import ImportSessionRecord, RepositoryState
 from app.services.indexing.indexing_service import IndexingService
 from app.services.ingestion.archive_service import ArchiveService
+from app.services.ingestion.streaming_upload_service import StreamingUploadService
 from app.services.ingestion.upload_service import UploadService
 from app.services.repositories.repository_service import RepositoryService
 from app.services.scanning.scanner_service import ScannerService
@@ -42,6 +43,7 @@ class ImportSessionService:
         self.scanner = scanner
         self.archive = archive
         self.upload = upload
+        self.streaming_upload = StreamingUploadService()
         self.import_sessions: dict[str, ImportSessionRecord] = {}
 
     async def upload_zip(self, file: UploadFile, name: str | None) -> RepositoryCreateResponse:
@@ -83,11 +85,8 @@ class ImportSessionService:
         session_root.mkdir(parents=True, exist_ok=True)
         source_dir.mkdir(parents=True, exist_ok=True)
         zip_path = session_root / "source.zip"
-        upload_bytes = await file.read()
         max_upload_size = settings.max_upload_size_mb * 1024 * 1024
-        if len(upload_bytes) > max_upload_size:
-            raise DomainError("FILE_TOO_LARGE", "Uploaded archive is larger than the configured limit.", 413)
-        zip_path.write_bytes(upload_bytes)
+        await self.streaming_upload.save_upload(file, zip_path, max_upload_size)
 
         skipped_records: list[dict[str, str | None]] = []
         security_records: list[dict[str, str]] = []
@@ -142,8 +141,15 @@ class ImportSessionService:
             if not self.upload.is_relative_to(target, source_dir.resolve()):
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
-            content = await upload.read()
-            if len(content) > settings.max_file_size_mb * 1024 * 1024:
+            try:
+                await self.streaming_upload.save_upload(
+                    upload,
+                    target,
+                    settings.max_file_size_mb * 1024 * 1024,
+                )
+            except DomainError as exc:
+                if exc.code != "UPLOAD_TOO_LARGE":
+                    raise
                 self.archive.record_skipped(
                     skipped_records,
                     safe_path.as_posix(),
@@ -151,7 +157,6 @@ class ImportSessionService:
                     f">{settings.max_file_size_mb}MB",
                 )
                 continue
-            target.write_bytes(content)
             saved_files += 1
 
         if saved_files == 0:

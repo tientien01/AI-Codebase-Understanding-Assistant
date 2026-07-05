@@ -14,8 +14,13 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite:///{PROJECT_ROOT / 'storage/app.db'}"
     repository_storage_dir: Path = PROJECT_ROOT / "storage/repositories"
     upload_storage_dir: Path = PROJECT_ROOT / "storage/uploads"
-    max_upload_size_mb: int = 200
+    max_upload_size_mb: int = 2048
+    upload_chunk_size_mb: int = 4
     max_file_size_mb: int = 1
+    max_zip_entries: int = 200_000
+    max_extracted_size_mb: int = 4096
+    max_archive_compression_ratio: int = 100
+    max_path_depth: int = 30
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     llm_provider: str = "fake"
     llm_model: str = "fake-chat-model"

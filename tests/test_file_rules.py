@@ -21,6 +21,8 @@ def test_secret_file_rules_allow_example_env() -> None:
 
 def test_supported_files_cover_mvp_source_and_docs() -> None:
     assert is_supported_file(Path("app.py"))
+    assert is_supported_file(Path("templates/index.html"))
+    assert is_supported_file(Path("static/site.css"))
     assert is_supported_file(Path("LoginPage.tsx"))
     assert is_supported_file(Path("main.go"))
     assert is_supported_file(Path("lib.rs"))
@@ -32,6 +34,8 @@ def test_supported_files_cover_mvp_source_and_docs() -> None:
 
 def test_language_detection_for_mvp_stack() -> None:
     assert detect_language(Path("main.py")) == "python"
+    assert detect_language(Path("templates/index.html")) == "html"
+    assert detect_language(Path("static/site.css")) == "css"
     assert detect_language(Path("authApi.ts")) == "typescript"
     assert detect_language(Path("README.md")) == "markdown"
 
@@ -39,6 +43,8 @@ def test_language_detection_for_mvp_stack() -> None:
 def test_language_registry_supports_common_source_languages() -> None:
     samples = {
         "main.go": "go",
+        "index.html": "html",
+        "site.css": "css",
         "lib.rs": "rust",
         "App.java": "java",
         "Service.kt": "kotlin",

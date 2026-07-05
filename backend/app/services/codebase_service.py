@@ -10,6 +10,7 @@ from app.schemas.api import (
     FailedFilesResponse,
     FileContentResponse,
     FileTreeNodeDTO,
+    GraphExpansionResponse,
     GraphResponse,
     IgnorePatternsResponse,
     ImportCancelResponse,
@@ -192,6 +193,15 @@ class CodebaseService:
     def get_graph(self, repository_id: str) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
         return self.graph.get_graph(repository)
+
+    def expand_graph_area(self, repository_id: str, scope_path: str) -> GraphExpansionResponse:
+        result = self.indexing.start_indexing(repository_id, force_reindex=True)
+        return GraphExpansionResponse(
+            job_id=result.indexing_job_id,
+            status=result.status,
+            scope_path=scope_path,
+            message="Detailed analysis was requested for this area. Current MVP refreshes the project graph while scoped indexing is being added.",
+        )
 
     def get_file_tree(self, repository_id: str) -> list[FileTreeNodeDTO]:
         return self.file_service.get_file_tree(repository_id)

@@ -3,15 +3,16 @@ import type { GraphData, Overview } from '../../types/api'
 
 export function GraphDetails({ graph }: { graph: GraphData | null }) {
   return (
-    <Panel title="Node Details">
-      <PreviewLine label="Nodes" value={String(graph?.nodes.length ?? 0)} />
-      <PreviewLine label="Edges" value={String(graph?.edges.length ?? 0)} />
-      <h3>Filters</h3>
+    <Panel title="Analysis Coverage">
+      <PreviewLine label="Ready" value={String(graph?.nodes.filter((node) => node.coverage === 'deep_indexed').length ?? 0)} />
+      <PreviewLine label="Needs analysis" value={String(graph?.nodes.filter((node) => node.coverage === 'mapped').length ?? 0)} />
+      <PreviewLine label="Relationships" value={String(graph?.edges.length ?? 0)} />
+      <h3>Status</h3>
       <div className="setting-chips">
-        <span>file</span>
-        <span>symbol</span>
-        <span>endpoint</span>
-        <span>calls_api</span>
+        <span>Ready</span>
+        <span>Analyzing</span>
+        <span>Needs analysis</span>
+        <span>Skipped</span>
       </div>
     </Panel>
   )
