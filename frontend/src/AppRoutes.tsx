@@ -1,6 +1,6 @@
 import type { FormEvent, ReactNode } from 'react'
 import { AssistantPanel } from './components/chat/AssistantChat'
-import { DashboardPage, ImportPage, IndexingPage } from './pages/management'
+import { ImportPage, IndexingPage, ProjectsPage } from './pages/management'
 import {
   ApiDetails,
   ApiExplorerPage,
@@ -69,6 +69,9 @@ type AppRoutesProps = {
   submitImport: (event: FormEvent) => void
   openWorkspace: (repositoryId: string) => void
   reindexRepository: (repositoryId: string) => void
+  pauseIndexingJob: (repositoryId: string, jobId: string) => void
+  resumeIndexingJob: (repositoryId: string, jobId: string) => void
+  cancelIndexingJob: (repositoryId: string, jobId: string) => void
   deleteRepository: (repositoryId: string) => void
   loadFileContent: (repositoryId: string, filePath: string) => void
   sendChatMessage: (event?: FormEvent) => void
@@ -104,8 +107,17 @@ export function AppRoutes(props: AppRoutesProps) {
     isWorkspacePage,
   } = props
 
-  if (page === 'dashboard') {
-    return <DashboardPage repositories={repositories} onNewProject={() => props.setPage('import')} onOpen={props.openWorkspace} onReindex={props.reindexRepository} onDelete={props.deleteRepository} />
+  if (page === 'projects') {
+    return (
+      <ProjectsPage
+        repositories={repositories}
+        onNewProject={() => props.setPage('import')}
+        onOpen={props.openWorkspace}
+        onReindex={props.reindexRepository}
+        onDelete={props.deleteRepository}
+        onViewIndexJobs={() => props.setPage('indexing')}
+      />
+    )
   }
   if (page === 'import') {
     return (
@@ -136,7 +148,16 @@ export function AppRoutes(props: AppRoutesProps) {
     )
   }
   if (page === 'indexing') {
-    return <IndexingPage status={indexStatus} repository={selectedRepository} onOpen={() => selectedRepository && props.openWorkspace(selectedRepository.id)} />
+    return (
+      <IndexingPage
+        status={indexStatus}
+        repository={selectedRepository}
+        onOpen={() => selectedRepository && props.openWorkspace(selectedRepository.id)}
+        onPause={() => selectedRepository && indexStatus?.job_id && props.pauseIndexingJob(selectedRepository.id, indexStatus.job_id)}
+        onResume={() => selectedRepository && indexStatus?.job_id && props.resumeIndexingJob(selectedRepository.id, indexStatus.job_id)}
+        onCancel={() => selectedRepository && indexStatus?.job_id && props.cancelIndexingJob(selectedRepository.id, indexStatus.job_id)}
+      />
+    )
   }
   if (page === 'overview') {
     return <AssistantWorkspace main={<OverviewPage overview={overview} onQuestion={props.setChatInput} />} {...props} />

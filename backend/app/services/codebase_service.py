@@ -131,8 +131,9 @@ class CodebaseService:
         name: str | None,
         start_indexing: bool,
         duplicate_action: str = "import_as_new",
+        run_in_background: bool = False,
     ) -> ImportConfirmResponse:
-        return self.ingestion.confirm_import_session(import_session_id, name, start_indexing, duplicate_action)
+        return self.ingestion.confirm_import_session(import_session_id, name, start_indexing, duplicate_action, run_in_background)
 
     def cancel_import_session(self, import_session_id: str) -> ImportCancelResponse:
         return self.ingestion.cancel_import_session(import_session_id)
@@ -140,6 +141,19 @@ class CodebaseService:
     def start_indexing(self, repository_id: str, force_reindex: bool = False) -> dict[str, str | int]:
         response = self.indexing.start_indexing(repository_id, force_reindex)
         return response.model_dump()
+
+    def start_indexing_background(self, repository_id: str, force_reindex: bool = False) -> dict[str, str | int]:
+        response = self.indexing.start_indexing_background(repository_id, force_reindex)
+        return response.model_dump()
+
+    def pause_indexing_job(self, repository_id: str, job_id: str) -> dict[str, str | int]:
+        return self.indexing.pause_indexing_job(repository_id, job_id).model_dump()
+
+    def resume_indexing_job(self, repository_id: str, job_id: str) -> dict[str, str | int]:
+        return self.indexing.resume_indexing_job(repository_id, job_id).model_dump()
+
+    def cancel_indexing_job(self, repository_id: str, job_id: str) -> dict[str, str | int]:
+        return self.indexing.cancel_indexing_job(repository_id, job_id).model_dump()
 
     def get_index_status(self, repository_id: str) -> IndexStatusResponse:
         return self.indexing.get_index_status(repository_id)

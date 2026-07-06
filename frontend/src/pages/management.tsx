@@ -1,1 +1,1 @@
-export { DashboardPage, ImportPage, IndexingPage } from './management/index'
+export { ImportPage, IndexingPage, ProjectsPage } from './management/index'

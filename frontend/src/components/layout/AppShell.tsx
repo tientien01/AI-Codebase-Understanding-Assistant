@@ -103,16 +103,16 @@ export function TopBar({
           <div className={`status-pill ${isRepositoryUsable(repository) ? 'green' : ''}`}>{repository?.status ?? 'not indexed'}</div>
         </>
       ) : (
-        <div className="topbar-title">{mode === 'management' ? 'Project Management' : 'Workspace'}</div>
+        <div className="topbar-title">{mode === 'management' ? 'Projects' : 'Workspace'}</div>
       )}
       <label className="global-search-shell">
         <Icon name="search" />
-        <input className="global-search" placeholder={mode === 'workspace' ? 'Search anything...' : 'Search projects, repositories, files...'} />
+        <input className="global-search" placeholder={mode === 'workspace' ? 'Search anything...' : 'Search projects...'} />
         <kbd>Ctrl K</kbd>
       </label>
       {mode === 'management' ? (
         <>
-          {page !== 'dashboard' && <button className="secondary topbar-back" onClick={onBack}>Back to Projects</button>}
+          {page !== 'projects' && <button className="secondary topbar-back" onClick={onBack}>Back to Projects</button>}
           <button className="ghost-icon" aria-label="Help"><Icon name="help" /></button>
           <button className="ghost-icon" aria-label="Notifications"><Icon name="bell" /></button>
           <div className="avatar">JD<span /></div>
@@ -143,7 +143,7 @@ function Brand() {
 }
 
 function isManagementNavActive(page: Page, label: string) {
-  if (page === 'dashboard') return label === 'Projects'
+  if (page === 'projects') return label === 'Projects'
   if (page === 'indexing') return label === 'Index Jobs'
   if (page === 'settings') return label === 'Settings'
   if (page === 'import') return label === 'Projects'

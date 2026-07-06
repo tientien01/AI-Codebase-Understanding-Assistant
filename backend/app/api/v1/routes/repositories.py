@@ -21,6 +21,7 @@ from app.schemas.api import (
     ImportConfirmResponse,
     ImportPreviewResponse,
     ImportSessionCreateResponse,
+    IndexJobControlResponse,
     IndexJobListResponse,
     IndexWarningsResponse,
     IndexRequest,
@@ -71,6 +72,7 @@ def confirm_import_session(import_session_id: str, request: ImportConfirmRequest
         request.name,
         request.start_indexing,
         request.duplicate_action,
+        run_in_background=True,
     )
 
 
@@ -105,7 +107,7 @@ async def upload_folder_repository(
 
 @router.post("/{repository_id}/index", response_model=IndexResponse)
 def start_indexing(repository_id: str, request: IndexRequest | None = None) -> IndexResponse:
-    result = codebase_service.start_indexing(repository_id, request.force_reindex if request else False)
+    result = codebase_service.start_indexing_background(repository_id, request.force_reindex if request else False)
     return IndexResponse(**result)
 
 
@@ -117,6 +119,24 @@ def get_index_status(repository_id: str) -> IndexStatusResponse:
 @router.get("/{repository_id}/index/jobs", response_model=IndexJobListResponse)
 def list_indexing_jobs(repository_id: str) -> IndexJobListResponse:
     return codebase_service.list_indexing_jobs(repository_id)
+
+
+@router.post("/{repository_id}/index/jobs/{job_id}/pause", response_model=IndexJobControlResponse)
+def pause_indexing_job(repository_id: str, job_id: str) -> IndexJobControlResponse:
+    result = codebase_service.pause_indexing_job(repository_id, job_id)
+    return IndexJobControlResponse(**result)
+
+
+@router.post("/{repository_id}/index/jobs/{job_id}/resume", response_model=IndexJobControlResponse)
+def resume_indexing_job(repository_id: str, job_id: str) -> IndexJobControlResponse:
+    result = codebase_service.resume_indexing_job(repository_id, job_id)
+    return IndexJobControlResponse(**result)
+
+
+@router.post("/{repository_id}/index/jobs/{job_id}/cancel", response_model=IndexJobControlResponse)
+def cancel_indexing_job(repository_id: str, job_id: str) -> IndexJobControlResponse:
+    result = codebase_service.cancel_indexing_job(repository_id, job_id)
+    return IndexJobControlResponse(**result)
 
 
 @router.get("/{repository_id}/index/jobs/{job_id}/warnings", response_model=IndexWarningsResponse)

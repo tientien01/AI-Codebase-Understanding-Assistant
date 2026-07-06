@@ -1,5 +1,5 @@
 export type Page =
-  | 'dashboard'
+  | 'projects'
   | 'import'
   | 'indexing'
   | 'overview'
@@ -43,6 +43,8 @@ export type IndexStatus = {
   failed_files: number
   progress: number
   stats: Record<string, number>
+  started_at?: string
+  finished_at?: string
   logs: string[]
   warnings: string[]
   error_code?: string
@@ -179,6 +181,8 @@ export type IconName =
   | 'search'
   | 'chart'
   | 'code'
+  | 'braces'
+  | 'file'
   | 'grid'
   | 'list'
   | 'bell'
@@ -186,6 +190,7 @@ export type IconName =
   | 'plus'
   | 'more'
   | 'refresh'
+  | 'route'
   | 'pause'
   | 'warning'
   | 'check'

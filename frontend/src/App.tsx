@@ -14,7 +14,7 @@ function App() {
           repository={controller.selectedRepository}
           status={controller.indexStatus}
           onNavigate={controller.setPage}
-          onBack={() => controller.setPage('dashboard')}
+          onBack={() => controller.setPage('projects')}
           onReindex={() => controller.selectedRepository && controller.reindexRepository(controller.selectedRepository.id)}
         />
       ) : (
@@ -33,7 +33,7 @@ function App() {
           repository={controller.selectedRepository}
           status={controller.indexStatus}
           onNewProject={() => controller.setPage('import')}
-          onBack={() => controller.setPage('dashboard')}
+          onBack={() => controller.setPage('projects')}
         />
         {controller.apiError && <div className="error-banner">{controller.apiError}</div>}
         <section className="content">

@@ -119,6 +119,13 @@ class IndexResponse(BaseModel):
     index_version: int = 0
 
 
+class IndexJobControlResponse(BaseModel):
+    indexing_job_id: str
+    repository_id: str
+    status: str
+    index_version: int = 0
+
+
 class IndexStatusResponse(BaseModel):
     repository_id: str
     job_id: str | None = None

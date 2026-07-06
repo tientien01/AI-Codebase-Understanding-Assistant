@@ -20,7 +20,7 @@ import { useImportController } from './useImportController'
 const workspacePages: Page[] = ['overview', 'code', 'graph', 'api', 'assistant', 'impact', 'search', 'evidence', 'evaluation']
 
 export function useAppController() {
-  const [page, setPage] = useState<Page>('dashboard')
+  const [page, setPage] = useState<Page>('projects')
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [selectedRepositoryId, setSelectedRepositoryId] = useState('')
   const [overview, setOverview] = useState<Overview | null>(null)
@@ -150,6 +150,22 @@ export function useAppController() {
     setPage('indexing')
   }
 
+  async function pauseIndexingJob(repositoryId: string, jobId: string) {
+    await request(`${API_V1}/repositories/${repositoryId}/index/jobs/${jobId}/pause`, { method: 'POST' })
+    await loadIndexStatus(repositoryId)
+  }
+
+  async function resumeIndexingJob(repositoryId: string, jobId: string) {
+    await request(`${API_V1}/repositories/${repositoryId}/index/jobs/${jobId}/resume`, { method: 'POST' })
+    await loadIndexStatus(repositoryId)
+  }
+
+  async function cancelIndexingJob(repositoryId: string, jobId: string) {
+    await request(`${API_V1}/repositories/${repositoryId}/index/jobs/${jobId}/cancel`, { method: 'POST' })
+    await loadRepositories()
+    await loadIndexStatus(repositoryId)
+  }
+
   async function deleteRepository(repositoryId: string) {
     const repository = repositories.find((item) => item.id === repositoryId)
     const label = repository?.name ?? repositoryId
@@ -164,7 +180,7 @@ export function useAppController() {
       setSelectedFilePath('')
       setFileContent(null)
       setSelectedEvidence(null)
-      setPage('dashboard')
+      setPage('projects')
     }
     await loadRepositories()
   }
@@ -251,6 +267,9 @@ export function useAppController() {
     setSearchQuery,
     openWorkspace,
     reindexRepository,
+    pauseIndexingJob,
+    resumeIndexingJob,
+    cancelIndexingJob,
     deleteRepository,
     loadFileContent,
     sendChatMessage,

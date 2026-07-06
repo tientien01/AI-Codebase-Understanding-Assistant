@@ -247,6 +247,7 @@ class ImportSessionService:
         name: str | None,
         start_indexing: bool,
         duplicate_action: str = "import_as_new",
+        run_in_background: bool = False,
     ) -> ImportConfirmResponse:
         session = self._get_import_session(import_session_id)
         if duplicate_action == "cancel":
@@ -283,7 +284,10 @@ class ImportSessionService:
 
         indexing_job_id = None
         if start_indexing:
-            result = self.indexing.start_indexing(repository.id, force_reindex=True)
+            if run_in_background:
+                result = self.indexing.start_indexing_background(repository.id, force_reindex=True)
+            else:
+                result = self.indexing.start_indexing(repository.id, force_reindex=True)
             indexing_job_id = result.indexing_job_id
         return ImportConfirmResponse(
             repository_id=repository.id,

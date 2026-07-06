@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from inspect import signature
+from threading import Event, Lock, Thread
 from uuid import uuid4
 
 from app.core.errors import DomainError
@@ -15,6 +17,30 @@ from app.services.repositories.repository_service import RepositoryService
 from app.services.repositories.repository_store import RepositoryStore
 from app.services.scanning.scanner_service import ScannerService
 from app.services.text_utils import utc_now
+
+
+class IndexingCancelled(Exception):
+    pass
+
+
+class IndexingJobControl:
+    def __init__(self) -> None:
+        self.pause_requested = Event()
+        self.resume_requested = Event()
+        self.cancel_requested = Event()
+        self.resume_requested.set()
+
+    def pause(self) -> None:
+        self.pause_requested.set()
+        self.resume_requested.clear()
+
+    def resume(self) -> None:
+        self.pause_requested.clear()
+        self.resume_requested.set()
+
+    def cancel(self) -> None:
+        self.cancel_requested.set()
+        self.resume_requested.set()
 
 
 class IndexingService:
@@ -35,11 +61,64 @@ class IndexingService:
         self.parser = parser
         self.chunking = chunking
         self.graph = graph
+        self._controls: dict[str, IndexingJobControl] = {}
+        self._controls_lock = Lock()
 
     def start_indexing(self, repository_id: str, force_reindex: bool = False) -> IndexResponse:
+        repository, job, control, previous_status = self._prepare_indexing_job(repository_id)
+        self._execute_indexing(repository, job, control, previous_status)
+        return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
+
+    def start_indexing_background(self, repository_id: str, force_reindex: bool = False) -> IndexResponse:
+        repository, job, control, previous_status = self._prepare_indexing_job(repository_id)
+        Thread(
+            target=self._execute_indexing,
+            args=(repository, job, control, previous_status, False),
+            daemon=True,
+        ).start()
+        return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
+
+    def pause_indexing_job(self, repository_id: str, job_id: str) -> IndexResponse:
+        repository = self.repositories.get_repository(repository_id)
+        job = self._get_controllable_job(repository.id, job_id)
+        if job.status != "running":
+            raise DomainError("INDEXING_JOB_NOT_RUNNING", "Only a running indexing job can be paused.", 409, {"job_id": job_id})
+        control = self._control_for_job(job_id)
+        control.pause()
+        job.status = "paused"
+        job.logs.append(f"{utc_now()} paused")
+        self.store.save_indexing_job(job)
+        return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
+
+    def resume_indexing_job(self, repository_id: str, job_id: str) -> IndexResponse:
+        repository = self.repositories.get_repository(repository_id)
+        job = self._get_controllable_job(repository.id, job_id)
+        if job.status != "paused":
+            raise DomainError("INDEXING_JOB_NOT_PAUSED", "Only a paused indexing job can be resumed.", 409, {"job_id": job_id})
+        control = self._control_for_job(job_id)
+        control.resume()
+        job.status = "running"
+        job.logs.append(f"{utc_now()} resumed")
+        self.store.save_indexing_job(job)
+        return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
+
+    def cancel_indexing_job(self, repository_id: str, job_id: str) -> IndexResponse:
+        repository = self.repositories.get_repository(repository_id)
+        job = self._get_controllable_job(repository.id, job_id)
+        if job.status not in {"running", "paused"}:
+            raise DomainError("INDEXING_JOB_NOT_RUNNING", "Only a running or paused indexing job can be cancelled.", 409, {"job_id": job_id})
+        control = self._control_for_job(job_id)
+        control.cancel()
+        job.status = "cancelling"
+        job.logs.append(f"{utc_now()} cancelling")
+        self.store.save_indexing_job(job)
+        return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
+
+    def _prepare_indexing_job(self, repository_id: str) -> tuple[RepositoryState, IndexingJobRecord, IndexingJobControl, str]:
         repository = self.repositories.get_repository(repository_id)
         if repository.status == "indexing":
             raise DomainError("INDEXING_ALREADY_RUNNING", "Repository indexing is already running.", 409)
+        previous_status = repository.status
         job = IndexingJobRecord(
             id=f"job_{uuid4().hex[:10]}",
             repository_id=repository.id,
@@ -47,12 +126,46 @@ class IndexingService:
             index_version=repository.current_index_version + 1,
             started_at=utc_now(),
         )
+        repository.status = "indexing"
+        repository.current_step = "queued"
+        repository.started_at = job.started_at
+        repository.finished_at = None
+        repository.logs = [f"{job.started_at} queued"]
         self.store.save_indexing_job(job)
+        self.repositories.persist_repository(repository)
+        control = IndexingJobControl()
+        with self._controls_lock:
+            self._controls[job.id] = control
+        return repository, job, control, previous_status
+
+    def _execute_indexing(
+        self,
+        repository: RepositoryState,
+        job: IndexingJobRecord,
+        control: IndexingJobControl,
+        previous_status: str,
+        raise_errors: bool = True,
+    ) -> None:
         working_repository = deepcopy(repository)
         try:
-            self._index_repository(working_repository, job)
+            self._index_repository(working_repository, job, control)
+        except IndexingCancelled:
+            if previous_status in {"indexed", "indexed_with_warnings"}:
+                repository.status = previous_status
+                repository.current_step = "cancelled_previous_index_retained"
+                repository.warnings = [*repository.warnings, "Latest indexing job was cancelled; previous index was retained."]
+            else:
+                repository.status = "created"
+                repository.current_step = "cancelled"
+            repository.finished_at = utc_now()
+            job.status = "cancelled"
+            job.current_step = "cancelled"
+            job.finished_at = repository.finished_at
+            job.logs.append(f"{repository.finished_at} cancelled")
+            self.store.save_indexing_job(job)
+            self.repositories.persist_repository(repository)
         except Exception as exc:
-            if repository.status not in {"indexed", "indexed_with_warnings"}:
+            if previous_status not in {"indexed", "indexed_with_warnings"}:
                 repository.status = "failed"
                 repository.current_step = job.current_step
                 repository.failed_files = job.failed_files
@@ -60,6 +173,7 @@ class IndexingService:
                 repository.logs = job.logs
                 repository.finished_at = utc_now()
             else:
+                repository.status = previous_status
                 repository.current_step = "index_failed_previous_index_retained"
                 repository.warnings = [*repository.warnings, "Latest indexing job failed; previous index was retained."]
             job.status = "failed"
@@ -68,12 +182,16 @@ class IndexingService:
             job.finished_at = utc_now()
             self.store.save_indexing_job(job)
             self.repositories.persist_repository(repository)
-            raise
-        self.repositories.replace_repository_index(repository, working_repository)
-        self.repositories.persist_repository(repository)
-        self.store.mark_stale_evidence(repository.id, repository.current_index_version)
-        self.evidence.clear_repository(repository.id)
-        return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
+            if raise_errors:
+                raise
+        else:
+            self.repositories.replace_repository_index(repository, working_repository)
+            self.repositories.persist_repository(repository)
+            self.store.mark_stale_evidence(repository.id, repository.current_index_version)
+            self.evidence.clear_repository(repository.id)
+        finally:
+            with self._controls_lock:
+                self._controls.pop(job.id, None)
 
     def get_index_status(self, repository_id: str) -> IndexStatusResponse:
         repository = self.repositories.get_repository(repository_id)
@@ -143,7 +261,7 @@ class IndexingService:
             recommended_action="reindex" if is_stale else None,
         )
 
-    def _index_repository(self, repository: RepositoryState, job: IndexingJobRecord) -> None:
+    def _index_repository(self, repository: RepositoryState, job: IndexingJobRecord, control: IndexingJobControl) -> None:
         repository.status = "indexing"
         repository.started_at = job.started_at or utc_now()
         repository.logs = []
@@ -160,6 +278,7 @@ class IndexingService:
             "finalize",
         ]
         for step in steps:
+            self._check_control(repository, job, control)
             repository.current_step = step
             job.current_step = step
             log_line = f"{utc_now()} {step}"
@@ -182,8 +301,16 @@ class IndexingService:
                 if not repository.files:
                     raise DomainError("NO_INDEXABLE_FILES", "Repository contains no indexable files.", 400)
             elif step == "parse_source_code":
-                self.parser.parse_files(repository)
-                job.processed_files = len(repository.files)
+                def after_file() -> None:
+                    job.processed_files += 1
+                    self._check_control(repository, job, control)
+                    self.store.save_indexing_job(job)
+
+                if "before_file" in signature(self.parser.parse_files).parameters:
+                    self.parser.parse_files(repository, before_file=lambda: self._check_control(repository, job, control), after_file=after_file)
+                else:
+                    self.parser.parse_files(repository)
+                    job.processed_files = len(repository.files)
                 job.failed_files = repository.failed_files
                 job.warnings = list(repository.warnings)
                 job.failed_file_records = list(repository.failed_file_records)
@@ -221,3 +348,31 @@ class IndexingService:
         repository.chunks = []
         repository.graph_nodes = []
         repository.graph_edges = []
+
+    def _check_control(self, repository: RepositoryState, job: IndexingJobRecord, control: IndexingJobControl) -> None:
+        if control.cancel_requested.is_set():
+            raise IndexingCancelled()
+        if not control.pause_requested.is_set():
+            return
+        job.status = "paused"
+        repository.current_step = job.current_step
+        self.store.save_indexing_job(job)
+        control.resume_requested.wait()
+        if control.cancel_requested.is_set():
+            raise IndexingCancelled()
+        job.status = "running"
+        self.store.save_indexing_job(job)
+
+    def _get_controllable_job(self, repository_id: str, job_id: str) -> IndexingJobRecord:
+        job = self.store.get_indexing_job(repository_id, job_id)
+        if job is None:
+            raise DomainError("INDEXING_JOB_NOT_FOUND", "Indexing job not found.", 404, {"job_id": job_id})
+        self._control_for_job(job_id)
+        return job
+
+    def _control_for_job(self, job_id: str) -> IndexingJobControl:
+        with self._controls_lock:
+            control = self._controls.get(job_id)
+        if control is None:
+            raise DomainError("INDEXING_JOB_NOT_CONTROLLABLE", "This indexing job is no longer running.", 409, {"job_id": job_id})
+        return control

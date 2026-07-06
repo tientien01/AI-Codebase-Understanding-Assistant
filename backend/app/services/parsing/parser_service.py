@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from app.services.chunking_service import ChunkingService
 from app.services.index_models import RepositoryState
 from app.services.language_registry import LANGUAGE_DEFINITIONS, SOURCE_LANGUAGES
@@ -17,8 +19,10 @@ class ParserService:
         self.fallback_parser = SourceFallbackParser(self.chunking)
         self.parsers = self._build_parser_registry()
 
-    def parse_files(self, repository: RepositoryState) -> None:
+    def parse_files(self, repository: RepositoryState, before_file: Callable[[], None] | None = None, after_file: Callable[[], None] | None = None) -> None:
         for file_record in repository.files:
+            if before_file:
+                before_file()
             try:
                 text = read_text(file_record.absolute_path)
             except OSError:
@@ -34,6 +38,8 @@ class ParserService:
                         "line": None,
                     }
                 )
+                if after_file:
+                    after_file()
                 continue
 
             parser = self.parsers.get(file_record.language, self.fallback_parser)
@@ -41,6 +47,8 @@ class ParserService:
             parser.parse(repository, file_record, text)
             if file_record.language in SOURCE_LANGUAGES and len(repository.chunks) == before_chunks:
                 self.fallback_parser.parse(repository, file_record, text)
+            if after_file:
+                after_file()
 
     def _build_parser_registry(self) -> dict[str, LanguageParser]:
         definitions = {definition.language: definition for definition in LANGUAGE_DEFINITIONS}
@@ -63,4 +71,3 @@ class ParserService:
                 continue
             parsers[definition.language] = TreeSitterLanguageParser(definition)
         return parsers
-

@@ -1,10 +1,7 @@
 import type { IconName, Page } from '../types/api'
 
 export const managementNav: { page: Page; label: string; icon: IconName }[] = [
-  { page: 'dashboard', label: 'Dashboard', icon: 'home' },
-  { page: 'dashboard', label: 'Projects', icon: 'folder' },
-  { page: 'dashboard', label: 'Recent', icon: 'clock' },
-  { page: 'dashboard', label: 'Favorites', icon: 'star' },
+  { page: 'projects', label: 'Projects', icon: 'folder' },
   { page: 'indexing', label: 'Index Jobs', icon: 'layers' },
   { page: 'settings', label: 'Settings', icon: 'settings' },
 ]
@@ -22,15 +19,12 @@ export const workspaceNav: { page: Page; label: string; icon: IconName }[] = [
 ]
 
 export const pipelineSteps = [
-  'Scan repository files',
-  'Apply ignore rules',
-  'Parse Python AST',
-  'Parse JavaScript / TypeScript',
-  'Detect FastAPI endpoints',
-  'Build code graph',
-  'Chunk source code',
-  'Generate embeddings',
-  'Store vector index',
-  'Validate citations',
-  'Post-process and finalize',
+  'Prepare source',
+  'Scan and filter files',
+  'Analyze languages',
+  'Extract code structure',
+  'Create searchable chunks',
+  'Build relationship graph',
+  'Save index',
+  'Finalize',
 ]

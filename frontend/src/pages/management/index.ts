@@ -1,3 +1,3 @@
-export { DashboardPage } from './DashboardPage'
+export { ProjectsPage } from './ProjectsPage'
 export { ImportPage } from './ImportPage'
 export { IndexingPage } from './IndexingPage'

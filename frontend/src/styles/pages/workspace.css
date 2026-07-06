@@ -1,0 +1,373 @@
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.architecture-map {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 8px 0 18px;
+}
+
+.architecture-map span {
+  min-width: 180px;
+  border: 1px solid #375bd6;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #13255a;
+  color: #dce7ff;
+  text-align: center;
+}
+
+.stack-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stack-row span {
+  border: 1px solid #2b3b55;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #101827;
+}
+
+.question-row,
+.list-row,
+.result-card {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid #2a384f;
+  border-radius: 10px;
+  padding: 12px;
+  background: #101827;
+  color: #dce7ff;
+  text-align: left;
+}
+
+.list-row p,
+.result-card p {
+  margin: 5px 0;
+  color: #9ba8ba;
+}
+
+.list-row span {
+  color: #9fb6ff;
+}
+
+.code-explorer-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+  gap: 18px;
+}
+
+.panel-search {
+  margin-bottom: 12px;
+}
+
+.file-tree {
+  max-height: 640px;
+  overflow: auto;
+}
+
+.file-tree button,
+.tree-folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding-block: 8px;
+  background: transparent;
+  color: #cbd6e5;
+  text-align: left;
+}
+
+.file-tree button:hover,
+.file-tree button.active {
+  background: #182760;
+  color: #fff;
+}
+
+.file-tree span {
+  min-width: 34px;
+  color: #8da1bf;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.code-block {
+  overflow: auto;
+  min-height: 560px;
+  max-height: 660px;
+  margin: 0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #070c15;
+  color: #dce7ff;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.code-block.compact {
+  min-height: 360px;
+}
+
+.graph-toolbar {
+  margin-bottom: 16px;
+}
+
+.graph-workspace,
+.api-layout,
+.impact-grid,
+.evidence-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 18px;
+}
+
+.graph-canvas {
+  position: relative;
+  min-height: 620px;
+  overflow: hidden;
+  border-radius: 14px;
+  background-image: radial-gradient(#26354c 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.graph-node {
+  position: absolute;
+  min-width: 150px;
+  border: 1px solid #536cff;
+  border-radius: 12px;
+  padding: 12px;
+  background: #111f4e;
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+}
+
+.graph-node span {
+  display: block;
+  margin-top: 4px;
+  color: #a5b1c3;
+  font-size: 12px;
+}
+
+.graph-node em {
+  display: inline-block;
+  margin-top: 8px;
+  color: #dbeafe;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.graph-node.active,
+.graph-node:hover {
+  border-color: #f8fafc;
+}
+
+.coverage-mapped {
+  border-color: #94a3b8;
+  background: #1e293b;
+}
+
+.coverage-analyzing {
+  border-color: #38bdf8;
+  background: #0c4a6e;
+}
+
+.coverage-skipped {
+  border-color: #64748b;
+  background: #334155;
+  opacity: 0.7;
+}
+
+.coverage-failed {
+  border-color: #f87171;
+  background: #7f1d1d;
+}
+
+.type-function,
+.type-class,
+.type-component {
+  border-color: #1cbf8c;
+  background: #0d302d;
+}
+
+.type-endpoint {
+  border-color: #536cff;
+  background: #122154;
+}
+
+.api-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.api-table th,
+.api-table td {
+  border-bottom: 1px solid #26344b;
+  padding: 12px;
+  color: #cbd6e5;
+  text-align: left;
+}
+
+.method {
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.method.get {
+  background: #0d3a24;
+  color: #77eaa0;
+}
+
+.method.post {
+  background: #142963;
+  color: #9fb6ff;
+}
+
+.method.put,
+.method.patch {
+  background: #4d3414;
+  color: #f5bf62;
+}
+
+.method.delete {
+  background: #451a1d;
+  color: #ff8e8e;
+}
+
+.assistant-chat {
+  display: grid;
+  gap: 14px;
+}
+
+.assistant-chat.full .chat-feed {
+  min-height: 540px;
+}
+
+.chat-feed {
+  display: grid;
+  gap: 12px;
+  max-height: 640px;
+  overflow: auto;
+}
+
+.chat-message {
+  border: 1px solid #26344b;
+  border-radius: 14px;
+  padding: 14px;
+  background: #101827;
+}
+
+.chat-message.user {
+  margin-left: 42px;
+  background: #17245a;
+}
+
+.chat-message strong {
+  color: #f3f7ff;
+}
+
+.chat-message p {
+  margin: 8px 0;
+}
+
+.citation-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.citation-list button {
+  border: 1px solid #2a384f;
+  border-radius: 9px;
+  padding: 8px;
+  background: #080f1c;
+  color: #b7c8ff;
+  text-align: left;
+}
+
+.chat-form {
+  display: flex;
+  gap: 10px;
+}
+
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.result-card {
+  position: relative;
+}
+
+.result-card em {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border-radius: 8px;
+  padding: 5px 10px;
+  background: #103821;
+  color: #75e99c;
+  font-style: normal;
+}
+
+.evaluation-grid,
+.settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.impact-columns {
+  display: grid;
+  gap: 10px;
+}
+
+.developing-inline {
+  display: grid;
+  gap: 10px;
+  border: 1px dashed #4d3d1b;
+  border-radius: 12px;
+  padding: 14px;
+  background: #19140d;
+}
+
+.developing-inline span {
+  width: max-content;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #4d3414;
+  color: #f5bf62;
+  font-weight: 700;
+}
+
+.checklist {
+  display: grid;
+  gap: 12px;
+}
+
+.checklist div {
+  display: flex;
+  gap: 10px;
+  color: #a8b4c8;
+}
+
+.checklist div.done {
+  color: #75e99c;
+}
+
+.checklist span {
+  width: 48px;
+  color: inherit;
+  font-size: 12px;
+}

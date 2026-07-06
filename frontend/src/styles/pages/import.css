@@ -1,0 +1,114 @@
+.wizard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.wizard-step {
+  border-radius: 12px;
+}
+
+.wizard-step span {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: #1f2d44;
+}
+
+.import-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  gap: 22px;
+}
+
+.form-sections,
+.settings-grid,
+.evaluation-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.source-card,
+.profile-card {
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+}
+
+.source-card.active,
+.profile-card.active {
+  border-color: #536cff;
+  background: #162456;
+}
+
+.source-card strong,
+.source-card span,
+.profile-card strong,
+.profile-card span {
+  display: block;
+}
+
+.source-card span,
+.profile-card p {
+  color: #9ba8ba;
+}
+
+.form-grid,
+.configure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.advanced-settings {
+  margin-top: 16px;
+  border: 1px solid #2a384f;
+  border-radius: 12px;
+  padding: 12px;
+  background: #101827;
+}
+
+.preview-column {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.language-bar {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0;
+}
+
+.footer-actions {
+  justify-content: flex-end;
+}
+
+.import-tile {
+  display: grid;
+  min-height: 130px;
+  place-items: center;
+  border-style: dashed;
+  color: #dce7ff;
+}
+
+.import-tile span {
+  color: #9ba8ba;
+}
