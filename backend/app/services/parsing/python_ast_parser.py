@@ -8,13 +8,21 @@ from app.services.index_models import EndpointRecord, FileRecord, RepositoryStat
 from app.services.parsing.base import LanguageParser
 from app.services.text_utils import node_id
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
+from app.services.code_analysis.pipeline import CodeAnalysisPipeline
 
 
 class PythonAstParser(LanguageParser):
     def __init__(self, chunking: ChunkingService) -> None:
         self.chunking = chunking
+        self.code_analysis = CodeAnalysisPipeline(chunking)
 
     def parse(self, repository: RepositoryState, file_record: FileRecord, text: str) -> None:
+        try:
+            if self.code_analysis.parse_python(repository, file_record, text):
+                return
+        except Exception as exc:
+            repository.warnings.append(f"Python code analysis fallback: {file_record.path}: {exc}")
+
         try:
             tree = ast.parse(text)
         except SyntaxError as exc:
@@ -169,4 +177,3 @@ class PythonAstParser(LanguageParser):
             prefix = "async def" if isinstance(node, ast.AsyncFunctionDef) else "def"
             return f"{prefix} {node.name}({', '.join(args)})"
         return ""
-

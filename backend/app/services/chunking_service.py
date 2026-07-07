@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from uuid import uuid4
-
 from app.services.index_models import ChunkRecord, RepositoryState
+from app.services.code_analysis.stable_ids import stable_chunk_id
 from app.services.text_utils import content_hash
 
 
@@ -20,16 +19,18 @@ class ChunkingService:
         normalized = content.strip()
         if not normalized:
             return
+        digest = content_hash(f"{file_path}:{start_line}:{end_line}:{normalized}")
+        anchor_key = symbol_name or f"{start_line}:{end_line}"
         repository.chunks.append(
             ChunkRecord(
-                id=f"chunk_{uuid4().hex[:10]}",
+                id=stable_chunk_id(repository.id, file_path, chunk_type, anchor_key, digest),
                 file_path=file_path,
                 chunk_type=chunk_type,
                 content=normalized,
                 start_line=start_line,
                 end_line=end_line,
                 symbol_name=symbol_name,
-                content_hash=content_hash(f"{file_path}:{start_line}:{end_line}:{normalized}"),
+                content_hash=digest,
             )
         )
 
