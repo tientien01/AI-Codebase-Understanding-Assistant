@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
+from app.schemas.api import GraphEdgeDTO, GraphNodeDTO, ImportPreviewResponse
 
 
 @dataclass
@@ -43,6 +43,8 @@ class ImportSessionRecord:
     confirmed_repository_id: str | None = None
     skipped_file_records: list[dict[str, str | None]] = field(default_factory=list)
     security_warning_records: list[dict[str, str]] = field(default_factory=list)
+    preview_response: ImportPreviewResponse | None = None
+    preview_project_fingerprint: str | None = None
 
 
 @dataclass

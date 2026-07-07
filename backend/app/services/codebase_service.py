@@ -122,6 +122,9 @@ class CodebaseService:
     ) -> ImportSessionCreateResponse:
         return await self.ingestion.create_folder_import_session(files, relative_paths, name)
 
+    def create_github_import_session(self, url: str, name: str | None, branch: str | None = None) -> ImportSessionCreateResponse:
+        return self.ingestion.create_github_import_session(url, name, branch)
+
     def get_import_preview(self, import_session_id: str) -> ImportPreviewResponse:
         return self.ingestion.get_import_preview(import_session_id)
 

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import hashlib
+import math
 import shutil
+import subprocess
 import zipfile
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import UploadFile
@@ -19,13 +23,13 @@ from app.schemas.api import (
     ImportSessionCreateResponse,
     RepositoryCreateResponse,
 )
-from app.services.index_models import ImportSessionRecord, RepositoryState
+from app.services.index_models import FileRecord, ImportSessionRecord, RepositoryState
 from app.services.indexing.indexing_service import IndexingService
 from app.services.ingestion.archive_service import ArchiveService
 from app.services.ingestion.streaming_upload_service import StreamingUploadService
 from app.services.ingestion.upload_service import UploadService
 from app.services.repositories.repository_service import RepositoryService
-from app.services.scanning.scanner_service import ScannerService
+from app.services.scanning.scanner_service import ScanResult, ScannerService
 from app.services.text_utils import utc_now
 
 
@@ -110,7 +114,7 @@ class ImportSessionService:
             security_warning_records=security_records,
         )
         self.import_sessions[session.id] = session
-        return ImportSessionCreateResponse(import_session_id=session.id, status="created", source_type=session.source_type)
+        return ImportSessionCreateResponse(import_session_id=session.id, status=session.status, source_type=session.source_type)
 
     async def create_folder_import_session(
         self,
@@ -176,10 +180,47 @@ class ImportSessionService:
             security_warning_records=security_records,
         )
         self.import_sessions[session.id] = session
-        return ImportSessionCreateResponse(import_session_id=session.id, status="created", source_type=session.source_type)
+        return ImportSessionCreateResponse(import_session_id=session.id, status=session.status, source_type=session.source_type)
+
+    def create_github_import_session(self, url: str, name: str | None, branch: str | None = None) -> ImportSessionCreateResponse:
+        clone_url, source_label, suggested_name = self._validate_github_url(url)
+        session_id = f"import_{uuid4().hex[:10]}"
+        session_root = settings.upload_storage_dir / "import_sessions" / session_id
+        source_dir = session_root / "source"
+        session_root.mkdir(parents=True, exist_ok=True)
+        try:
+            self._clone_github_repository(clone_url, source_dir, branch)
+        except FileNotFoundError as exc:
+            raise DomainError("GIT_NOT_AVAILABLE", "Git executable is not available on this machine.", 500) from exc
+        except subprocess.TimeoutExpired as exc:
+            raise DomainError("GITHUB_IMPORT_TIMEOUT", "GitHub import timed out before preview could be prepared.", 504) from exc
+        except subprocess.CalledProcessError as exc:
+            raise DomainError("GITHUB_IMPORT_FAILED", "Could not clone the GitHub repository for preview.", 400) from exc
+
+        git_dir = source_dir / ".git"
+        if git_dir.exists():
+            shutil.rmtree(git_dir)
+
+        session = ImportSessionRecord(
+            id=session_id,
+            name=name or suggested_name,
+            source_type="github_url",
+            source_uri=clone_url,
+            source_label=source_label,
+            source_path=source_dir,
+            status="preview_ready",
+            created_at=utc_now(),
+        )
+        self.import_sessions[session.id] = session
+        return ImportSessionCreateResponse(import_session_id=session.id, status=session.status, source_type=session.source_type)
 
     def get_import_preview(self, import_session_id: str) -> ImportPreviewResponse:
         session = self._get_import_session(import_session_id)
+        if session.preview_response is not None:
+            return session.preview_response.model_copy(
+                update={"possible_duplicates": self._possible_import_duplicates(session)}
+            )
+
         preview_repository = RepositoryState(
             id=session.id,
             name=session.name,
@@ -191,8 +232,7 @@ class ImportSessionService:
         )
         scan_result = self.scanner.scan_files_with_diagnostics(preview_repository)
         preview_repository.files = scan_result.files
-        repository_size = sum(path.stat().st_size for path in session.source_path.rglob("*") if path.is_file())
-        file_statistics = self._import_file_statistics(preview_repository)
+        file_statistics = self._import_file_statistics(preview_repository, scan_result)
         file_statistics.total_files += len(session.skipped_file_records)
         file_statistics.skipped_files += len(session.skipped_file_records)
         skipped_records = [
@@ -206,14 +246,15 @@ class ImportSessionService:
                 for skipped in scan_result.skipped_files
             ],
         ]
-        return ImportPreviewResponse(
+        session.preview_project_fingerprint = self._project_fingerprint(scan_result.files)
+        preview_response = ImportPreviewResponse(
             import_session_id=session.id,
             status=session.status,
             project_summary=ImportProjectSummaryDTO(
                 suggested_name=session.name,
                 source_type=session.source_type,
-                repository_size_bytes=repository_size,
-                estimated_index_time_seconds=max(1, file_statistics.supported_files // 25),
+                repository_size_bytes=scan_result.total_size_bytes,
+                estimated_index_time_seconds=self._estimate_index_time_seconds(scan_result, file_statistics),
             ),
             detected_stack=self.repositories.detect_stack(preview_repository),
             file_statistics=file_statistics,
@@ -240,6 +281,8 @@ class ImportSessionService:
             indexing_plan=["scan_files", "parse_symbols", "create_chunks", "build_graph", "validate_citations"],
             possible_duplicates=self._possible_import_duplicates(session),
         )
+        session.preview_response = preview_response
+        return preview_response
 
     def confirm_import_session(
         self,
@@ -313,15 +356,12 @@ class ImportSessionService:
             raise DomainError("IMPORT_SESSION_NOT_AVAILABLE", "Import session is not available.", 409, {"import_session_id": import_session_id})
         return session
 
-    def _import_file_statistics(self, repository: RepositoryState) -> ImportFileStatisticsDTO:
-        total_files = sum(1 for path in repository.source_path.rglob("*") if path.is_file())
-        language_files: dict[str, int] = {}
-        for file in repository.files:
-            language_files[file.language] = language_files.get(file.language, 0) + 1
+    def _import_file_statistics(self, repository: RepositoryState, scan_result: ScanResult) -> ImportFileStatisticsDTO:
+        language_files = scan_result.language_files or {}
         return ImportFileStatisticsDTO(
-            total_files=total_files,
+            total_files=scan_result.total_files,
             supported_files=len(repository.files),
-            skipped_files=max(0, total_files - len(repository.files)),
+            skipped_files=max(0, scan_result.total_files - len(repository.files)),
             language_files=language_files,
             python_files=len([file for file in repository.files if file.language == "python"]),
             javascript_files=len([file for file in repository.files if file.language == "javascript"]),
@@ -360,7 +400,16 @@ class ImportSessionService:
         session_label = (session.source_label or "").lower()
         duplicates = []
         for repository in self.repositories.repositories.values():
-            if repository.name.lower() == session_name:
+            repository_fingerprint = self._project_fingerprint(repository.files)
+            if session.preview_project_fingerprint and repository_fingerprint == session.preview_project_fingerprint:
+                duplicates.append(
+                    ImportDuplicateCandidateDTO(
+                        repository_id=repository.id,
+                        name=repository.name,
+                        match_reason="same_fingerprint",
+                    )
+                )
+            elif repository.name.lower() == session_name:
                 duplicates.append(
                     ImportDuplicateCandidateDTO(
                         repository_id=repository.id,
@@ -377,3 +426,49 @@ class ImportSessionService:
                     )
                 )
         return duplicates[:5]
+
+    def _estimate_index_time_seconds(self, scan_result: ScanResult, file_statistics: ImportFileStatisticsDTO) -> int:
+        file_cost = file_statistics.supported_files * 0.03
+        size_cost = (scan_result.supported_size_bytes / 1_000_000) * 0.15
+        parser_cost = (
+            file_statistics.python_files * 0.02
+            + file_statistics.typescript_files * 0.04
+            + file_statistics.javascript_files * 0.03
+            + file_statistics.markdown_files * 0.01
+        )
+        return max(1, math.ceil(file_cost + size_cost + parser_cost))
+
+    def _project_fingerprint(self, files: list[FileRecord]) -> str | None:
+        if not files:
+            return None
+        digest = hashlib.sha256()
+        for file in sorted(files, key=lambda item: item.path):
+            digest.update(file.path.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(str(file.size_bytes).encode("ascii"))
+            digest.update(b"\0")
+            digest.update(file.content_hash.encode("ascii"))
+            digest.update(b"\n")
+        return digest.hexdigest()
+
+    def _validate_github_url(self, raw_url: str) -> tuple[str, str, str]:
+        parsed = urlparse(raw_url.strip())
+        host = parsed.netloc.lower()
+        if parsed.scheme != "https" or host not in {"github.com", "www.github.com"}:
+            raise DomainError("INVALID_GITHUB_URL", "Only public HTTPS GitHub repository URLs are supported.", 400)
+        parts = [part for part in parsed.path.strip("/").split("/") if part]
+        if len(parts) < 2:
+            raise DomainError("INVALID_GITHUB_URL", "GitHub URL must include owner and repository name.", 400)
+        owner = parts[0]
+        repository = parts[1].removesuffix(".git")
+        if not owner or not repository or any(part in {".", ".."} for part in (owner, repository)):
+            raise DomainError("INVALID_GITHUB_URL", "GitHub URL contains an invalid owner or repository name.", 400)
+        source_label = f"{owner}/{repository}"
+        return f"https://github.com/{source_label}.git", source_label, repository
+
+    def _clone_github_repository(self, clone_url: str, source_dir: Path, branch: str | None = None) -> None:
+        command = ["git", "clone", "--depth", "1"]
+        if branch:
+            command.extend(["--branch", branch])
+        command.extend([clone_url, str(source_dir)])
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=120)

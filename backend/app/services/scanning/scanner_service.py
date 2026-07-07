@@ -27,6 +27,10 @@ class ScanResult:
     files: list[FileRecord]
     skipped_files: list[SkippedFile]
     security_warnings: list[SecurityWarning]
+    total_files: int = 0
+    total_size_bytes: int = 0
+    supported_size_bytes: int = 0
+    language_files: dict[str, int] | None = None
 
 
 class ScannerService:
@@ -40,12 +44,25 @@ class ScannerService:
         files: list[FileRecord] = []
         skipped_files: list[SkippedFile] = []
         security_warnings: list[SecurityWarning] = []
+        language_files: dict[str, int] = {}
+        total_files = 0
+        total_size_bytes = 0
+        supported_size_bytes = 0
         max_size = self.max_file_size_mb * 1024 * 1024
         for path in repository.source_path.rglob("*"):
             if not path.is_file():
                 continue
+            total_files += 1
             relative_parts = path.relative_to(repository.source_path).parts
             relative_path = path.relative_to(repository.source_path).as_posix()
+            try:
+                size = path.stat().st_size
+            except OSError:
+                repository.failed_files += 1
+                repository.warnings.append(f"Could not stat file: {relative_path}")
+                skipped_files.append(SkippedFile(relative_path, "stat_error"))
+                continue
+            total_size_bytes += size
 
             ignored_part = next((part for part in relative_parts if part in IGNORE_DIRS), None)
             if ignored_part:
@@ -59,7 +76,6 @@ class ScannerService:
                 skipped_files.append(SkippedFile(relative_path, "unsupported_file_type", path.suffix.lower() or path.name))
                 continue
 
-            size = path.stat().st_size
             if size > max_size:
                 repository.warnings.append(f"Skipped large file: {relative_path}")
                 skipped_files.append(SkippedFile(relative_path, "file_too_large", f">{self.max_file_size_mb}MB"))
@@ -73,14 +89,25 @@ class ScannerService:
                 skipped_files.append(SkippedFile(relative_path, "read_error"))
                 continue
 
+            language = detect_language(path)
+            supported_size_bytes += size
+            language_files[language] = language_files.get(language, 0) + 1
             files.append(
                 FileRecord(
                     path=relative_path,
                     absolute_path=path,
-                    language=detect_language(path),
+                    language=language,
                     file_type=detect_file_type(path),
                     size_bytes=size,
                     content_hash=hashlib.sha256(raw_content).hexdigest(),
                 )
             )
-        return ScanResult(files=files, skipped_files=skipped_files, security_warnings=security_warnings)
+        return ScanResult(
+            files=files,
+            skipped_files=skipped_files,
+            security_warnings=security_warnings,
+            total_files=total_files,
+            total_size_bytes=total_size_bytes,
+            supported_size_bytes=supported_size_bytes,
+            language_files=language_files,
+        )

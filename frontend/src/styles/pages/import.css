@@ -91,6 +91,12 @@
   gap: 14px;
 }
 
+.preview-status {
+  margin-bottom: 12px;
+  color: #aebbf0;
+  font-size: 14px;
+}
+
 .language-bar {
   display: grid;
   gap: 7px;

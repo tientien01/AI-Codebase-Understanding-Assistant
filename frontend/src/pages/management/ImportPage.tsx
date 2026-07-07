@@ -10,6 +10,7 @@ export function ImportPage({
   zipFileName,
   preview,
   uploadProgress,
+  isPreviewLoading,
   onModeChange,
   onNameChange,
   onGithubUrlChange,
@@ -24,6 +25,7 @@ export function ImportPage({
   zipFileName: string
   preview: ImportPreview | null
   uploadProgress: number
+  isPreviewLoading: boolean
   onModeChange: (mode: ImportMode) => void
   onNameChange: (value: string) => void
   onGithubUrlChange: (value: string) => void
@@ -48,7 +50,7 @@ export function ImportPage({
                 <label>
                   Repository URL
                   <input value={githubUrl} onChange={(event) => onGithubUrlChange(event.target.value)} />
-                  <span>GitHub URL import is dang phat trien in backend.</span>
+                  <span>Paste a public GitHub repository URL to prepare preview automatically.</span>
                 </label>
               )}
               {mode === 'folder' && (
@@ -107,6 +109,7 @@ export function ImportPage({
         <aside className="preview-column">
           <Panel title="Import Preview">
             <h3>Repository</h3>
+            {isPreviewLoading ? <div className="preview-status">Preparing preview...</div> : null}
             <PreviewLine label="Repository" value={preview?.project_summary.suggested_name ?? (mode === 'github' ? githubUrl : projectName)} />
             {uploadProgress > 0 && uploadProgress < 100 ? (
               <>
@@ -150,7 +153,7 @@ export function ImportPage({
           </Panel>
           <div className="footer-actions">
             <button type="button" className="secondary">Cancel</button>
-            <button type="submit" className="primary">{preview ? 'Start Indexing' : 'Preview Project'}</button>
+            <button type="submit" className="primary" disabled={!preview || isPreviewLoading}>{preview ? 'Start Indexing' : isPreviewLoading ? 'Preparing Preview' : 'Waiting for Preview'}</button>
           </div>
         </aside>
       </div>

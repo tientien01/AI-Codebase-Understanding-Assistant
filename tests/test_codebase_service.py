@@ -95,7 +95,7 @@ def test_import_session_preview_and_confirm_creates_indexed_repository() -> None
     preview_response = service.get_import_preview(session.import_session_id)
     confirmed = service.confirm_import_session(session.import_session_id, None, True)
 
-    assert session.status == "created"
+    assert session.status == "preview_ready"
     assert session.source_type == "upload_folder"
     assert preview_response.status == "preview_ready"
     assert preview_response.file_statistics.supported_files >= 8
@@ -104,6 +104,64 @@ def test_import_session_preview_and_confirm_creates_indexed_repository() -> None
     assert confirmed.indexing_job_id
     assert confirmed.status == "indexed"
     assert confirmed.index_version == 1
+
+
+def test_import_preview_is_cached_after_first_scan() -> None:
+    service = CodebaseService()
+    files, relative_paths = fixture_upload_files()
+
+    session = asyncio.run(service.create_folder_import_session(files, relative_paths, "fixture-preview-cache-test"))
+    first_preview = service.get_import_preview(session.import_session_id)
+
+    def fail_scan(_repository):
+        raise RuntimeError("preview should be served from cache")
+
+    service.scanner.scan_files_with_diagnostics = fail_scan
+    second_preview = service.get_import_preview(session.import_session_id)
+
+    assert second_preview.file_statistics == first_preview.file_statistics
+    assert second_preview.project_summary == first_preview.project_summary
+
+
+def test_import_preview_detects_duplicate_by_project_fingerprint() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-duplicate-source")
+    service.start_indexing(created.repository_id, force_reindex=True)
+    files, relative_paths = fixture_upload_files()
+
+    session = asyncio.run(service.create_folder_import_session(files, relative_paths, "fixture-duplicate-source-copy"))
+    preview = service.get_import_preview(session.import_session_id)
+
+    assert any(item.match_reason == "same_fingerprint" for item in preview.possible_duplicates)
+
+
+def test_github_import_session_prepares_preview_without_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    service = CodebaseService()
+
+    def fake_clone(_clone_url: str, source_dir: Path, _branch: str | None = None) -> None:
+        source_dir.mkdir(parents=True)
+        (source_dir / ".git").mkdir()
+        (source_dir / "app.py").write_text("print('github preview')\n", encoding="utf-8")
+
+    monkeypatch.setattr(service.ingestion, "_clone_github_repository", fake_clone)
+
+    session = service.create_github_import_session("https://github.com/example/demo", None)
+    preview = service.get_import_preview(session.import_session_id)
+
+    assert session.status == "preview_ready"
+    assert session.source_type == "github_url"
+    assert preview.project_summary.suggested_name == "demo"
+    assert preview.file_statistics.supported_files == 1
+    assert not (service.import_sessions[session.import_session_id].source_path / ".git").exists()
+
+
+def test_github_import_session_rejects_non_github_url() -> None:
+    service = CodebaseService()
+
+    with pytest.raises(DomainError) as error:
+        service.create_github_import_session("https://example.com/not/github", None)
+
+    assert error.value.code == "INVALID_GITHUB_URL"
 
 
 def test_import_session_cancel_removes_temporary_source() -> None:

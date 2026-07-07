@@ -39,6 +39,12 @@ class ImportSessionCreateResponse(BaseModel):
     source_type: str
 
 
+class GitHubImportRequest(BaseModel):
+    url: str
+    name: str | None = None
+    branch: str | None = None
+
+
 class ImportProjectSummaryDTO(BaseModel):
     suggested_name: str
     source_type: str

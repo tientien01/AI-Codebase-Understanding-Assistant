@@ -15,6 +15,7 @@ from app.schemas.api import (
     GraphExpansionRequest,
     GraphExpansionResponse,
     GraphResponse,
+    GitHubImportRequest,
     IgnorePatternsResponse,
     ImportCancelResponse,
     ImportConfirmRequest,
@@ -58,6 +59,11 @@ async def create_folder_import_session(
     name: str | None = Form(default=None),
 ) -> ImportSessionCreateResponse:
     return await codebase_service.create_folder_import_session(files, relative_paths, name)
+
+
+@import_sessions_router.post("/github", response_model=ImportSessionCreateResponse)
+def create_github_import_session(request: GitHubImportRequest) -> ImportSessionCreateResponse:
+    return codebase_service.create_github_import_session(request.url, request.name, request.branch)
 
 
 @import_sessions_router.get("/{import_session_id}/preview", response_model=ImportPreviewResponse)

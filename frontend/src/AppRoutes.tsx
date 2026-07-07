@@ -57,6 +57,7 @@ type AppRoutesProps = {
   zipFile: File | null
   importPreview: ImportPreview | null
   uploadProgress: number
+  isPreviewLoading: boolean
   setPage: (page: Page) => void
   setChatInput: (value: string) => void
   setSearchQuery: (value: string) => void
@@ -104,6 +105,7 @@ export function AppRoutes(props: AppRoutesProps) {
     zipFile,
     importPreview,
     uploadProgress,
+    isPreviewLoading,
     isWorkspacePage,
   } = props
 
@@ -129,6 +131,7 @@ export function AppRoutes(props: AppRoutesProps) {
         zipFileName={zipFile?.name ?? ''}
         preview={importPreview}
         uploadProgress={uploadProgress}
+        isPreviewLoading={isPreviewLoading}
         onModeChange={(mode) => {
           props.setImportMode(mode)
           props.clearImportPreview()
