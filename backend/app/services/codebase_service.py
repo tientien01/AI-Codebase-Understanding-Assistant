@@ -36,6 +36,7 @@ from app.services.chunking_service import ChunkingService
 from app.services.evidence.evidence_service import EvidenceService
 from app.services.files.file_service import FileService
 from app.services.graph.graph_service import GraphService
+from app.services.graph.graph_projection_service import GraphProjectionService
 from app.services.indexing.indexing_job_service import IndexingJobService
 from app.services.indexing.indexing_service import IndexingService
 from app.services.ingestion.archive_service import ArchiveService
@@ -59,6 +60,7 @@ class CodebaseService:
         self.scanner = ScannerService()
         self.parser = ParserService(self.chunking)
         self.graph = GraphService()
+        self.graph_projection = GraphProjectionService()
         self.retrieval = RetrievalService()
         self.archive = ArchiveService()
         self.upload = UploadService(self.archive)
@@ -210,6 +212,26 @@ class CodebaseService:
     def get_graph(self, repository_id: str) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
         return self.graph.get_graph(repository)
+
+    def get_project_map_graph(self, repository_id: str) -> GraphResponse:
+        repository = self.repositories_service.get_indexed_repository(repository_id)
+        return self.graph_projection.project_map(repository)
+
+    def get_dependency_graph(self, repository_id: str, file_path: str | None = None) -> GraphResponse:
+        repository = self.repositories_service.get_indexed_repository(repository_id)
+        return self.graph_projection.dependencies(repository, file_path)
+
+    def get_api_flow_graph(self, repository_id: str, endpoint_id: str | None = None) -> GraphResponse:
+        repository = self.repositories_service.get_indexed_repository(repository_id)
+        return self.graph_projection.api_flow(repository, endpoint_id)
+
+    def get_function_flow_graph(self, repository_id: str, symbol_id: str | None = None) -> GraphResponse:
+        repository = self.repositories_service.get_indexed_repository(repository_id)
+        return self.graph_projection.function_flow(repository, symbol_id)
+
+    def get_data_flow_graph(self, repository_id: str, symbol_id: str | None = None) -> GraphResponse:
+        repository = self.repositories_service.get_indexed_repository(repository_id)
+        return self.graph_projection.data_flow(repository, symbol_id)
 
     def expand_graph_area(self, repository_id: str, scope_path: str) -> GraphExpansionResponse:
         result = self.indexing.start_indexing(repository_id, force_reindex=True)

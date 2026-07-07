@@ -25,6 +25,7 @@ import type {
   FileContent,
   FileTreeNode,
   GraphData,
+  GraphView,
   ImportMode,
   ImportPreview,
   IndexStatus,
@@ -42,6 +43,7 @@ type AppRoutesProps = {
   overview: Overview | null
   indexStatus: IndexStatus | null
   graph: GraphData | null
+  graphView: GraphView
   fileTree: FileTreeNode[]
   selectedFilePath: string
   fileContent: FileContent | null
@@ -79,6 +81,7 @@ type AppRoutesProps = {
   openEvidence: (citation: Citation) => void
   runSearch: (event?: FormEvent) => void
   analyzeGraphArea: (scopePath: string) => void
+  changeGraphView: (view: GraphView) => void
   isWorkspacePage: boolean
 }
 
@@ -90,6 +93,7 @@ export function AppRoutes(props: AppRoutesProps) {
     overview,
     indexStatus,
     graph,
+    graphView,
     fileTree,
     selectedFilePath,
     fileContent,
@@ -173,7 +177,7 @@ export function AppRoutes(props: AppRoutesProps) {
       />
     )
   }
-  if (page === 'graph') return <WorkspacePage main={<GraphPage graph={graph} overview={overview} onAnalyzeArea={props.analyzeGraphArea} />} side={<GraphDetails graph={graph} />} />
+  if (page === 'graph') return <WorkspacePage main={<GraphPage graph={graph} graphView={graphView} overview={overview} onGraphView={props.changeGraphView} onAnalyzeArea={props.analyzeGraphArea} />} side={<GraphDetails graph={graph} />} />
   if (page === 'api') return <WorkspacePage main={<ApiExplorerPage overview={overview} />} side={<ApiDetails overview={overview} />} />
   if (page === 'assistant') {
     return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />

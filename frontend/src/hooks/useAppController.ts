@@ -8,6 +8,7 @@ import type {
   FileContent,
   FileTreeNode,
   GraphData,
+  GraphView,
   IndexStatus,
   Overview,
   Page,
@@ -26,6 +27,7 @@ export function useAppController() {
   const [overview, setOverview] = useState<Overview | null>(null)
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
   const [graph, setGraph] = useState<GraphData | null>(null)
+  const [graphView, setGraphView] = useState<GraphView>('project-map')
   const [fileTree, setFileTree] = useState<FileTreeNode[]>([])
   const [selectedFilePath, setSelectedFilePath] = useState('')
   const [fileContent, setFileContent] = useState<FileContent | null>(null)
@@ -113,12 +115,17 @@ export function useAppController() {
     }
   }
 
-  async function loadGraph(repositoryId: string) {
+  async function loadGraph(repositoryId: string, view: GraphView = graphView) {
     try {
-      setGraph(await request<GraphData>(`${API_V1}/repositories/${repositoryId}/graph`))
+      setGraph(await request<GraphData>(`${API_V1}/repositories/${repositoryId}/graph/${view}`))
     } catch {
       setGraph(null)
     }
+  }
+
+  async function changeGraphView(view: GraphView) {
+    setGraphView(view)
+    if (selectedRepository) await loadGraph(selectedRepository.id, view)
   }
 
   async function loadFileTree(repositoryId: string) {
@@ -251,6 +258,7 @@ export function useAppController() {
     overview,
     indexStatus,
     graph,
+    graphView,
     fileTree,
     selectedFilePath,
     fileContent,
@@ -276,5 +284,6 @@ export function useAppController() {
     openEvidence,
     runSearch,
     analyzeGraphArea,
+    changeGraphView,
   }
 }

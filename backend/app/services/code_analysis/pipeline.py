@@ -21,6 +21,7 @@ class CodeAnalysisPipeline:
         module = self.python_adapter.parse(repository.id, file_record.path, text)
         if module.diagnostics:
             for diagnostic in module.diagnostics:
+                repository.parse_diagnostics.append(diagnostic)
                 repository.failed_file_records.append(diagnostic)
             if any(item.get("severity") == "error" for item in module.diagnostics):
                 return False

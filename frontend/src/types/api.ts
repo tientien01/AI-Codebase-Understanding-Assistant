@@ -102,6 +102,8 @@ export type GraphData = {
   edges: { source: string; target: string; type: string; confidence: number; evidence_level?: 'map' | 'deep' | 'inferred' }[]
 }
 
+export type GraphView = 'project-map' | 'dependencies' | 'api-flow' | 'function-flow' | 'data-flow'
+
 export type SearchResult = {
   evidence_id: string
   file_path: string

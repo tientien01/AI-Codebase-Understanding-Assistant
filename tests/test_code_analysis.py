@@ -5,6 +5,8 @@ from pathlib import Path
 from app.services.chunking_service import ChunkingService
 from app.services.index_models import FileRecord, RepositoryState
 from app.services.parsing.parser_service import ParserService
+from app.services.graph.graph_projection_service import GraphProjectionService
+from app.services.graph.graph_service import GraphService
 
 
 def parse_python_source(tmp_path: Path, source_text: str) -> RepositoryState:
@@ -85,3 +87,24 @@ def test_python_code_analysis_emits_dfg_for_assignment_and_return(tmp_path: Path
     assert "dfg_returned" in edge_types
     assert "parameter: user" in dfg_labels
     assert "definition: token" in dfg_labels
+
+
+def test_graph_projection_exposes_project_function_and_data_views(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "def choose(value):\n"
+        "    if value:\n"
+        "        token = str(value)\n"
+        "        return token\n"
+        "    return 'empty'\n",
+    )
+    GraphService().build_graph(repository)
+    projection = GraphProjectionService()
+
+    project_map = projection.project_map(repository)
+    function_flow = projection.function_flow(repository)
+    data_flow = projection.data_flow(repository)
+
+    assert any(node.type == "function" for node in project_map.nodes)
+    assert any(edge.type.startswith("cfg_") for edge in function_flow.edges)
+    assert any(edge.type.startswith("dfg_") for edge in data_flow.edges)

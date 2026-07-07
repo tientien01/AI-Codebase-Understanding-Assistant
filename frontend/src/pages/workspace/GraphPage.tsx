@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { ListRow, PageTitle, Panel, PreviewLine } from '../../components/common/ui'
-import type { GraphData, Overview } from '../../types/api'
+import type { GraphData, GraphView, Overview } from '../../types/api'
 
 type GraphNode = NonNullable<GraphData['nodes']>[number]
 
 export function GraphPage({
   graph,
+  graphView,
   overview,
+  onGraphView,
   onAnalyzeArea,
 }: {
   graph: GraphData | null
+  graphView: GraphView
   overview: Overview | null
+  onGraphView: (view: GraphView) => void
   onAnalyzeArea: (scopePath: string) => void
 }) {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
@@ -21,14 +25,15 @@ export function GraphPage({
     <div>
       <PageTitle title="Project Map" subtitle="Explore the main areas of this repository and analyze details only when needed." />
       <div className="toolbar graph-toolbar">
-        <span className="tab active">Project Map</span>
-        <span className="tab">Ready areas</span>
-        <span className="tab">Needs analysis</span>
-        <span className="tab">API Flow</span>
+        {graphViews.map((view) => (
+          <button type="button" className={`tab ${graphView === view.id ? 'active' : ''}`} key={view.id} onClick={() => onGraphView(view.id)}>
+            {view.label}
+          </button>
+        ))}
         <input className="panel-search" placeholder="Search node" />
       </div>
       <div className="graph-workspace">
-        <Panel title="Repository Areas">
+        <Panel title={graphViews.find((view) => view.id === graphView)?.label ?? 'Graph'}>
           <div className="graph-canvas">
             {nodes.map((node, index) => (
               <button
@@ -63,8 +68,8 @@ export function GraphPage({
           )}
           <h3>Project summary</h3>
           <PreviewLine label="Endpoints" value={String(overview?.endpoints.length ?? 0)} />
-          <PreviewLine label="Ready areas" value={String(graph?.nodes.filter((node) => node.coverage === 'deep_indexed').length ?? 0)} />
-          <PreviewLine label="Needs analysis" value={String(graph?.nodes.filter((node) => node.coverage === 'mapped').length ?? 0)} />
+          <PreviewLine label="Nodes in view" value={String(graph?.nodes.length ?? 0)} />
+          <PreviewLine label="Relationships" value={String(graph?.edges.length ?? 0)} />
           <h3>Relationship sample</h3>
           {edges.map((edge) => <ListRow key={`${edge.source}-${edge.target}-${edge.type}`} title={readableType(edge.type)} detail={edge.evidence_level === 'map' ? 'Known from repository structure' : 'Backed by analyzed code'} meta={edge.evidence_level ?? 'deep'} />)}
         </Panel>
@@ -72,6 +77,14 @@ export function GraphPage({
     </div>
   )
 }
+
+const graphViews: { id: GraphView; label: string }[] = [
+  { id: 'project-map', label: 'Project Map' },
+  { id: 'dependencies', label: 'Dependencies' },
+  { id: 'api-flow', label: 'API Flow' },
+  { id: 'function-flow', label: 'Function Flow' },
+  { id: 'data-flow', label: 'Data Flow' },
+]
 
 function coverageLabel(coverage?: string) {
   if (coverage === 'mapped') return 'Needs analysis'
