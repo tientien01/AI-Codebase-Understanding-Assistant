@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+from app.core.config import settings
 from app.services.chunking_service import ChunkingService
 from app.services.index_models import FileRecord, RepositoryState
+from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.parsing.parser_service import ParserService
 from app.services.graph.graph_projection_service import GraphProjectionService
 from app.services.graph.graph_service import GraphService
@@ -108,3 +111,50 @@ def test_graph_projection_exposes_project_function_and_data_views(tmp_path: Path
     assert any(node.type == "function" for node in project_map.nodes)
     assert any(edge.type.startswith("cfg_") for edge in function_flow.edges)
     assert any(edge.type.startswith("dfg_") for edge in data_flow.edges)
+
+
+def test_graph_edges_reference_existing_nodes_after_build(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "def helper():\n"
+        "    return True\n\n"
+        "def login():\n"
+        "    return helper()\n",
+    )
+
+    GraphService().build_graph(repository)
+
+    node_ids = {node.id for node in repository.graph_nodes}
+    dangling_edges = [
+        edge
+        for edge in repository.graph_edges
+        if edge.source not in node_ids or edge.target not in node_ids
+    ]
+    assert dangling_edges == []
+
+
+def test_parse_debug_output_contains_files_nodes_edges_and_diagnostics(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "def helper():\n"
+        "    return True\n\n"
+        "def login():\n"
+        "    return helper()\n",
+    )
+    GraphService().build_graph(repository)
+
+    artifact_path = ParseDebugOutputService().write(repository)
+
+    assert artifact_path == settings.repository_storage_dir / repository.id / "parse_output.json"
+    mirror_path = repository.source_path / ".ai-codebase" / "parse_output.json"
+    assert mirror_path.exists()
+    payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    mirror_payload = json.loads(mirror_path.read_text(encoding="utf-8"))
+    assert payload["metadata"]["schema_version"] == "parse-debug-v1"
+    assert mirror_payload["metadata"]["primary_artifact_path"] == str(artifact_path)
+    assert payload["files"][0]["path"] == "sample.py"
+    assert any(node["kind"] == "Function" and node["label"] == "login" for node in payload["nodes"])
+    assert any(node["kind"] == "Call" for node in payload["nodes"])
+    assert any(edge["type"] == "calls" and edge["resolved"] for edge in payload["edges"])
+    assert "errors" in payload
+    assert "warnings" in payload

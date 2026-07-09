@@ -44,7 +44,33 @@ class ParserService:
 
             parser = self.parsers.get(file_record.language, self.fallback_parser)
             before_chunks = len(repository.chunks)
-            parser.parse(repository, file_record, text)
+            try:
+                parser.parse(repository, file_record, text)
+            except Exception as exc:
+                repository.failed_files += 1
+                file_record.parse_status = "failed"
+                message = f"{type(exc).__name__}: {exc}"
+                repository.warnings.append(f"Parser error: {file_record.path}: {message}")
+                repository.failed_file_records.append(
+                    {
+                        "file_path": file_record.path,
+                        "stage": "parsing_files",
+                        "error_code": "PARSER_EXCEPTION",
+                        "message": message,
+                        "line": None,
+                    }
+                )
+                repository.parse_diagnostics.append(
+                    {
+                        "file_path": file_record.path,
+                        "language": file_record.language,
+                        "parser": parser.__class__.__name__,
+                        "stage": "parse",
+                        "severity": "error",
+                        "message": message,
+                        "line": None,
+                    }
+                )
             if file_record.language in SOURCE_LANGUAGES and len(repository.chunks) == before_chunks:
                 self.fallback_parser.parse(repository, file_record, text)
             if after_file:

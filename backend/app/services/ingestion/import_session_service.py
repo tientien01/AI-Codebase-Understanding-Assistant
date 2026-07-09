@@ -84,6 +84,13 @@ class ImportSessionService:
             raise DomainError("INVALID_ARCHIVE", "Only .zip repositories are supported.", 400)
 
         session_id = f"import_{uuid4().hex[:10]}"
+        activity_logs: list[dict[str, str | dict[str, str]]] = []
+        self._append_activity_log(
+            activity_logs,
+            "upload_received",
+            "ZIP upload received.",
+            source_label=file.filename,
+        )
         session_root = settings.upload_storage_dir / "import_sessions" / session_id
         source_dir = session_root / "source"
         session_root.mkdir(parents=True, exist_ok=True)
@@ -91,6 +98,7 @@ class ImportSessionService:
         zip_path = session_root / "source.zip"
         max_upload_size = settings.max_upload_size_mb * 1024 * 1024
         await self.streaming_upload.save_upload(file, zip_path, max_upload_size)
+        self._append_activity_log(activity_logs, "upload_saved", "ZIP upload saved to temporary storage.")
 
         skipped_records: list[dict[str, str | None]] = []
         security_records: list[dict[str, str]] = []
@@ -100,6 +108,14 @@ class ImportSessionService:
             raise DomainError("INVALID_ARCHIVE", "Uploaded file is not a valid zip archive.", 400) from exc
         if extracted_files == 0:
             raise DomainError("NO_SUPPORTED_FILES", "Archive contains no supported non-secret files.", 400)
+        self._append_activity_log(
+            activity_logs,
+            "archive_extracted",
+            "ZIP archive extracted for preview.",
+            extracted_files=extracted_files,
+            skipped_files=len(skipped_records),
+            security_warnings=len(security_records),
+        )
 
         session = ImportSessionRecord(
             id=session_id,
@@ -112,7 +128,9 @@ class ImportSessionService:
             created_at=utc_now(),
             skipped_file_records=skipped_records,
             security_warning_records=security_records,
+            activity_logs=activity_logs,
         )
+        self._log_session(session, "preview_ready", "Import session is ready for preview.")
         self.import_sessions[session.id] = session
         return ImportSessionCreateResponse(import_session_id=session.id, status=session.status, source_type=session.source_type)
 
@@ -128,6 +146,13 @@ class ImportSessionService:
             raise DomainError("INVALID_REPOSITORY", "Uploaded files and relative paths do not match.", 400)
 
         session_id = f"import_{uuid4().hex[:10]}"
+        activity_logs: list[dict[str, str | dict[str, str]]] = []
+        self._append_activity_log(
+            activity_logs,
+            "upload_received",
+            "Folder upload received.",
+            submitted_files=len(files),
+        )
         source_dir = settings.upload_storage_dir / "import_sessions" / session_id / "source"
         source_dir.mkdir(parents=True, exist_ok=True)
         saved_files = 0
@@ -165,6 +190,15 @@ class ImportSessionService:
 
         if saved_files == 0:
             raise DomainError("INVALID_REPOSITORY", "No supported non-secret files were uploaded.", 400)
+        self._append_activity_log(
+            activity_logs,
+            "folder_saved",
+            "Folder files saved to temporary storage.",
+            submitted_files=len(files),
+            saved_files=saved_files,
+            skipped_files=len(skipped_records),
+            security_warnings=len(security_records),
+        )
 
         source_label = name or Path(relative_paths[0]).parts[0]
         session = ImportSessionRecord(
@@ -178,13 +212,23 @@ class ImportSessionService:
             created_at=utc_now(),
             skipped_file_records=skipped_records,
             security_warning_records=security_records,
+            activity_logs=activity_logs,
         )
+        self._log_session(session, "preview_ready", "Import session is ready for preview.")
         self.import_sessions[session.id] = session
         return ImportSessionCreateResponse(import_session_id=session.id, status=session.status, source_type=session.source_type)
 
     def create_github_import_session(self, url: str, name: str | None, branch: str | None = None) -> ImportSessionCreateResponse:
         clone_url, source_label, suggested_name = self._validate_github_url(url)
         session_id = f"import_{uuid4().hex[:10]}"
+        activity_logs: list[dict[str, str | dict[str, str]]] = []
+        self._append_activity_log(
+            activity_logs,
+            "github_received",
+            "GitHub import request received.",
+            source_label=source_label,
+            branch=branch or "default",
+        )
         session_root = settings.upload_storage_dir / "import_sessions" / session_id
         source_dir = session_root / "source"
         session_root.mkdir(parents=True, exist_ok=True)
@@ -200,6 +244,7 @@ class ImportSessionService:
         git_dir = source_dir / ".git"
         if git_dir.exists():
             shutil.rmtree(git_dir)
+        self._append_activity_log(activity_logs, "github_cloned", "GitHub repository cloned for preview.")
 
         session = ImportSessionRecord(
             id=session_id,
@@ -210,16 +255,21 @@ class ImportSessionService:
             source_path=source_dir,
             status="preview_ready",
             created_at=utc_now(),
+            activity_logs=activity_logs,
         )
+        self._log_session(session, "preview_ready", "Import session is ready for preview.")
         self.import_sessions[session.id] = session
         return ImportSessionCreateResponse(import_session_id=session.id, status=session.status, source_type=session.source_type)
 
     def get_import_preview(self, import_session_id: str) -> ImportPreviewResponse:
         session = self._get_import_session(import_session_id)
         if session.preview_response is not None:
-            return session.preview_response.model_copy(
-                update={"possible_duplicates": self._possible_import_duplicates(session)}
-            )
+            payload = session.preview_response.model_dump()
+            payload["possible_duplicates"] = self._possible_import_duplicates(session)
+            payload["activity_logs"] = session.activity_logs
+            payload["status"] = session.status
+            return ImportPreviewResponse.model_validate(payload)
+        self._log_session(session, "preview_scan_started", "Preview scan started.")
 
         preview_repository = RepositoryState(
             id=session.id,
@@ -247,6 +297,15 @@ class ImportSessionService:
             ],
         ]
         session.preview_project_fingerprint = self._project_fingerprint(scan_result.files)
+        self._log_session(
+            session,
+            "preview_scan_completed",
+            "Preview scan completed.",
+            total_files=file_statistics.total_files,
+            supported_files=file_statistics.supported_files,
+            skipped_files=file_statistics.skipped_files,
+            repository_size_bytes=scan_result.total_size_bytes,
+        )
         preview_response = ImportPreviewResponse(
             import_session_id=session.id,
             status=session.status,
@@ -280,6 +339,7 @@ class ImportSessionService:
             ],
             indexing_plan=["scan_files", "parse_symbols", "create_chunks", "build_graph", "validate_citations"],
             possible_duplicates=self._possible_import_duplicates(session),
+            activity_logs=session.activity_logs,
         )
         session.preview_response = preview_response
         return preview_response
@@ -294,6 +354,7 @@ class ImportSessionService:
     ) -> ImportConfirmResponse:
         session = self._get_import_session(import_session_id)
         if duplicate_action == "cancel":
+            self._log_session(session, "cancelled", "Import session cancelled by duplicate action.", level="warning")
             return ImportConfirmResponse(repository_id="", indexing_job_id=None, status="cancelled", index_version=None)
         if duplicate_action not in {"import_as_new"}:
             raise DomainError("UNSUPPORTED_OPERATION", "Only import_as_new duplicate action is supported in this milestone.", 400)
@@ -311,6 +372,7 @@ class ImportSessionService:
         source_dir.parent.mkdir(parents=True, exist_ok=True)
         if source_dir.exists():
             raise DomainError("INVALID_REPOSITORY", "Repository source destination already exists.", 409)
+        self._log_session(session, "confirm_started", "Import confirmation started.", repository_id=repository_id)
         shutil.move(str(session.source_path), str(source_dir))
 
         repository = RepositoryState(
@@ -324,6 +386,7 @@ class ImportSessionService:
         self.repositories.create_repository(repository)
         session.status = "confirmed"
         session.confirmed_repository_id = repository.id
+        self._log_session(session, "repository_created", "Repository record created.", repository_id=repository.id)
 
         indexing_job_id = None
         if start_indexing:
@@ -332,6 +395,13 @@ class ImportSessionService:
             else:
                 result = self.indexing.start_indexing(repository.id, force_reindex=True)
             indexing_job_id = result.indexing_job_id
+            self._log_session(
+                session,
+                "indexing_started",
+                "Indexing job started.",
+                repository_id=repository.id,
+                indexing_job_id=indexing_job_id,
+            )
         return ImportConfirmResponse(
             repository_id=repository.id,
             indexing_job_id=indexing_job_id,
@@ -342,11 +412,45 @@ class ImportSessionService:
     def cancel_import_session(self, import_session_id: str) -> ImportCancelResponse:
         session = self._get_import_session(import_session_id)
         session.status = "cancelled"
+        self._log_session(session, "cancelled", "Import session cancelled.")
         session_root = settings.upload_storage_dir / "import_sessions" / session.id
         if session_root.exists() and self.archive.is_relative_to(session_root.resolve(), settings.upload_storage_dir.resolve()):
             shutil.rmtree(session_root)
         self.import_sessions.pop(session.id, None)
         return ImportCancelResponse(cancelled=True, import_session_id=import_session_id)
+
+    def _log_session(
+        self,
+        session: ImportSessionRecord,
+        stage: str,
+        message: str,
+        level: str = "info",
+        **details: str | int,
+    ) -> None:
+        self._append_activity_log(session.activity_logs, stage, message, level, **details)
+        if session.preview_response is not None:
+            payload = session.preview_response.model_dump()
+            payload["activity_logs"] = session.activity_logs
+            payload["status"] = session.status
+            session.preview_response = ImportPreviewResponse.model_validate(payload)
+
+    def _append_activity_log(
+        self,
+        logs: list[dict[str, str | dict[str, str]]],
+        stage: str,
+        message: str,
+        level: str = "info",
+        **details: str | int,
+    ) -> None:
+        logs.append(
+            {
+                "timestamp": utc_now(),
+                "level": level,
+                "stage": stage,
+                "message": message,
+                "details": {key: str(value) for key, value in details.items() if value is not None},
+            }
+        )
 
     def _get_import_session(self, import_session_id: str) -> ImportSessionRecord:
         session = self.import_sessions.get(import_session_id)

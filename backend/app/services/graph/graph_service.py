@@ -33,10 +33,9 @@ class GraphService:
             edges.append(GraphEdgeDTO(source=parent_id, target=file_id, type="contains", confidence=0.95, evidence_level="map"))
 
         for symbol in repository.symbols:
-            symbol_id = node_id("symbol", f"{symbol.file_path}:{symbol.name}")
             file_id = node_id("file", symbol.file_path)
-            nodes[symbol_id] = GraphNodeDTO(
-                id=symbol_id,
+            nodes[symbol.id] = GraphNodeDTO(
+                id=symbol.id,
                 type=symbol.symbol_type,
                 label=symbol.name,
                 file_path=symbol.file_path,
@@ -44,11 +43,16 @@ class GraphService:
                 scope_path=symbol.file_path,
                 role=symbol.symbol_type,
             )
-            edges.append(GraphEdgeDTO(source=file_id, target=symbol_id, type="defines", confidence=0.95))
+            edges.append(GraphEdgeDTO(source=file_id, target=symbol.id, type="defines", confidence=0.95))
 
+        handler_symbols = {
+            (symbol.file_path, symbol.name): symbol.id
+            for symbol in repository.symbols
+            if symbol.symbol_type in {"function", "method"}
+        }
         for endpoint in repository.endpoints:
             endpoint_id = node_id("endpoint", f"{endpoint.method}:{endpoint.path}")
-            handler_id = node_id("symbol", f"{endpoint.file_path}:{endpoint.handler}")
+            handler_id = handler_symbols.get((endpoint.file_path, endpoint.handler))
             nodes[endpoint_id] = GraphNodeDTO(
                 id=endpoint_id,
                 type="endpoint",
@@ -58,7 +62,8 @@ class GraphService:
                 scope_path=endpoint.file_path,
                 role="API endpoint",
             )
-            edges.append(GraphEdgeDTO(source=endpoint_id, target=handler_id, type="exposes_endpoint", confidence=0.9))
+            if handler_id:
+                edges.append(GraphEdgeDTO(source=endpoint_id, target=handler_id, type="exposes_endpoint", confidence=0.9))
 
         endpoint_by_path = {normalize_route(endpoint.path): endpoint for endpoint in repository.endpoints}
         for graph_node in list(repository.graph_nodes):

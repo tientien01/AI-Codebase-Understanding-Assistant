@@ -43,6 +43,7 @@ class ImportSessionRecord:
     confirmed_repository_id: str | None = None
     skipped_file_records: list[dict[str, str | None]] = field(default_factory=list)
     security_warning_records: list[dict[str, str]] = field(default_factory=list)
+    activity_logs: list[dict[str, str | dict[str, str]]] = field(default_factory=list)
     preview_response: ImportPreviewResponse | None = None
     preview_project_fingerprint: str | None = None
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import ast
-from uuid import uuid4
 
 from app.services.chunking_service import ChunkingService
+from app.services.code_analysis.stable_ids import stable_symbol_id
 from app.services.index_models import EndpointRecord, FileRecord, RepositoryState, SymbolRecord
 from app.services.parsing.base import LanguageParser
 from app.services.text_utils import node_id
@@ -89,7 +89,7 @@ class PythonAstParser(LanguageParser):
         end_line = getattr(node, "end_lineno", node.lineno)
         repository.symbols.append(
             SymbolRecord(
-                id=f"symbol_{uuid4().hex[:10]}",
+                id=stable_symbol_id(repository.id, file_record.path, node.name, symbol_type),
                 name=node.name,
                 symbol_type=symbol_type,
                 file_path=file_record.path,

@@ -97,6 +97,49 @@
   font-size: 14px;
 }
 
+.import-activity-log {
+  display: grid;
+  gap: 8px;
+}
+
+.import-log-row {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #25344d;
+  border-left: 3px solid #6b8cff;
+  border-radius: 8px;
+  background: #0f1725;
+  padding: 10px;
+}
+
+.import-log-row.level-warning {
+  border-left-color: #ffd166;
+}
+
+.import-log-row > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.import-log-row strong {
+  color: #f3f7ff;
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.import-log-row span,
+.import-log-row small {
+  color: #9ba8ba;
+  font-size: 12px;
+}
+
+.import-log-row p {
+  margin: 0;
+  color: #d7e2f5;
+  font-size: 13px;
+}
+
 .language-bar {
   display: grid;
   gap: 7px;

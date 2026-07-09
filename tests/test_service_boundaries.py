@@ -18,6 +18,9 @@ def test_scanner_skips_secret_and_dependency_files(tmp_path: Path) -> None:
     dependency_dir = tmp_path / "node_modules"
     dependency_dir.mkdir()
     (dependency_dir / "package.js").write_text("console.log('skip')\n", encoding="utf-8")
+    debug_dir = tmp_path / ".ai-codebase"
+    debug_dir.mkdir()
+    (debug_dir / "parse_output.json").write_text("{}\n", encoding="utf-8")
     repository = RepositoryState(
         id="repo_test",
         name="test",
@@ -65,10 +68,11 @@ def test_parser_extracts_fastapi_endpoint_and_symbol(tmp_path: Path) -> None:
     ParserService(ChunkingService()).parse_files(repository)
 
     assert any(symbol.name == "login" for symbol in repository.symbols)
+    helper_symbol = next(symbol for symbol in repository.symbols if symbol.name == "helper")
     assert any(endpoint.path == "/login" and endpoint.method == "POST" for endpoint in repository.endpoints)
     assert any(chunk.chunk_type == "endpoint" for chunk in repository.chunks)
     assert any(edge.type == "imports" and edge.target == node_id("module", "fastapi") for edge in repository.graph_edges)
-    assert any(edge.type == "calls" and edge.target == node_id("symbol", "routes.py:helper") for edge in repository.graph_edges)
+    assert any(edge.type == "calls" and edge.target == helper_symbol.id for edge in repository.graph_edges)
 
 
 def test_parser_creates_chunks_for_new_source_languages(tmp_path: Path) -> None:
@@ -124,6 +128,7 @@ def test_graph_links_frontend_api_call_to_matching_endpoint(tmp_path: Path) -> N
     GraphService().build_graph(repository)
 
     assert any(edge.type == "exposes_endpoint" for edge in repository.graph_edges)
+    assert any(edge.type == "exposes_endpoint" and edge.target == "symbol_login" for edge in repository.graph_edges)
     assert any(edge.type == "calls_api" and edge.source == "api_call_login" for edge in repository.graph_edges)
     assert any(node.type == "folder" and node.coverage == "mapped" for node in repository.graph_nodes)
     assert any(node.type == "file" and node.coverage == "deep_indexed" for node in repository.graph_nodes)

@@ -14,6 +14,7 @@ export function ProjectsPage({
   onOpen,
   onReindex,
   onDelete,
+  onDeleteAll,
   onViewIndexJobs,
 }: {
   repositories: Repository[]
@@ -21,6 +22,7 @@ export function ProjectsPage({
   onOpen: (id: string) => void
   onReindex: (id: string) => void
   onDelete: (id: string) => void
+  onDeleteAll: () => void
   onViewIndexJobs: () => void
 }) {
   const [activeFilter, setActiveFilter] = useState<ProjectFilter>('all')
@@ -154,6 +156,7 @@ export function ProjectsPage({
             <div className="quick-actions">
               <button onClick={onNewProject}><Icon name="plus" /><span><strong>New Project</strong><small>Import a repository</small></span></button>
               <button onClick={onViewIndexJobs}><Icon name="layers" /><span><strong>View Index Jobs</strong><small>Monitor indexing tasks</small></span></button>
+              <button className="danger-action" disabled={!repositories.length} onClick={onDeleteAll}><Icon name="warning" /><span><strong>Delete All Projects</strong><small>Remove uploaded sources and indexes</small></span></button>
             </div>
           </Panel>
         </aside>

@@ -150,6 +150,23 @@ export function ImportPage({
             <PreviewLine label="Chunks" value="calculated after scan" />
             <PreviewLine label="Embeddings" value="dang phat trien" />
             <PreviewLine label="Estimated time" value={preview ? `${preview.project_summary.estimated_index_time_seconds}s` : 'available after preview'} />
+            {preview?.activity_logs.length ? (
+              <>
+                <h3>Import Activity</h3>
+                <div className="import-activity-log">
+                  {preview.activity_logs.map((item) => (
+                    <div className={`import-log-row level-${item.level}`} key={`${item.timestamp}-${item.stage}`}>
+                      <div>
+                        <strong>{activityStageLabel(item.stage)}</strong>
+                        <span>{formatActivityTime(item.timestamp)}</span>
+                      </div>
+                      <p>{item.message}</p>
+                      {Object.keys(item.details).length ? <small>{formatLogDetails(item.details)}</small> : null}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </Panel>
           <div className="footer-actions">
             <button type="button" className="secondary">Cancel</button>
@@ -159,6 +176,20 @@ export function ImportPage({
       </div>
     </form>
   )
+}
+
+function activityStageLabel(stage: string) {
+  return stage.replace(/_/g, ' ')
+}
+
+function formatActivityTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function formatLogDetails(details: Record<string, string>) {
+  return Object.entries(details).map(([key, value]) => `${key}: ${value}`).join(' | ')
 }
 
 function previewPercent(value: number, total: number) {

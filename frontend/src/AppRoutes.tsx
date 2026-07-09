@@ -76,6 +76,7 @@ type AppRoutesProps = {
   resumeIndexingJob: (repositoryId: string, jobId: string) => void
   cancelIndexingJob: (repositoryId: string, jobId: string) => void
   deleteRepository: (repositoryId: string) => void
+  deleteAllRepositories: () => void
   loadFileContent: (repositoryId: string, filePath: string) => void
   sendChatMessage: (event?: FormEvent) => void
   openEvidence: (citation: Citation) => void
@@ -121,6 +122,7 @@ export function AppRoutes(props: AppRoutesProps) {
         onOpen={props.openWorkspace}
         onReindex={props.reindexRepository}
         onDelete={props.deleteRepository}
+        onDeleteAll={props.deleteAllRepositories}
         onViewIndexJobs={() => props.setPage('indexing')}
       />
     )

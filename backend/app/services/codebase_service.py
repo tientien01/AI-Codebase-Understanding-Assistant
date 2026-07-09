@@ -22,6 +22,7 @@ from app.schemas.api import (
     IndexWarningsResponse,
     OverviewResponse,
     ReadingPathResponse,
+    RepositoryBulkDeleteResponse,
     RepositoryCreateResponse,
     RepositoryDeleteResponse,
     RepositoryDTO,
@@ -101,6 +102,10 @@ class CodebaseService:
 
     def delete_repository(self, repository_id: str) -> RepositoryDeleteResponse:
         return self.repositories_service.delete_repository(repository_id, self.evidence.clear_repository)
+
+    def delete_repositories(self, repository_ids: list[str], delete_all: bool = False) -> RepositoryBulkDeleteResponse:
+        target_ids = list(self.repositories_service.repositories) if delete_all else repository_ids
+        return self.repositories_service.delete_repositories(target_ids, self.evidence.clear_repository)
 
     async def upload_zip(self, file: UploadFile, name: str | None) -> RepositoryCreateResponse:
         return await self.ingestion.upload_zip(file, name)

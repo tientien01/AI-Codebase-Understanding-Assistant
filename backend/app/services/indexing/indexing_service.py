@@ -13,6 +13,7 @@ from app.services.evidence.evidence_service import EvidenceService
 from app.services.graph.graph_service import GraphService
 from app.services.index_models import IndexingJobRecord, RepositoryState
 from app.services.parsing.parser_service import ParserService
+from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.repositories.repository_service import RepositoryService
 from app.services.repositories.repository_store import RepositoryStore
 from app.services.scanning.scanner_service import ScannerService
@@ -61,6 +62,7 @@ class IndexingService:
         self.parser = parser
         self.chunking = chunking
         self.graph = graph
+        self.parse_debug_output = ParseDebugOutputService()
         self._controls: dict[str, IndexingJobControl] = {}
         self._controls_lock = Lock()
 
@@ -327,6 +329,7 @@ class IndexingService:
         repository.status = "indexed_with_warnings" if has_warnings else "indexed"
         repository.current_index_version = job.index_version
         repository.current_step = "completed"
+        self._write_parse_debug_output(repository)
         repository.finished_at = utc_now()
         repository.logs.append(f"{repository.finished_at} completed")
         repository.failed_files = job.failed_files
@@ -348,6 +351,14 @@ class IndexingService:
         repository.chunks = []
         repository.graph_nodes = []
         repository.graph_edges = []
+
+    def _write_parse_debug_output(self, repository: RepositoryState) -> None:
+        try:
+            artifact_path = self.parse_debug_output.write(repository)
+        except OSError as exc:
+            repository.warnings.append(f"Could not write parse debug output: {exc}")
+            return
+        repository.logs.append(f"{utc_now()} parse_debug_output_written {artifact_path}")
 
     def _check_control(self, repository: RepositoryState, job: IndexingJobRecord, control: IndexingJobControl) -> None:
         if control.cancel_requested.is_set():

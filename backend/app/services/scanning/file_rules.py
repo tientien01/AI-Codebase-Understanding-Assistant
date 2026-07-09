@@ -22,6 +22,7 @@ IGNORE_DIRS = {
     ".mypy_cache",
     "__pycache__",
     ".cache",
+    ".ai-codebase",
     ".idea",
     ".vscode",
     "target",

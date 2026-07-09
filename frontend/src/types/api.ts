@@ -140,6 +140,14 @@ export type FileContent = {
 
 export type ImportMode = 'github' | 'folder' | 'zip'
 
+export type ImportActivityLog = {
+  timestamp: string
+  level: string
+  stage: string
+  message: string
+  details: Record<string, string>
+}
+
 export type ImportPreview = {
   import_session_id: string
   status: string
@@ -166,6 +174,7 @@ export type ImportPreview = {
   security_warnings: { file_path: string; risk_type: string; action: string }[]
   indexing_plan: string[]
   possible_duplicates: { repository_id: string; name: string; match_reason: string }[]
+  activity_logs: ImportActivityLog[]
 }
 
 export type IconName =

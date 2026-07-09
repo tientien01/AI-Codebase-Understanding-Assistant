@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from uuid import uuid4
-
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
+from app.services.code_analysis.stable_ids import stable_chunk_id, stable_node_id, stable_symbol_id
 from app.services.index_models import FileRecord, RepositoryState, SymbolRecord
 from app.services.language_registry import LanguageDefinition
 from app.services.parsing.base import LanguageParser
@@ -97,7 +96,7 @@ class TreeSitterLanguageParser(LanguageParser):
         symbol_type = SYMBOL_NODE_TYPES[node.type]
         repository.symbols.append(
             SymbolRecord(
-                id=f"symbol_{uuid4().hex[:10]}",
+                id=stable_symbol_id(repository.id, file_record.path, name, symbol_type),
                 name=name,
                 symbol_type=symbol_type,
                 file_path=file_record.path,
@@ -122,12 +121,24 @@ class TreeSitterLanguageParser(LanguageParser):
         call_target = self._node_text(content, node.child_by_field_name("function") or node).split("(", 1)[0].strip()
         if not call_target:
             return
+        target = stable_node_id(repository.id, "unresolved_call", f"{file_path}:{call_target}")
+        repository.graph_nodes.append(
+            GraphNodeDTO(
+                id=target,
+                type="unresolved_call",
+                label=call_target,
+                file_path=file_path,
+                scope_path=file_path,
+                role="Unresolved call",
+            )
+        )
         repository.graph_edges.append(
             GraphEdgeDTO(
                 source=node_id("file", file_path),
-                target=node_id("symbol", call_target),
+                target=target,
                 type="calls",
                 confidence=0.45,
+                evidence_level="inferred",
             )
         )
 
@@ -153,15 +164,16 @@ class TreeSitterLanguageParser(LanguageParser):
         from app.services.text_utils import content_hash
 
         content = "\n".join(lines[start_line - 1 : end_line]).strip()
+        digest = content_hash(f"{file_path}:{start_line}:{end_line}:{content}")
         return ChunkRecord(
-            id=f"chunk_{uuid4().hex[:10]}",
+            id=stable_chunk_id(repository.id, file_path, chunk_type, symbol_name, digest),
             file_path=file_path,
             chunk_type=chunk_type,
             content=content,
             start_line=start_line,
             end_line=max(start_line, end_line),
             symbol_name=symbol_name,
-            content_hash=content_hash(f"{file_path}:{start_line}:{end_line}:{content}"),
+            content_hash=digest,
         )
 
     def _first_line(self, lines: list[str], start_line: int) -> str:
@@ -174,4 +186,3 @@ class TreeSitterLanguageParser(LanguageParser):
 
     def _row(self, point) -> int:
         return point[0] if isinstance(point, tuple) else point.row
-

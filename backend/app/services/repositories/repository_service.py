@@ -14,6 +14,7 @@ from app.schemas.api import (
     ReadingPathItemDTO,
     ReadingPathResponse,
     ReadingPathSignalDTO,
+    RepositoryBulkDeleteResponse,
     RepositoryCreateResponse,
     RepositoryDeleteResponse,
     RepositoryDTO,
@@ -53,6 +54,19 @@ class RepositoryService:
         self._delete_managed_storage(repository)
         clear_evidence(repository_id)
         return RepositoryDeleteResponse(deleted=True, repository_id=repository_id)
+
+    def delete_repositories(self, repository_ids: list[str], clear_evidence) -> RepositoryBulkDeleteResponse:
+        deleted_ids: list[str] = []
+        for repository_id in repository_ids:
+            repository = self.repositories.get(repository_id)
+            if repository is None:
+                continue
+            self.store.delete_repository(repository_id)
+            self.repositories.pop(repository_id, None)
+            self._delete_managed_storage(repository)
+            clear_evidence(repository_id)
+            deleted_ids.append(repository_id)
+        return RepositoryBulkDeleteResponse(deleted_count=len(deleted_ids), repository_ids=deleted_ids)
 
     def persist_repository(self, repository: RepositoryState) -> None:
         self.store.save_repository(repository)

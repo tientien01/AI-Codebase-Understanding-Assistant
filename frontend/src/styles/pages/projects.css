@@ -471,6 +471,25 @@
   color: #8ea9ff;
 }
 
+.quick-actions .danger-action {
+  border-color: #552633;
+  color: #ffb3b3;
+}
+
+.quick-actions .danger-action .icon {
+  color: #ff8e8e;
+}
+
+.quick-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quick-actions button:disabled:hover {
+  border-color: #223047;
+  background: #0f1725;
+}
+
 @media (max-width: 1100px) {
   .projects-toolbar {
     align-items: flex-start;

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-from uuid import uuid4
 
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
 from app.services.chunking_service import ChunkingService
+from app.services.code_analysis.stable_ids import stable_node_id, stable_symbol_id
 from app.services.index_models import FileRecord, RepositoryState, SymbolRecord
 from app.services.parsing.base import LanguageParser
 from app.services.parsing.tree_sitter_parser import TreeSitterLanguageParser
@@ -37,7 +37,7 @@ class JavaScriptTypeScriptParser(LanguageParser):
             symbol_type = "component" if name[:1].isupper() else "function"
             repository.symbols.append(
                 SymbolRecord(
-                    id=f"symbol_{uuid4().hex[:10]}",
+                    id=stable_symbol_id(repository.id, file_record.path, name, symbol_type),
                     name=name,
                     symbol_type=symbol_type,
                     file_path=file_record.path,
@@ -67,7 +67,12 @@ class JavaScriptTypeScriptParser(LanguageParser):
                 route_path = api_match.group(3)
                 self.chunking.add_chunk(repository, file_record.path, "api_call", line, index, index, f"{method} {route_path}")
                 repository.graph_nodes.append(
-                    GraphNodeDTO(id=f"api_call_{uuid4().hex[:8]}", type="api_call", label=f"{method} {route_path}", file_path=file_record.path)
+                    GraphNodeDTO(
+                        id=stable_node_id(repository.id, "api_call", f"{file_record.path}:{index}:{method}:{route_path}"),
+                        type="api_call",
+                        label=f"{method} {route_path}",
+                        file_path=file_record.path,
+                    )
                 )
 
     def _add_import_relation(self, repository: RepositoryState, file_path: str, module: str, confidence: float) -> None:

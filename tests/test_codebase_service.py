@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -8,6 +9,7 @@ from pathlib import Path
 import pytest
 from fastapi import UploadFile
 
+from app.core.config import settings
 from app.core.errors import DomainError
 from app.services.codebase_service import CodebaseService
 
@@ -74,6 +76,22 @@ def test_service_indexes_fixture_and_answers_with_evidence() -> None:
     assert not evidence.is_stale
 
 
+def test_indexing_writes_parse_debug_output() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-parse-output-test")
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+
+    artifact_path = settings.repository_storage_dir / created.repository_id / "parse_output.json"
+    assert artifact_path.exists()
+    payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    assert payload["metadata"]["schema_version"] == "parse-debug-v1"
+    assert payload["files"]
+    assert any(node["kind"] in {"Function", "Method"} for node in payload["nodes"])
+    assert "errors" in payload
+    assert "warnings" in payload
+
+
 def test_service_file_tree_and_content_are_available_after_index() -> None:
     service = CodebaseService()
     created = import_fixture_folder(service, "fixture-file-test")
@@ -100,6 +118,13 @@ def test_import_session_preview_and_confirm_creates_indexed_repository() -> None
     assert preview_response.status == "preview_ready"
     assert preview_response.file_statistics.supported_files >= 8
     assert "FastAPI" in preview_response.detected_stack
+    assert [item.stage for item in preview_response.activity_logs] == [
+        "upload_received",
+        "folder_saved",
+        "preview_ready",
+        "preview_scan_started",
+        "preview_scan_completed",
+    ]
     assert confirmed.repository_id in service.repositories
     assert confirmed.indexing_job_id
     assert confirmed.status == "indexed"
@@ -121,6 +146,7 @@ def test_import_preview_is_cached_after_first_scan() -> None:
 
     assert second_preview.file_statistics == first_preview.file_statistics
     assert second_preview.project_summary == first_preview.project_summary
+    assert second_preview.activity_logs == first_preview.activity_logs
 
 
 def test_import_preview_detects_duplicate_by_project_fingerprint() -> None:
@@ -394,3 +420,20 @@ def test_delete_repository_removes_project_records_and_managed_source() -> None:
 
     restarted = CodebaseService()
     assert all(repository.id != created.repository_id for repository in restarted.list_repositories())
+
+
+def test_delete_repositories_removes_multiple_project_records() -> None:
+    service = CodebaseService()
+    first = import_fixture_folder(service, "fixture-bulk-delete-one")
+    second = import_fixture_folder(service, "fixture-bulk-delete-two")
+    first_source = service.repositories[first.repository_id].source_path
+    second_source = service.repositories[second.repository_id].source_path
+
+    deleted = service.delete_repositories([first.repository_id, second.repository_id])
+
+    assert deleted.deleted_count == 2
+    assert set(deleted.repository_ids) == {first.repository_id, second.repository_id}
+    assert first.repository_id not in service.repositories
+    assert second.repository_id not in service.repositories
+    assert not first_source.exists()
+    assert not second_source.exists()

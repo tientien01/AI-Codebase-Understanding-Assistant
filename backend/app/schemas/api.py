@@ -33,6 +33,16 @@ class RepositoryDeleteResponse(BaseModel):
     repository_id: str
 
 
+class RepositoryBulkDeleteRequest(BaseModel):
+    repository_ids: list[str] = Field(default_factory=list)
+    delete_all: bool = False
+
+
+class RepositoryBulkDeleteResponse(BaseModel):
+    deleted_count: int
+    repository_ids: list[str] = Field(default_factory=list)
+
+
 class ImportSessionCreateResponse(BaseModel):
     import_session_id: str
     status: str
@@ -82,6 +92,14 @@ class ImportDuplicateCandidateDTO(BaseModel):
     match_reason: str
 
 
+class ImportActivityLogDTO(BaseModel):
+    timestamp: str
+    level: str = "info"
+    stage: str
+    message: str
+    details: dict[str, str] = Field(default_factory=dict)
+
+
 class ImportPreviewResponse(BaseModel):
     import_session_id: str
     status: str
@@ -93,6 +111,7 @@ class ImportPreviewResponse(BaseModel):
     security_warnings: list[ImportSecurityWarningDTO] = Field(default_factory=list)
     indexing_plan: list[str] = Field(default_factory=list)
     possible_duplicates: list[ImportDuplicateCandidateDTO] = Field(default_factory=list)
+    activity_logs: list[ImportActivityLogDTO] = Field(default_factory=list)
 
 
 class ImportConfirmRequest(BaseModel):

@@ -30,6 +30,8 @@ from app.schemas.api import (
     IndexStatusResponse,
     OverviewResponse,
     ReadingPathResponse,
+    RepositoryBulkDeleteRequest,
+    RepositoryBulkDeleteResponse,
     RepositoryCreateResponse,
     RepositoryDeleteResponse,
     RepositoryDTO,
@@ -90,6 +92,11 @@ def cancel_import_session(import_session_id: str) -> ImportCancelResponse:
 @router.get("", response_model=list[RepositoryDTO])
 def list_repositories() -> list[RepositoryDTO]:
     return codebase_service.list_repositories()
+
+
+@router.post("/bulk-delete", response_model=RepositoryBulkDeleteResponse)
+def delete_repositories(request: RepositoryBulkDeleteRequest) -> RepositoryBulkDeleteResponse:
+    return codebase_service.delete_repositories(request.repository_ids, request.delete_all)
 
 
 @router.delete("/{repository_id}", response_model=RepositoryDeleteResponse)

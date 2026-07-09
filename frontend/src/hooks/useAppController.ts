@@ -192,6 +192,26 @@ export function useAppController() {
     await loadRepositories()
   }
 
+  async function deleteAllRepositories() {
+    if (!repositories.length) return
+    if (!window.confirm(`Delete all ${repositories.length} projects from AI Codebase Assistant? Uploaded source and index data will be removed.`)) return
+    await request(`${API_V1}/repositories/bulk-delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delete_all: true }),
+    })
+    setSelectedRepositoryId('')
+    setOverview(null)
+    setIndexStatus(null)
+    setGraph(null)
+    setFileTree([])
+    setSelectedFilePath('')
+    setFileContent(null)
+    setSelectedEvidence(null)
+    setPage('projects')
+    await loadRepositories()
+  }
+
   async function openWorkspace(repositoryId: string) {
     setSelectedRepositoryId(repositoryId)
     await loadWorkspaceData(repositoryId)
@@ -279,6 +299,7 @@ export function useAppController() {
     resumeIndexingJob,
     cancelIndexingJob,
     deleteRepository,
+    deleteAllRepositories,
     loadFileContent,
     sendChatMessage,
     openEvidence,
