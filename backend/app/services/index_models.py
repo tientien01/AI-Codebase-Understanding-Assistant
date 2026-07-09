@@ -78,6 +78,7 @@ class EndpointRecord:
     file_path: str
     start_line: int
     end_line: int
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -103,6 +104,7 @@ class RepositoryState:
     source_label: str | None = None
     status: str = "created"
     current_index_version: int = 0
+    project_fingerprint: str | None = None
     files: list[FileRecord] = field(default_factory=list)
     symbols: list[SymbolRecord] = field(default_factory=list)
     endpoints: list[EndpointRecord] = field(default_factory=list)

@@ -373,17 +373,25 @@ class ImportSessionService:
         if source_dir.exists():
             raise DomainError("INVALID_REPOSITORY", "Repository source destination already exists.", 409)
         self._log_session(session, "confirm_started", "Import confirmation started.", repository_id=repository_id)
-        shutil.move(str(session.source_path), str(source_dir))
-
-        repository = RepositoryState(
-            id=repository_id,
-            name=name or session.name,
-            source_type=session.source_type,
-            source_uri=session.source_uri,
-            source_label=session.source_label,
-            source_path=source_dir,
-        )
-        self.repositories.create_repository(repository)
+        original_source_path = session.source_path
+        moved_source = False
+        try:
+            shutil.move(str(original_source_path), str(source_dir))
+            moved_source = True
+            repository = RepositoryState(
+                id=repository_id,
+                name=name or session.name,
+                source_type=session.source_type,
+                source_uri=session.source_uri,
+                source_label=session.source_label,
+                source_path=source_dir,
+                project_fingerprint=session.preview_project_fingerprint,
+            )
+            self.repositories.create_repository(repository)
+        except Exception:
+            if moved_source:
+                self._rollback_confirmed_source(source_dir, original_source_path)
+            raise
         session.status = "confirmed"
         session.confirmed_repository_id = repository.id
         self._log_session(session, "repository_created", "Repository record created.", repository_id=repository.id)
@@ -483,6 +491,16 @@ class ImportSessionService:
                 break
         return items
 
+    def _rollback_confirmed_source(self, source_dir: Path, original_source_path: Path) -> None:
+        try:
+            if source_dir.exists() and not original_source_path.exists():
+                original_source_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(source_dir), str(original_source_path))
+            elif source_dir.exists() and self.archive.is_relative_to(source_dir.resolve(), settings.repository_storage_dir.resolve()):
+                shutil.rmtree(source_dir)
+        except OSError:
+            return
+
     def _ignore_summary(self, skipped_files) -> list[dict[str, str | int]]:
         counts: dict[tuple[str, str], int] = {}
         for skipped in skipped_files:
@@ -504,7 +522,7 @@ class ImportSessionService:
         session_label = (session.source_label or "").lower()
         duplicates = []
         for repository in self.repositories.repositories.values():
-            repository_fingerprint = self._project_fingerprint(repository.files)
+            repository_fingerprint = repository.project_fingerprint or self._project_fingerprint(repository.files)
             if session.preview_project_fingerprint and repository_fingerprint == session.preview_project_fingerprint:
                 duplicates.append(
                     ImportDuplicateCandidateDTO(

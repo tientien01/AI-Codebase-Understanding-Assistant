@@ -113,6 +113,19 @@ class ParseDebugOutputService:
                     "signature": symbol.signature,
                 }
             )
+        for endpoint in repository.endpoints:
+            nodes.append(
+                {
+                    "id": node_id("endpoint", f"{endpoint.method}:{endpoint.path}"),
+                    "kind": "Endpoint",
+                    "label": f"{endpoint.method} {endpoint.path}",
+                    "file_path": endpoint.file_path,
+                    "start_line": endpoint.start_line,
+                    "end_line": endpoint.end_line,
+                    "handler": endpoint.handler,
+                    "metadata": endpoint.metadata,
+                }
+            )
         for edge in repository.graph_edges:
             if edge.type != "imports":
                 continue

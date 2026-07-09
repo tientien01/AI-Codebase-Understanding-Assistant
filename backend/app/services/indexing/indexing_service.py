@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+import hashlib
 from inspect import signature
 from threading import Event, Lock, Thread
 from uuid import uuid4
@@ -134,7 +135,7 @@ class IndexingService:
         repository.finished_at = None
         repository.logs = [f"{job.started_at} queued"]
         self.store.save_indexing_job(job)
-        self.repositories.persist_repository(repository)
+        self.repositories.persist_repository_metadata(repository)
         control = IndexingJobControl()
         with self._controls_lock:
             self._controls[job.id] = control
@@ -165,7 +166,7 @@ class IndexingService:
             job.finished_at = repository.finished_at
             job.logs.append(f"{repository.finished_at} cancelled")
             self.store.save_indexing_job(job)
-            self.repositories.persist_repository(repository)
+            self.repositories.persist_repository_metadata(repository)
         except Exception as exc:
             if previous_status not in {"indexed", "indexed_with_warnings"}:
                 repository.status = "failed"
@@ -183,7 +184,7 @@ class IndexingService:
             job.error_message = str(exc)
             job.finished_at = utc_now()
             self.store.save_indexing_job(job)
-            self.repositories.persist_repository(repository)
+            self.repositories.persist_repository_metadata(repository)
             if raise_errors:
                 raise
         else:
@@ -289,6 +290,7 @@ class IndexingService:
             if step == "scan_repository_files":
                 scan_result = self.scanner.scan_files_with_diagnostics(repository)
                 repository.files = scan_result.files
+                repository.project_fingerprint = self._project_fingerprint(repository)
                 repository.skipped_file_records = [
                     {
                         "file_path": skipped.file_path,
@@ -359,6 +361,19 @@ class IndexingService:
             repository.warnings.append(f"Could not write parse debug output: {exc}")
             return
         repository.logs.append(f"{utc_now()} parse_debug_output_written {artifact_path}")
+
+    def _project_fingerprint(self, repository: RepositoryState) -> str | None:
+        if not repository.files:
+            return None
+        digest = hashlib.sha256()
+        for file in sorted(repository.files, key=lambda item: item.path):
+            digest.update(file.path.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(str(file.size_bytes).encode("ascii"))
+            digest.update(b"\0")
+            digest.update(file.content_hash.encode("ascii"))
+            digest.update(b"\n")
+        return digest.hexdigest()
 
     def _check_control(self, repository: RepositoryState, job: IndexingJobRecord, control: IndexingJobControl) -> None:
         if control.cancel_requested.is_set():

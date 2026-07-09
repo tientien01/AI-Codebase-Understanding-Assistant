@@ -254,6 +254,7 @@ class EndpointDTO(BaseModel):
     file_path: str
     start_line: int
     end_line: int
+    metadata: dict[str, str] = Field(default_factory=dict)
 
 
 class OverviewResponse(BaseModel):

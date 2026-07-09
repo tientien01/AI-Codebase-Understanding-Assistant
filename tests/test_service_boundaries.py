@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.schemas.api import GraphNodeDTO
+from app.services.chat.llm_client import LLMClient
 from app.services.chunking_service import ChunkingService
 from app.services.graph.graph_service import GraphService
 from app.services.index_models import EndpointRecord, FileRecord, RepositoryState, SymbolRecord
@@ -151,3 +152,10 @@ def test_retrieval_classifies_and_scores_login_queries(tmp_path: Path) -> None:
     assert results
     assert results[0].file_path == "backend/auth.py"
     assert results[0].symbol_name == "authenticate_user"
+
+
+def test_llm_client_is_not_configured_for_fake_provider() -> None:
+    client = LLMClient(provider="fake", model="fake-chat-model", api_key="")
+
+    assert not client.is_configured
+    assert client.generate_grounded_answer("question", "code_question", []) is None

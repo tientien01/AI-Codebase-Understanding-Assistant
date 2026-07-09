@@ -87,7 +87,7 @@ class GraphService:
             edges.append(GraphEdgeDTO(source=graph_node.id, target=endpoint_id, type="calls_api", confidence=0.72))
 
         repository.graph_nodes = list(nodes.values())
-        repository.graph_edges = edges
+        repository.graph_edges = self._dedupe_edges(edges)
 
     def _add_folder_path(self, nodes: dict[str, GraphNodeDTO], edges: list[GraphEdgeDTO], root_id: str, file_path: str) -> None:
         parts = Path(file_path).parts[:-1]
@@ -136,3 +136,12 @@ class GraphService:
         if "route" in file_path.lower() or "controller" in file_path.lower():
             return "API routing"
         return f"{language.title()} file"
+
+    def _dedupe_edges(self, edges: list[GraphEdgeDTO]) -> list[GraphEdgeDTO]:
+        deduped: dict[tuple[str, str, str], GraphEdgeDTO] = {}
+        for edge in edges:
+            key = (edge.source, edge.target, edge.type)
+            existing = deduped.get(key)
+            if existing is None or edge.confidence > existing.confidence:
+                deduped[key] = edge
+        return list(deduped.values())

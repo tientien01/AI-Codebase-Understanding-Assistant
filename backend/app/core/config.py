@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     embedding_api_key: str = ""
     vector_store_provider: str = "local"
     enable_agent_trace: bool = True
+    enable_cfg_dfg: bool = True
+    api_auth_token: str = ""
     vite_api_base_url: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", env_file_encoding="utf-8")

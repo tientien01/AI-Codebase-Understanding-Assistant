@@ -20,6 +20,15 @@ class IRImport(IRNode):
     module: str = ""
     imported_name: str | None = None
     alias: str | None = None
+    level: int = 0
+
+
+@dataclass
+class IRDecorator:
+    name: str
+    args: list[str] = field(default_factory=list)
+    kwargs: dict[str, str] = field(default_factory=dict)
+    line: int | None = None
 
 
 @dataclass
@@ -49,6 +58,7 @@ class IRFunction(IRNode):
     qualified_name: str = ""
     parameters: list[IRParameter] = field(default_factory=list)
     body: list[IRStatement] = field(default_factory=list)
+    decorators: list[IRDecorator] = field(default_factory=list)
     is_async: bool = False
 
 
@@ -69,6 +79,7 @@ class IREndpoint:
     file_path: str
     start_line: int
     end_line: int
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

@@ -42,6 +42,7 @@ class RepositoryStore:
                     source_path=str(repository.source_path),
                     status=repository.status,
                     current_index_version=repository.current_index_version,
+                    project_fingerprint=repository.project_fingerprint,
                     logs_json=json.dumps(repository.logs),
                     warnings_json=json.dumps(repository.warnings),
                     failed_files=repository.failed_files,
@@ -94,6 +95,7 @@ class RepositoryStore:
                         file_path=endpoint.file_path,
                         start_line=endpoint.start_line,
                         end_line=endpoint.end_line,
+                        metadata_json=json.dumps(endpoint.metadata),
                     )
                     for endpoint in repository.endpoints
                 ]
@@ -144,6 +146,28 @@ class RepositoryStore:
                     )
                     for edge in repository.graph_edges
                 ]
+            )
+
+    def save_repository_metadata(self, repository: RepositoryState) -> None:
+        with SessionLocal.begin() as session:
+            session.merge(
+                RepositoryORM(
+                    id=repository.id,
+                    name=repository.name,
+                    source_type=repository.source_type,
+                    source_uri=repository.source_uri,
+                    source_label=repository.source_label,
+                    source_path=str(repository.source_path),
+                    status=repository.status,
+                    current_index_version=repository.current_index_version,
+                    project_fingerprint=repository.project_fingerprint,
+                    logs_json=json.dumps(repository.logs),
+                    warnings_json=json.dumps(repository.warnings),
+                    failed_files=repository.failed_files,
+                    current_step=repository.current_step,
+                    started_at=repository.started_at,
+                    finished_at=repository.finished_at,
+                )
             )
 
     def save_indexing_job(self, job: IndexingJobRecord) -> None:
@@ -279,6 +303,7 @@ class RepositoryStore:
             source_path=Path(repository.source_path),
             status=repository.status,
             current_index_version=repository.current_index_version,
+            project_fingerprint=repository.project_fingerprint,
             files=[
                 FileRecord(
                     path=file.path,
@@ -311,6 +336,7 @@ class RepositoryStore:
                     file_path=endpoint.file_path,
                     start_line=endpoint.start_line,
                     end_line=endpoint.end_line,
+                    metadata=json.loads(endpoint.metadata_json or "{}"),
                 )
                 for endpoint in endpoints
             ],

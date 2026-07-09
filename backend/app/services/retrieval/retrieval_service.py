@@ -5,6 +5,36 @@ import re
 from app.schemas.api import CitationDTO
 from app.services.index_models import ChunkRecord, RepositoryState
 
+STOPWORDS = {
+    "the",
+    "and",
+    "for",
+    "with",
+    "that",
+    "this",
+    "what",
+    "where",
+    "when",
+    "how",
+    "can",
+    "you",
+    "toi",
+    "cua",
+    "cho",
+    "nao",
+    "nhu",
+    "the",
+    "hoat",
+    "dong",
+}
+
+QUESTION_TYPE_CHUNK_BOOSTS = {
+    "api_question": {"endpoint": 2.0, "function": 0.5, "method": 0.5},
+    "flow_tracing": {"endpoint": 1.0, "function": 1.0, "method": 1.0},
+    "architecture_overview": {"doc_section": 1.5, "file_summary": 1.0},
+    "debugging": {"function": 0.8, "method": 0.8, "file_summary": 0.4},
+}
+
 
 class RetrievalService:
     def classify_question(self, question: str) -> str:
@@ -26,25 +56,45 @@ class RetrievalService:
         return "code_question"
 
     def search_chunks(self, repository: RepositoryState, query: str, limit: int) -> list[ChunkRecord]:
-        terms = [term.lower() for term in re.findall(r"[\w/.-]+", query) if len(term) > 1]
+        question_type = self.classify_question(query)
+        terms = self._query_terms(query)
         scored: list[ChunkRecord] = []
         for chunk in repository.chunks:
-            haystack = f"{chunk.file_path} {chunk.symbol_name or ''} {chunk.content}".lower()
-            score = sum(1.0 for term in terms if term in haystack)
-            if chunk.symbol_name and chunk.symbol_name.lower() in query.lower():
-                score += 2
-            if chunk.file_path.lower() in query.lower():
-                score += 2
+            haystack = self._chunk_haystack(chunk)
+            score = self._lexical_score(terms, haystack)
+            score += QUESTION_TYPE_CHUNK_BOOSTS.get(question_type, {}).get(chunk.chunk_type, 0.0)
+            normalized_query = query.lower()
+            if chunk.symbol_name and chunk.symbol_name.lower() in normalized_query:
+                score += 3
+            if chunk.file_path.lower() in normalized_query:
+                score += 3
             if chunk.chunk_type == "endpoint" and any(term in haystack for term in terms):
                 score += 1
-            if "login" in query.lower() and ("login" in haystack or "auth" in haystack):
+            if "login" in normalized_query and ("login" in haystack or "auth" in haystack):
                 score += 3
-            if any(token in query.lower() for token in ["overview", "kien truc", "architecture"]) and chunk.chunk_type in {"doc_section", "file_summary"}:
-                score += 1
             if score > 0:
-                clone = ChunkRecord(**{**chunk.__dict__, "score": min(0.99, score / max(len(terms), 1))})
+                clone = ChunkRecord(**{**chunk.__dict__, "score": min(0.99, score / max(len(terms), 2))})
                 scored.append(clone)
         return sorted(scored, key=lambda item: item.score, reverse=True)[:limit]
+
+    def _query_terms(self, query: str) -> list[str]:
+        raw_terms = re.findall(r"[\w/.-]+", query.lower())
+        return [term for term in raw_terms if len(term) > 1 and term not in STOPWORDS]
+
+    def _chunk_haystack(self, chunk: ChunkRecord) -> str:
+        return f"{chunk.file_path} {chunk.symbol_name or ''} {chunk.chunk_type} {chunk.content}".lower()
+
+    def _lexical_score(self, terms: list[str], haystack: str) -> float:
+        if not terms:
+            return 0.0
+        score = 0.0
+        haystack_tokens = set(re.findall(r"[\w/.-]+", haystack))
+        for term in terms:
+            if term in haystack_tokens:
+                score += 2.0
+            elif term in haystack:
+                score += 0.75
+        return score
 
     def generate_grounded_answer(self, question_type: str, message: str, citations: list[CitationDTO]) -> str:
         first = citations[0]

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
+from app.core.auth import require_api_auth
 from app.schemas.api import (
     ChatRequest,
     ChatResponse,
@@ -44,9 +45,9 @@ from app.schemas.api import (
 )
 from app.services.codebase_service import codebase_service
 
-router = APIRouter(prefix="/repositories", tags=["repositories"])
-import_sessions_router = APIRouter(prefix="/import-sessions", tags=["import-sessions"])
-settings_router = APIRouter(prefix="/settings", tags=["settings"])
+router = APIRouter(prefix="/repositories", tags=["repositories"], dependencies=[Depends(require_api_auth)])
+import_sessions_router = APIRouter(prefix="/import-sessions", tags=["import-sessions"], dependencies=[Depends(require_api_auth)])
+settings_router = APIRouter(prefix="/settings", tags=["settings"], dependencies=[Depends(require_api_auth)])
 
 
 @import_sessions_router.post("/upload-zip", response_model=ImportSessionCreateResponse)

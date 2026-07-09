@@ -34,6 +34,7 @@ def _ensure_sqlite_columns() -> None:
         "repositories": {
             "source_label": "TEXT",
             "current_index_version": "INTEGER DEFAULT 0",
+            "project_fingerprint": "TEXT",
         },
         "indexing_jobs": {
             "index_version": "INTEGER DEFAULT 0",
@@ -42,7 +43,10 @@ def _ensure_sqlite_columns() -> None:
         },
         "file_records": {"index_version": "INTEGER DEFAULT 0"},
         "symbol_records": {"index_version": "INTEGER DEFAULT 0"},
-        "endpoint_records": {"index_version": "INTEGER DEFAULT 0"},
+        "endpoint_records": {
+            "index_version": "INTEGER DEFAULT 0",
+            "metadata_json": "TEXT DEFAULT '{}'",
+        },
         "chunk_records": {"index_version": "INTEGER DEFAULT 0"},
         "graph_nodes": {"index_version": "INTEGER DEFAULT 0"},
         "graph_edges": {"index_version": "INTEGER DEFAULT 0"},

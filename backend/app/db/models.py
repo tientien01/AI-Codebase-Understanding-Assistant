@@ -17,6 +17,7 @@ class RepositoryORM(Base):
     source_path: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
     current_index_version: Mapped[int] = mapped_column(Integer, default=0)
+    project_fingerprint: Mapped[str | None] = mapped_column(String)
     logs_json: Mapped[str] = mapped_column(Text, default="[]")
     warnings_json: Mapped[str] = mapped_column(Text, default="[]")
     failed_files: Mapped[int] = mapped_column(Integer, default=0)
@@ -76,6 +77,7 @@ class SymbolRecordORM(Base):
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     start_line: Mapped[int] = mapped_column(Integer, nullable=False)
     end_line: Mapped[int] = mapped_column(Integer, nullable=False)
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
     signature: Mapped[str] = mapped_column(Text, default="")
 
 

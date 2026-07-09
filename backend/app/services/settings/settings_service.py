@@ -16,7 +16,7 @@ class SettingsService:
             providers={
                 "llm_provider": settings.llm_provider,
                 "llm_model": settings.llm_model,
-                "llm_configured": bool(settings.llm_api_key) or settings.llm_provider == "fake",
+                "llm_configured": settings.llm_provider != "fake" and bool(settings.llm_api_key),
                 "embedding_provider": settings.embedding_provider,
                 "embedding_model": settings.embedding_model,
                 "embedding_configured": bool(settings.embedding_api_key) or settings.embedding_provider == "fake",

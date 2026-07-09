@@ -158,3 +158,105 @@ def test_parse_debug_output_contains_files_nodes_edges_and_diagnostics(tmp_path:
     assert any(edge["type"] == "calls" and edge["resolved"] for edge in payload["edges"])
     assert "errors" in payload
     assert "warnings" in payload
+
+
+def test_python_endpoint_detector_handles_flask_decorators(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "from flask import Blueprint, render_template\n\n"
+        "auth = Blueprint('auth', __name__)\n\n"
+        "@auth.route('/login', methods=['GET', 'POST'])\n"
+        "def login():\n"
+        "    return render_template('login.html')\n",
+    )
+
+    endpoint = next(item for item in repository.endpoints if item.handler == "login")
+
+    assert endpoint.path == "/login"
+    assert endpoint.method == "GET"
+    assert endpoint.metadata["framework"] == "flask"
+    assert not any("render_template" in item.get("message", "") for item in repository.parse_diagnostics)
+
+
+def test_endpoint_detector_keeps_unknown_framework_generic(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "class Router:\n"
+        "    def route(self, path):\n"
+        "        return lambda func: func\n\n"
+        "router = Router()\n\n"
+        "@router.route('/custom')\n"
+        "def custom():\n"
+        "    return 'ok'\n",
+    )
+
+    endpoint = next(item for item in repository.endpoints if item.handler == "custom")
+
+    assert endpoint.path == "/custom"
+    assert endpoint.metadata["framework"] == "unknown"
+
+
+def test_python_call_resolver_classifies_builtins_and_imported_calls(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "import ast\n"
+        "from flask import redirect\n\n"
+        "def parse(value):\n"
+        "    data = ast.literal_eval(value)\n"
+        "    return len(data)\n\n"
+        "def go():\n"
+        "    return redirect('/login')\n",
+    )
+
+    edge_types = {edge.type for edge in repository.graph_edges}
+
+    assert "calls_stdlib" in edge_types
+    assert "calls_builtin" in edge_types
+    assert "calls_framework" in edge_types
+    assert not repository.parse_diagnostics
+
+
+def test_import_resolver_links_internal_python_modules(tmp_path: Path) -> None:
+    package_dir = tmp_path / "app"
+    package_dir.mkdir()
+    user_file = package_dir / "user.py"
+    routes_file = package_dir / "routes.py"
+    user_file.write_text("class User:\n    pass\n", encoding="utf-8")
+    routes_file.write_text("from app.user import User\n\n\ndef load():\n    return User()\n", encoding="utf-8")
+    repository = RepositoryState(
+        id="repo_imports",
+        name="imports",
+        source_type="upload_folder",
+        source_uri=str(tmp_path),
+        source_path=tmp_path,
+        files=[
+            FileRecord("app/user.py", user_file, "python", "source", user_file.stat().st_size, "hash-user"),
+            FileRecord("app/routes.py", routes_file, "python", "source", routes_file.stat().st_size, "hash-routes"),
+        ],
+    )
+
+    ParserService(ChunkingService()).parse_files(repository)
+    GraphService().build_graph(repository)
+
+    file_nodes = {node.file_path: node.id for node in repository.graph_nodes if node.type == "file"}
+    assert any(
+        edge.type == "imports_internal"
+        and edge.source == file_nodes["app/routes.py"]
+        and edge.target == file_nodes["app/user.py"]
+        for edge in repository.graph_edges
+    )
+
+
+def test_cfg_dfg_can_be_disabled_for_lightweight_indexing(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "enable_cfg_dfg", False)
+
+    repository = parse_python_source(
+        tmp_path,
+        "def choose(value):\n"
+        "    if value:\n"
+        "        return value\n"
+        "    return 0\n",
+    )
+
+    assert not any(edge.type.startswith("cfg_") for edge in repository.graph_edges)
+    assert not any(edge.type.startswith("dfg_") for edge in repository.graph_edges)

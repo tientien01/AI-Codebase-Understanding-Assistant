@@ -71,6 +71,9 @@ class RepositoryService:
     def persist_repository(self, repository: RepositoryState) -> None:
         self.store.save_repository(repository)
 
+    def persist_repository_metadata(self, repository: RepositoryState) -> None:
+        self.store.save_repository_metadata(repository)
+
     def replace_repository_index(self, repository: RepositoryState, indexed_repository: RepositoryState) -> None:
         repository.status = indexed_repository.status
         repository.current_index_version = indexed_repository.current_index_version
@@ -189,6 +192,7 @@ class RepositoryService:
                     file_path=endpoint.file_path,
                     start_line=endpoint.start_line,
                     end_line=endpoint.end_line,
+                    metadata=endpoint.metadata,
                 )
                 for endpoint in repository.endpoints
             ],
@@ -266,6 +270,7 @@ class RepositoryService:
                     file_path=endpoint.file_path,
                     start_line=endpoint.start_line,
                     end_line=endpoint.end_line,
+                    metadata=endpoint.metadata,
                 )
                 for endpoint in repository.endpoints
             ]

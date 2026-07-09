@@ -7,6 +7,7 @@ from app.services.code_analysis.diagnostics import parser_diagnostic
 from app.services.code_analysis.models import (
     IRClass,
     IREndpoint,
+    IRDecorator,
     IRExpression,
     IRFunction,
     IRImport,
@@ -50,11 +51,7 @@ class PythonAdapter(LanguageAdapter):
             if isinstance(node, ast.ClassDef):
                 module.classes.append(self._class(repository_id, file_path, lines, node, ast_path, None))
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                function = self._function(repository_id, file_path, lines, node, ast_path, None)
-                module.functions.append(function)
-                endpoint = self._endpoint(node, file_path, function.qualified_name)
-                if endpoint:
-                    module.endpoints.append(endpoint)
+                module.functions.append(self._function(repository_id, file_path, lines, node, ast_path, None))
             else:
                 statement = self._statement(repository_id, file_path, lines, node, ast_path, "module")
                 if statement:
@@ -78,7 +75,8 @@ class PythonAdapter(LanguageAdapter):
                             alias.asname,
                         )
                     )
-            elif isinstance(node, ast.ImportFrom) and node.module:
+            elif isinstance(node, ast.ImportFrom):
+                module_name = "." * node.level + (node.module or "")
                 for alias_index, alias in enumerate(node.names):
                     imports.append(
                         self._import_node(
@@ -87,9 +85,10 @@ class PythonAdapter(LanguageAdapter):
                             lines,
                             node,
                             f"ImportFrom[{index}].names[{alias_index}]",
-                            node.module,
+                            module_name,
                             alias.name,
                             alias.asname,
+                            node.level,
                         )
                     )
         return imports
@@ -104,6 +103,7 @@ class PythonAdapter(LanguageAdapter):
         module: str,
         imported_name: str | None,
         alias: str | None,
+        level: int = 0,
     ) -> IRImport:
         return IRImport(
             id=self._node_id(repository_id, file_path, "module", ast_path, "import", node, lines),
@@ -116,6 +116,7 @@ class PythonAdapter(LanguageAdapter):
             module=module,
             imported_name=imported_name,
             alias=alias,
+            level=level,
         )
 
     def _class(
@@ -170,6 +171,7 @@ class PythonAdapter(LanguageAdapter):
             qualified_name=qualified_name,
             is_async=isinstance(node, ast.AsyncFunctionDef),
             metadata={"signature": self._signature(node)},
+            decorators=[self._decorator(decorator) for decorator in node.decorator_list],
         )
         function.parameters = [
             IRParameter(
@@ -282,25 +284,27 @@ class PythonAdapter(LanguageAdapter):
         ]
         return expression
 
-    def _endpoint(self, node: ast.FunctionDef | ast.AsyncFunctionDef, file_path: str, qualified_name: str) -> IREndpoint | None:
-        for decorator in node.decorator_list:
-            if not isinstance(decorator, ast.Call) or not isinstance(decorator.func, ast.Attribute):
-                continue
-            method = decorator.func.attr.lower()
-            if method not in {"get", "post", "put", "delete", "patch"}:
-                continue
-            if not decorator.args or not isinstance(decorator.args[0], ast.Constant):
-                continue
-            return IREndpoint(
-                method=method.upper(),
-                path=str(decorator.args[0].value),
-                handler=node.name,
-                handler_qualified_name=qualified_name,
-                file_path=file_path,
-                start_line=node.lineno,
-                end_line=getattr(node, "end_lineno", node.lineno),
-            )
-        return None
+    def _decorator(self, node: ast.AST) -> IRDecorator:
+        call = node if isinstance(node, ast.Call) else None
+        target = call.func if call else node
+        kwargs = {
+            keyword.arg or "kwargs": self._literal_or_name(keyword.value)
+            for keyword in (call.keywords if call else [])
+        }
+        args = [self._literal_or_name(arg) for arg in (call.args if call else [])]
+        return IRDecorator(
+            name=self._name(target) or self._node_text([], node) or type(node).__name__,
+            args=args,
+            kwargs=kwargs,
+            line=getattr(node, "lineno", None),
+        )
+
+    def _literal_or_name(self, node: ast.AST) -> str:
+        try:
+            value = ast.literal_eval(node)
+        except (ValueError, TypeError):
+            return self._name(node) or ast.unparse(node)
+        return repr(value)
 
     def _node_id(self, repository_id: str, file_path: str, scope_key: str, ast_path: str, node_kind: str, node: ast.AST, lines: list[str]) -> str:
         snippet = self._node_text(lines, node)
