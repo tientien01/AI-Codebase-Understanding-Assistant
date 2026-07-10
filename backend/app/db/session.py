@@ -42,7 +42,10 @@ def _ensure_sqlite_columns() -> None:
             "failed_files_json": "TEXT DEFAULT '[]'",
         },
         "file_records": {"index_version": "INTEGER DEFAULT 0"},
-        "symbol_records": {"index_version": "INTEGER DEFAULT 0"},
+        "symbol_records": {
+            "index_version": "INTEGER DEFAULT 0",
+            "metadata_json": "TEXT DEFAULT '{}'",
+        },
         "endpoint_records": {
             "index_version": "INTEGER DEFAULT 0",
             "metadata_json": "TEXT DEFAULT '{}'",
@@ -57,12 +60,25 @@ def _ensure_sqlite_columns() -> None:
     }
     columns_by_table["graph_nodes"].update(
         {
+            "start_line": "INTEGER",
+            "end_line": "INTEGER",
+            "summary": "TEXT",
+            "tags_json": "TEXT DEFAULT '[]'",
+            "complexity": "TEXT",
+            "layer": "TEXT",
             "coverage": "TEXT DEFAULT 'deep_indexed'",
             "scope_path": "TEXT",
             "role": "TEXT",
+            "metadata_json": "TEXT DEFAULT '{}'",
         }
     )
-    columns_by_table["graph_edges"].update({"evidence_level": "TEXT DEFAULT 'deep'"})
+    columns_by_table["graph_edges"].update(
+        {
+            "evidence_level": "TEXT DEFAULT 'deep'",
+            "weight": "REAL",
+            "metadata_json": "TEXT DEFAULT '{}'",
+        }
+    )
 
     with engine.begin() as connection:
         for table_name, required_columns in columns_by_table.items():

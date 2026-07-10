@@ -126,9 +126,16 @@ class RepositoryStore:
                         type=node.type,
                         label=node.label,
                         file_path=node.file_path,
+                        start_line=node.start_line,
+                        end_line=node.end_line,
+                        summary=node.summary,
+                        tags_json=json.dumps(node.tags),
+                        complexity=node.complexity,
+                        layer=node.layer,
                         coverage=node.coverage,
                         scope_path=node.scope_path,
                         role=node.role,
+                        metadata_json=json.dumps(node.metadata),
                     )
                     for node in repository.graph_nodes
                 ]
@@ -143,6 +150,8 @@ class RepositoryStore:
                         type=edge.type,
                         confidence=edge.confidence,
                         evidence_level=edge.evidence_level,
+                        weight=edge.weight,
+                        metadata_json=json.dumps(edge.metadata),
                     )
                     for edge in repository.graph_edges
                 ]
@@ -359,9 +368,16 @@ class RepositoryStore:
                     type=node.type,
                     label=node.label,
                     file_path=node.file_path,
+                    start_line=node.start_line,
+                    end_line=node.end_line,
+                    summary=node.summary,
+                    tags=json.loads(node.tags_json or "[]"),
+                    complexity=node.complexity,
+                    layer=node.layer,
                     coverage=node.coverage or "deep_indexed",
                     scope_path=node.scope_path,
                     role=node.role,
+                    metadata=json.loads(node.metadata_json or "{}"),
                 )
                 for node in graph_nodes
             ],
@@ -372,6 +388,8 @@ class RepositoryStore:
                     type=edge.type,
                     confidence=edge.confidence,
                     evidence_level=edge.evidence_level or "deep",
+                    weight=edge.weight,
+                    metadata=json.loads(edge.metadata_json or "{}"),
                 )
                 for edge in graph_edges
             ],

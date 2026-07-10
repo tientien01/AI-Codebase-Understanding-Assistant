@@ -314,6 +314,8 @@ class CPGEmitter:
                         type="cfg_node",
                         label=node.label,
                         file_path=node.file_path,
+                        start_line=node.start_line,
+                        end_line=node.end_line,
                         scope_path=node.file_path,
                         role=node.kind,
                     )
@@ -330,6 +332,8 @@ class CPGEmitter:
                         type="dfg_node",
                         label=f"{node.kind}: {node.name}",
                         file_path=node.file_path,
+                        start_line=node.line,
+                        end_line=node.line,
                         scope_path=node.file_path,
                         role=node.kind,
                     )

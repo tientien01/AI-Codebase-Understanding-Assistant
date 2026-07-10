@@ -72,6 +72,10 @@ class JavaScriptTypeScriptParser(LanguageParser):
                         type="api_call",
                         label=f"{method} {route_path}",
                         file_path=file_record.path,
+                        start_line=index,
+                        end_line=index,
+                        scope_path=file_record.path,
+                        role="API call",
                     )
                 )
 

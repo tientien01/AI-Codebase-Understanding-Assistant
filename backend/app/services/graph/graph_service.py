@@ -3,11 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO, GraphResponse
+from app.services.graph.graph_schema_service import GraphSchemaService
 from app.services.index_models import RepositoryState
 from app.services.text_utils import node_id, normalize_route
 
 
 class GraphService:
+    def __init__(self, schema: GraphSchemaService | None = None) -> None:
+        self.schema = schema or GraphSchemaService()
+
     def get_graph(self, repository: RepositoryState) -> GraphResponse:
         return GraphResponse(nodes=repository.graph_nodes, edges=repository.graph_edges)
 
@@ -39,6 +43,8 @@ class GraphService:
                 type=symbol.symbol_type,
                 label=symbol.name,
                 file_path=symbol.file_path,
+                start_line=symbol.start_line,
+                end_line=symbol.end_line,
                 coverage="deep_indexed",
                 scope_path=symbol.file_path,
                 role=symbol.symbol_type,
@@ -58,6 +64,8 @@ class GraphService:
                 type="endpoint",
                 label=f"{endpoint.method} {endpoint.path}",
                 file_path=endpoint.file_path,
+                start_line=endpoint.start_line,
+                end_line=endpoint.end_line,
                 coverage="deep_indexed",
                 scope_path=endpoint.file_path,
                 role="API endpoint",
@@ -88,6 +96,7 @@ class GraphService:
 
         repository.graph_nodes = list(nodes.values())
         repository.graph_edges = self._dedupe_edges(edges)
+        self.schema.normalize_repository_graph(repository)
 
     def _add_folder_path(self, nodes: dict[str, GraphNodeDTO], edges: list[GraphEdgeDTO], root_id: str, file_path: str) -> None:
         parts = Path(file_path).parts[:-1]

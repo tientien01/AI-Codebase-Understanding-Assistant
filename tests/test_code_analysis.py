@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from app.core.config import settings
+from app.schemas.api import GraphEdgeDTO
 from app.services.chunking_service import ChunkingService
 from app.services.index_models import FileRecord, RepositoryState
 from app.services.parsing.debug_output_service import ParseDebugOutputService
@@ -131,6 +132,38 @@ def test_graph_edges_reference_existing_nodes_after_build(tmp_path: Path) -> Non
         if edge.source not in node_ids or edge.target not in node_ids
     ]
     assert dangling_edges == []
+
+
+def test_graph_schema_normalizes_nodes_edges_and_metadata(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "def login(user):\n"
+        "    return user\n",
+    )
+    repository.graph_edges.append(
+        GraphEdgeDTO(
+            source="missing",
+            target="also_missing",
+            type="custom_edge",
+            confidence=2.5,
+        )
+    )
+
+    GraphService().build_graph(repository)
+
+    login_node = next(node for node in repository.graph_nodes if node.label == "login")
+    assert login_node.start_line == 1
+    assert login_node.end_line == 2
+    assert login_node.summary
+    assert "function" in login_node.tags
+    assert login_node.layer == "application"
+    assert login_node.complexity
+
+    assert all(edge.source != "missing" for edge in repository.graph_edges)
+    assert all(0 <= edge.confidence <= 1 for edge in repository.graph_edges)
+    assert all(edge.weight is not None for edge in repository.graph_edges)
+    assert all(edge.evidence_level in {"map", "deep", "inferred"} for edge in repository.graph_edges)
+    assert any("Dropped graph edge with missing endpoint" in item["message"] for item in repository.parse_diagnostics)
 
 
 def test_parse_debug_output_contains_files_nodes_edges_and_diagnostics(tmp_path: Path) -> None:

@@ -359,9 +359,16 @@ class GraphNodeDTO(BaseModel):
     type: str
     label: str
     file_path: str | None = None
+    start_line: int | None = None
+    end_line: int | None = None
+    summary: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    complexity: str | None = None
+    layer: str | None = None
     coverage: str = "deep_indexed"
     scope_path: str | None = None
     role: str | None = None
+    metadata: dict[str, str] = Field(default_factory=dict)
 
 
 class GraphEdgeDTO(BaseModel):
@@ -370,6 +377,8 @@ class GraphEdgeDTO(BaseModel):
     type: str
     confidence: float
     evidence_level: str = "deep"
+    weight: float | None = None
+    metadata: dict[str, str] = Field(default_factory=dict)
 
 
 class GraphResponse(BaseModel):

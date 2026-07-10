@@ -93,6 +93,7 @@ class EndpointRecordORM(Base):
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     start_line: Mapped[int] = mapped_column(Integer, nullable=False)
     end_line: Mapped[int] = mapped_column(Integer, nullable=False)
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class ChunkRecordORM(Base):
@@ -119,9 +120,16 @@ class GraphNodeORM(Base):
     type: Mapped[str] = mapped_column(String, nullable=False)
     label: Mapped[str] = mapped_column(String, nullable=False)
     file_path: Mapped[str | None] = mapped_column(Text)
+    start_line: Mapped[int | None] = mapped_column(Integer)
+    end_line: Mapped[int | None] = mapped_column(Integer)
+    summary: Mapped[str | None] = mapped_column(Text)
+    tags_json: Mapped[str] = mapped_column(Text, default="[]")
+    complexity: Mapped[str | None] = mapped_column(String)
+    layer: Mapped[str | None] = mapped_column(String)
     coverage: Mapped[str] = mapped_column(String, default="deep_indexed")
     scope_path: Mapped[str | None] = mapped_column(Text)
     role: Mapped[str | None] = mapped_column(String)
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class GraphEdgeORM(Base):
@@ -135,6 +143,8 @@ class GraphEdgeORM(Base):
     type: Mapped[str] = mapped_column(String, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     evidence_level: Mapped[str] = mapped_column(String, default="deep")
+    weight: Mapped[float | None] = mapped_column(Float)
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class EvidenceORM(Base):

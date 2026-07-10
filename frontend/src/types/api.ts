@@ -95,11 +95,26 @@ export type GraphData = {
     type: string
     label: string
     file_path?: string
+    start_line?: number
+    end_line?: number
+    summary?: string
+    tags?: string[]
+    complexity?: string
+    layer?: string
     coverage?: 'mapped' | 'analyzing' | 'deep_indexed' | 'skipped' | 'failed'
     scope_path?: string
     role?: string
+    metadata?: Record<string, string>
   }[]
-  edges: { source: string; target: string; type: string; confidence: number; evidence_level?: 'map' | 'deep' | 'inferred' }[]
+  edges: {
+    source: string
+    target: string
+    type: string
+    confidence: number
+    evidence_level?: 'map' | 'deep' | 'inferred'
+    weight?: number
+    metadata?: Record<string, string>
+  }[]
 }
 
 export type GraphView = 'project-map' | 'dependencies' | 'api-flow' | 'function-flow' | 'data-flow'

@@ -56,7 +56,12 @@ export function GraphPage({
             <>
               <PreviewLine label="Status" value={coverageLabel(activeNode.coverage)} />
               <PreviewLine label="Type" value={activeNode.role || readableType(activeNode.type)} />
+              <PreviewLine label="Layer" value={activeNode.layer || 'application'} />
+              <PreviewLine label="Complexity" value={activeNode.complexity || 'unknown'} />
               <PreviewLine label="Path" value={activeNode.scope_path || activeNode.file_path || 'project root'} />
+              {activeNode.start_line ? <PreviewLine label="Lines" value={`${activeNode.start_line}-${activeNode.end_line ?? activeNode.start_line}`} /> : null}
+              {activeNode.summary ? <PreviewLine label="Summary" value={activeNode.summary} /> : null}
+              {activeNode.tags?.length ? <PreviewLine label="Tags" value={activeNode.tags.slice(0, 5).join(', ')} /> : null}
               {activeNode.coverage !== 'deep_indexed' && activeNode.coverage !== 'skipped' ? (
                 <button className="primary wide" onClick={() => onAnalyzeArea(activeNode.scope_path || activeNode.file_path || '')}>
                   Analyze this area

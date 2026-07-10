@@ -128,6 +128,8 @@ class TreeSitterLanguageParser(LanguageParser):
                 type="unresolved_call",
                 label=call_target,
                 file_path=file_path,
+                start_line=self._row(node.start_point) + 1,
+                end_line=self._row(node.end_point) + 1,
                 scope_path=file_path,
                 role="Unresolved call",
             )
