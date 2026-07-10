@@ -217,7 +217,7 @@ def test_hybrid_search_returns_endpoint_symbol_and_file_matches(tmp_path: Path) 
     assert any(match.result_type == "endpoint" for match in matches)
     assert any(match.result_type in {"function", "method"} and match.title == "login" for match in matches)
     assert any(match.result_type == "file" and match.title == "sample.py" for match in matches)
-    assert all(match.retrieval_source in {"chunk", "symbol", "endpoint", "file", "graph", "graph_context"} for match in matches)
+    assert all(match.retrieval_source in {"chunk", "symbol", "endpoint", "file", "graph", "graph_context", "semantic_vector"} for match in matches)
     assert any("login" in match.matched_terms for match in matches)
 
 
@@ -233,6 +233,27 @@ def test_hybrid_search_uses_fuzzy_symbol_matching(tmp_path: Path) -> None:
     matches = RetrievalService().hybrid_search(repository, "logn_user", limit=5)
 
     assert any(match.title == "login_user" for match in matches)
+
+
+def test_hybrid_search_uses_local_vector_matches_for_semantic_summary(tmp_path: Path) -> None:
+    repository = parse_python_files(
+        tmp_path,
+        {
+            "backend/app/api/auth/routes.py": (
+                "from flask import Blueprint\n\n"
+                "auth = Blueprint('auth', __name__)\n\n"
+                "@auth.route('/login', methods=['POST'])\n"
+                "def login():\n"
+                "    return 'ok'\n"
+            ),
+        },
+    )
+    SemanticEnrichmentService(ChunkingService()).enrich(repository)
+
+    matches = RetrievalService().hybrid_search(repository, "authentication", limit=8)
+
+    assert any(match.retrieval_source == "semantic_vector" for match in matches)
+    assert any(match.chunk.chunk_type == "semantic_summary" for match in matches)
 
 
 def test_impact_analysis_finds_files_endpoints_and_tests(tmp_path: Path) -> None:

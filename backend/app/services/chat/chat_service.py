@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from app.schemas.api import ChatResponse, CitationDTO, EvidenceDTO
+from app.services.chat.agent_workflow_service import AgentWorkflowService
 from app.services.chat.llm_client import LLMClient
 from app.services.evidence.evidence_service import EvidenceService
 from app.services.repositories.repository_service import RepositoryService
@@ -21,42 +22,41 @@ class ChatService:
         self.retrieval = retrieval
         self.evidence = evidence
         self.llm = llm or LLMClient()
+        self.agent = AgentWorkflowService(retrieval, evidence)
 
     def chat(self, repository_id: str, message: str, conversation_id: str | None = None) -> ChatResponse:
         repository = self.repositories.get_indexed_repository(repository_id)
-        question_type = self.retrieval.classify_question(message)
-        matches = self.retrieval.search_chunks(repository, message, limit=5)
-        if not matches:
+        result = self.agent.answer(repository, message)
+        if not result.citations:
             return ChatResponse(
                 conversation_id=conversation_id or f"conv_{uuid4().hex[:8]}",
                 message_id=f"msg_{uuid4().hex[:10]}",
-                question_type=question_type,
-                answer="Chua du bang chung de tra loi chac chan. He thong khong tim thay file, symbol hoac relation phu hop trong index hien tai.",
+                question_type=result.question_type,
+                answer=result.answer,
                 citations=[],
                 evidence_sufficient=False,
-                missing_evidence=["Expected code or document evidence", "Expected citation metadata"],
+                missing_evidence=result.missing_evidence,
             )
 
-        citations = [self.evidence.chunk_to_citation(repository, chunk, "keyword") for chunk in matches]
-        generated = self.llm.generate_grounded_answer(message, question_type, citations)
+        generated = self.llm.generate_grounded_answer(message, result.question_type, result.citations)
         if generated:
             return ChatResponse(
                 conversation_id=conversation_id or f"conv_{uuid4().hex[:8]}",
                 message_id=f"msg_{uuid4().hex[:10]}",
-                question_type=question_type,
+                question_type=result.question_type,
                 answer=generated.answer,
-                citations=citations,
+                citations=result.citations,
                 evidence_sufficient=True,
             )
 
         return ChatResponse(
             conversation_id=conversation_id or f"conv_{uuid4().hex[:8]}",
             message_id=f"msg_{uuid4().hex[:10]}",
-            question_type=question_type,
-            answer=self.retrieval.generate_grounded_answer(question_type, message, citations),
-            citations=citations,
-            evidence_sufficient=False,
-            missing_evidence=["LLM provider is not configured; returned deterministic evidence summary only"],
+            question_type=result.question_type,
+            answer=result.answer,
+            citations=result.citations,
+            evidence_sufficient=result.evidence_sufficient,
+            missing_evidence=result.missing_evidence,
         )
 
     def ask_with_evidence(
@@ -94,6 +94,7 @@ class ChatService:
 
         evidences = [self.evidence.get_evidence(repository.id, evidence_id) for evidence_id in evidence_ids]
         citations = [self._citation_from_evidence(evidence) for evidence in evidences]
+        agent_result = self.agent.answer_from_citations(repository, message, citations)
         generated = self.llm.generate_grounded_answer(message, question_type, citations)
         if generated:
             return ChatResponse(
@@ -109,10 +110,10 @@ class ChatService:
             conversation_id=conversation_id or f"conv_{uuid4().hex[:8]}",
             message_id=f"msg_{uuid4().hex[:10]}",
             question_type=question_type,
-            answer=self.retrieval.generate_grounded_answer(question_type, message, citations),
+            answer=agent_result.answer,
             citations=citations,
-            evidence_sufficient=False,
-            missing_evidence=["LLM provider is not configured; returned deterministic evidence summary only"],
+            evidence_sufficient=agent_result.evidence_sufficient,
+            missing_evidence=agent_result.missing_evidence,
         )
 
     def _citation_from_evidence(self, evidence: EvidenceDTO) -> CitationDTO:

@@ -81,6 +81,73 @@ Date: 2026-07-06
 - Backend tests passed with:
   - `backend\.venv\Scripts\python.exe -m pytest tests\test_codebase_service.py tests\test_file_rules.py tests\test_service_boundaries.py`
 
+## Follow-up: Local Vector Retrieval Phase 6
+
+Date: 2026-07-10
+
+### Backend
+
+- Added `LocalVectorSearchService` under `backend/app/services/retrieval/`.
+- Added deterministic sparse-vector retrieval without external dependencies or embedding provider configuration.
+- The local vector service builds token/subtoken vectors from:
+  - file paths;
+  - symbol names;
+  - chunk types;
+  - chunk content;
+  - semantic summary chunks.
+- Added cosine similarity scoring over sparse token vectors.
+- Integrated local vector matches into `RetrievalService.hybrid_search(...)`.
+- Added `semantic_vector` as a retrieval source inside hybrid search results.
+- Kept vector retrieval optional and local-first so the system still works without OpenAI, Chroma, Qdrant, or other provider setup.
+
+### Tests
+
+- Added backend coverage for semantic-vector matches over enriched semantic summary chunks.
+- Updated hybrid search tests to accept `semantic_vector` retrieval source.
+
+### Verification
+
+- Backend graph/code-analysis tests passed with:
+  - `backend\.venv\Scripts\python.exe -m pytest tests\test_code_analysis.py`
+- Backend service and scanner tests passed with:
+  - `backend\.venv\Scripts\python.exe -m pytest tests\test_codebase_service.py tests\test_service_boundaries.py tests\test_file_rules.py`
+- Frontend production build passed with:
+  - `npm.cmd run build`
+
+## Follow-up: Deterministic Agent Workflow Phase 7
+
+Date: 2026-07-10
+
+### Backend
+
+- Added `AgentWorkflowService` under `backend/app/services/chat/`.
+- Added a testable deterministic chat workflow with:
+  - question classification;
+  - retrieval planning;
+  - hybrid search and semantic-vector retrieval;
+  - evidence conversion;
+  - evidence sufficiency checks;
+  - deterministic grounded answer fallback.
+- Updated `ChatService.chat(...)` to use the agent workflow before optional LLM generation.
+- Updated selected-evidence chat to reuse agent sufficiency checks and deterministic answer generation.
+- Chat now reports sufficient evidence when citations satisfy the workflow, even if the LLM provider is not configured.
+- Kept optional OpenAI generation behavior unchanged: if configured, the LLM answer is used with the same citations.
+- Removed skipped-file count from indexing warning status calculation; skipped files remain visible in diagnostics, but intentional scanner skips no longer force `completed_with_warnings`.
+
+### Tests
+
+- Existing chat and evidence tests now pass with the deterministic agent workflow.
+- Existing re-index status test now passes because scanner skips no longer count as warning status by themselves.
+
+### Verification
+
+- Backend graph/code-analysis tests passed with:
+  - `backend\.venv\Scripts\python.exe -m pytest tests\test_code_analysis.py`
+- Backend service and scanner tests passed with:
+  - `backend\.venv\Scripts\python.exe -m pytest tests\test_codebase_service.py tests\test_service_boundaries.py tests\test_file_rules.py`
+- Frontend production build passed with:
+  - `npm.cmd run build`
+
 ## Follow-up: Semantic Enrichment Phase 5
 
 Date: 2026-07-10

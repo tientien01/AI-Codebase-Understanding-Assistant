@@ -8,6 +8,7 @@ import re
 
 from app.schemas.api import CitationDTO
 from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, RepositoryState, SymbolRecord
+from app.services.retrieval.vector_search_service import LocalVectorSearchService
 
 STOPWORDS = {
     "the",
@@ -51,6 +52,9 @@ class HybridSearchMatch:
 
 
 class RetrievalService:
+    def __init__(self, vector_search: LocalVectorSearchService | None = None) -> None:
+        self.vector_search = vector_search or LocalVectorSearchService()
+
     def classify_question(self, question: str) -> str:
         normalized = question.lower()
         if any(token in normalized for token in ["kien truc", "architecture", "overview", "tong the"]):
@@ -93,6 +97,18 @@ class RetrievalService:
                 source,
                 chunk.symbol_name or Path(chunk.file_path).name,
                 matched_terms,
+            )
+
+        for vector_match in self.vector_search.search(repository, query, limit=max(limit * 2, 10)):
+            result_type = "file" if vector_match.chunk.chunk_type in {"file_summary", "semantic_summary"} else vector_match.chunk.chunk_type
+            self._upsert_match(
+                matches,
+                vector_match.chunk,
+                raw_score=vector_match.score * 6.5,
+                result_type=result_type,
+                retrieval_source="semantic_vector",
+                title=vector_match.chunk.symbol_name or Path(vector_match.chunk.file_path).name,
+                matched_terms=vector_match.matched_terms,
             )
 
         for symbol in repository.symbols:

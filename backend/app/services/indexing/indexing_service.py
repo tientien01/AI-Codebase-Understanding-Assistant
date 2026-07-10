@@ -362,7 +362,7 @@ class IndexingService:
                 job.total_chunks = len(repository.chunks)
             self.store.save_indexing_job(job)
 
-        has_warnings = bool(job.warnings or job.failed_files or job.skipped_files)
+        has_warnings = bool(job.warnings or job.failed_files)
         repository.status = "indexed_with_warnings" if has_warnings else "indexed"
         repository.current_index_version = job.index_version
         repository.current_step = "completed"
