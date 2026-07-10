@@ -11,6 +11,7 @@ from app.core.errors import DomainError
 from app.schemas.api import IndexResponse, IndexStatusResponse, StalenessResponse
 from app.services.chunking_service import ChunkingService
 from app.services.evidence.evidence_service import EvidenceService
+from app.services.enrichment.semantic_enrichment_service import SemanticEnrichmentService
 from app.services.graph.graph_service import GraphService
 from app.services.index_models import IndexingJobRecord, RepositoryState
 from app.services.parsing.parser_service import ParserService
@@ -63,6 +64,7 @@ class IndexingService:
         self.parser = parser
         self.chunking = chunking
         self.graph = graph
+        self.enrichment = SemanticEnrichmentService(chunking)
         self.parse_debug_output = ParseDebugOutputService()
         self._controls: dict[str, IndexingJobControl] = {}
         self._controls_lock = Lock()
@@ -353,8 +355,11 @@ class IndexingService:
                 job.total_chunks = len(repository.chunks)
             elif step == "build_code_graph":
                 self.graph.build_graph(repository)
+                self.enrichment.enrich(repository)
+                self.graph.schema.normalize_repository_graph(repository)
                 job.total_graph_nodes = len(repository.graph_nodes)
                 job.total_graph_edges = len(repository.graph_edges)
+                job.total_chunks = len(repository.chunks)
             self.store.save_indexing_job(job)
 
         has_warnings = bool(job.warnings or job.failed_files or job.skipped_files)

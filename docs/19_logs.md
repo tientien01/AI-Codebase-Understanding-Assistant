@@ -81,6 +81,46 @@ Date: 2026-07-06
 - Backend tests passed with:
   - `backend\.venv\Scripts\python.exe -m pytest tests\test_codebase_service.py tests\test_file_rules.py tests\test_service_boundaries.py`
 
+## Follow-up: Semantic Enrichment Phase 5
+
+Date: 2026-07-10
+
+### Backend
+
+- Added `SemanticEnrichmentService` under `backend/app/services/enrichment/`.
+- Added deterministic semantic enrichment that does not require an LLM provider or external API key.
+- Enrichment updates graph node metadata with:
+  - summaries;
+  - tags;
+  - architectural layers;
+  - complexity labels;
+  - enrichment metadata.
+- Added heuristic file summaries that include:
+  - file path;
+  - language/source role;
+  - defined symbols;
+  - exposed endpoints;
+  - inferred layer.
+- Added `semantic_summary` chunks so search and chat retrieval can use enriched file-level context.
+- Integrated enrichment into the indexing pipeline after graph construction.
+- Re-normalized the graph after enrichment so enriched graph records still follow the canonical graph schema.
+- Updated indexing chunk totals after enrichment adds semantic summary chunks.
+
+### Tests
+
+- Added backend coverage for semantic enrichment populating graph node metadata and semantic summary chunks.
+
+### Verification
+
+- Backend graph/code-analysis tests passed with:
+  - `backend\.venv\Scripts\python.exe -m pytest tests\test_code_analysis.py`
+- Incremental indexing focused test passed with:
+  - `backend\.venv\Scripts\python.exe -m pytest tests\test_codebase_service.py::test_incremental_indexing_parses_only_changed_files`
+- Frontend production build passed with:
+  - `npm.cmd run build`
+- Broader backend service test run still has the existing non-Phase-5 failures around fake LLM evidence sufficiency and completed-with-warnings status:
+  - `backend\.venv\Scripts\python.exe -m pytest tests\test_codebase_service.py tests\test_service_boundaries.py tests\test_file_rules.py`
+
 ## Follow-up: Incremental Indexing Phase 4
 
 Date: 2026-07-10

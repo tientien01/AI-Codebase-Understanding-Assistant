@@ -9,6 +9,7 @@ from app.services.chunking_service import ChunkingService
 from app.services.index_models import FileRecord, RepositoryState
 from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.parsing.parser_service import ParserService
+from app.services.enrichment.semantic_enrichment_service import SemanticEnrichmentService
 from app.services.retrieval.retrieval_service import RetrievalService
 from app.services.graph.graph_projection_service import GraphProjectionService
 from app.services.graph.graph_service import GraphService
@@ -275,6 +276,33 @@ def test_impact_analysis_reports_unresolved_target(tmp_path: Path) -> None:
     assert result.target is None
     assert result.risk_level == "unknown"
     assert result.missing_relations
+
+
+def test_semantic_enrichment_adds_node_metadata_and_summary_chunks(tmp_path: Path) -> None:
+    repository = parse_python_files(
+        tmp_path,
+        {
+            "backend/app/api/auth/routes.py": (
+                "from flask import Blueprint\n\n"
+                "auth = Blueprint('auth', __name__)\n\n"
+                "@auth.route('/login', methods=['POST'])\n"
+                "def login():\n"
+                "    return 'ok'\n"
+            ),
+        },
+    )
+
+    SemanticEnrichmentService(ChunkingService()).enrich(repository)
+
+    file_node = next(node for node in repository.graph_nodes if node.type == "file")
+    endpoint_node = next(node for node in repository.graph_nodes if node.type == "endpoint")
+    semantic_chunk = next(chunk for chunk in repository.chunks if chunk.chunk_type == "semantic_summary")
+
+    assert file_node.layer == "api"
+    assert "auth" in file_node.tags
+    assert "login" in file_node.summary
+    assert endpoint_node.summary.startswith("API endpoint")
+    assert "POST /login" in semantic_chunk.content
 
 
 def test_parse_debug_output_contains_files_nodes_edges_and_diagnostics(tmp_path: Path) -> None:
