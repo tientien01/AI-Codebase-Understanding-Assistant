@@ -154,7 +154,7 @@ export function useAppController() {
     await request(`${API_V1}/repositories/${repositoryId}/index`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ force_reindex: true }),
+      body: JSON.stringify({ force_reindex: false }),
     })
     await loadRepositories()
     await loadIndexStatus(repositoryId)

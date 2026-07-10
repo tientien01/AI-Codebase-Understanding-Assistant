@@ -69,14 +69,14 @@ class IndexingService:
 
     def start_indexing(self, repository_id: str, force_reindex: bool = False) -> IndexResponse:
         repository, job, control, previous_status = self._prepare_indexing_job(repository_id)
-        self._execute_indexing(repository, job, control, previous_status)
+        self._execute_indexing(repository, job, control, previous_status, force_reindex=force_reindex)
         return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
 
     def start_indexing_background(self, repository_id: str, force_reindex: bool = False) -> IndexResponse:
         repository, job, control, previous_status = self._prepare_indexing_job(repository_id)
         Thread(
             target=self._execute_indexing,
-            args=(repository, job, control, previous_status, False),
+            args=(repository, job, control, previous_status, False, force_reindex),
             daemon=True,
         ).start()
         return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
@@ -148,10 +148,11 @@ class IndexingService:
         control: IndexingJobControl,
         previous_status: str,
         raise_errors: bool = True,
+        force_reindex: bool = False,
     ) -> None:
         working_repository = deepcopy(repository)
         try:
-            self._index_repository(working_repository, job, control)
+            self._index_repository(working_repository, job, control, previous_status, force_reindex)
         except IndexingCancelled:
             if previous_status in {"indexed", "indexed_with_warnings"}:
                 repository.status = previous_status
@@ -264,13 +265,29 @@ class IndexingService:
             recommended_action="reindex" if is_stale else None,
         )
 
-    def _index_repository(self, repository: RepositoryState, job: IndexingJobRecord, control: IndexingJobControl) -> None:
+    def _index_repository(
+        self,
+        repository: RepositoryState,
+        job: IndexingJobRecord,
+        control: IndexingJobControl,
+        previous_status: str,
+        force_reindex: bool = False,
+    ) -> None:
+        previous_repository = deepcopy(repository)
+        previous_repository.status = previous_status
+        can_incremental = (
+            not force_reindex
+            and previous_status in {"indexed", "indexed_with_warnings"}
+            and previous_repository.current_index_version > 0
+            and bool(previous_repository.files)
+        )
         repository.status = "indexing"
         repository.started_at = job.started_at or utc_now()
         repository.logs = []
         repository.warnings = []
         repository.failed_files = 0
-        self._clear_index(repository)
+        if force_reindex or not can_incremental:
+            self._clear_index(repository)
 
         steps = [
             "scan_repository_files",
@@ -289,6 +306,7 @@ class IndexingService:
             job.logs.append(log_line)
             if step == "scan_repository_files":
                 scan_result = self.scanner.scan_files_with_diagnostics(repository)
+                incremental_plan = self._incremental_plan(previous_repository, scan_result.files) if can_incremental else None
                 repository.files = scan_result.files
                 repository.project_fingerprint = self._project_fingerprint(repository)
                 repository.skipped_file_records = [
@@ -304,16 +322,28 @@ class IndexingService:
                 job.skipped_file_records = list(repository.skipped_file_records)
                 if not repository.files:
                     raise DomainError("NO_INDEXABLE_FILES", "Repository contains no indexable files.", 400)
+                if incremental_plan is not None:
+                    repository.logs.append(
+                        f"{utc_now()} incremental_plan changed={len(incremental_plan['changed'])} deleted={len(incremental_plan['deleted'])} unchanged={len(incremental_plan['unchanged'])}"
+                    )
+                    job.logs.append(repository.logs[-1])
+                    self._prepare_incremental_repository(repository, previous_repository, incremental_plan)
             elif step == "parse_source_code":
                 def after_file() -> None:
                     job.processed_files += 1
                     self._check_control(repository, job, control)
                     self.store.save_indexing_job(job)
 
-                if "before_file" in signature(self.parser.parse_files).parameters:
-                    self.parser.parse_files(repository, before_file=lambda: self._check_control(repository, job, control), after_file=after_file)
+                parse_repository = self._parse_scope(repository)
+                if not parse_repository.files:
+                    job.processed_files = len(repository.files)
+                elif "before_file" in signature(self.parser.parse_files).parameters:
+                    self.parser.parse_files(parse_repository, before_file=lambda: self._check_control(repository, job, control), after_file=after_file)
                 else:
-                    self.parser.parse_files(repository)
+                    self.parser.parse_files(parse_repository)
+                    job.processed_files = len(parse_repository.files)
+                if parse_repository is not repository:
+                    self._merge_incremental_parse(repository, parse_repository)
                     job.processed_files = len(repository.files)
                 job.failed_files = repository.failed_files
                 job.warnings = list(repository.warnings)
@@ -345,6 +375,90 @@ class IndexingService:
         job.finished_at = repository.finished_at
         job.logs.append(f"{repository.finished_at} completed")
         self.store.save_indexing_job(job)
+
+    def _incremental_plan(self, previous: RepositoryState, scanned_files: list) -> dict[str, set[str]]:
+        previous_by_path = {file.path: file for file in previous.files}
+        scanned_by_path = {file.path: file for file in scanned_files}
+        changed = {
+            path
+            for path, file in scanned_by_path.items()
+            if path not in previous_by_path or previous_by_path[path].content_hash != file.content_hash
+        }
+        deleted = set(previous_by_path) - set(scanned_by_path)
+        unchanged = set(scanned_by_path) - changed
+        return {"changed": changed, "deleted": deleted, "unchanged": unchanged}
+
+    def _prepare_incremental_repository(
+        self,
+        repository: RepositoryState,
+        previous: RepositoryState,
+        plan: dict[str, set[str]],
+    ) -> None:
+        affected_paths = plan["changed"] | plan["deleted"]
+        removed_node_ids = {
+            node.id
+            for node in previous.graph_nodes
+            if node.file_path in affected_paths
+            or node.scope_path in affected_paths
+            or any(node.id == self._file_node_id(path) for path in affected_paths)
+        }
+        structural_types = {"folder", "file", "class", "schema", "model", "function", "method", "component", "endpoint"}
+        repository.symbols = [symbol for symbol in previous.symbols if symbol.file_path not in affected_paths]
+        repository.endpoints = [endpoint for endpoint in previous.endpoints if endpoint.file_path not in affected_paths]
+        repository.chunks = [chunk for chunk in previous.chunks if chunk.file_path not in affected_paths]
+        repository.graph_nodes = [
+            node
+            for node in previous.graph_nodes
+            if node.id not in removed_node_ids and node.type not in structural_types
+        ]
+        repository.graph_edges = [
+            edge
+            for edge in previous.graph_edges
+            if edge.source not in removed_node_ids and edge.target not in removed_node_ids
+        ]
+        repository.parse_diagnostics = [
+            item
+            for item in previous.parse_diagnostics
+            if item.get("file_path") not in affected_paths
+        ]
+        repository.failed_file_records = [
+            item
+            for item in previous.failed_file_records
+            if item.get("file_path") not in affected_paths
+        ]
+        repository._incremental_changed_paths = plan["changed"]  # type: ignore[attr-defined]
+
+    def _parse_scope(self, repository: RepositoryState) -> RepositoryState:
+        changed_paths = getattr(repository, "_incremental_changed_paths", None)
+        if changed_paths is None:
+            return repository
+        return RepositoryState(
+            id=repository.id,
+            name=repository.name,
+            source_type=repository.source_type,
+            source_uri=repository.source_uri,
+            source_path=repository.source_path,
+            source_label=repository.source_label,
+            status=repository.status,
+            current_index_version=repository.current_index_version,
+            files=[file for file in repository.files if file.path in changed_paths],
+        )
+
+    def _merge_incremental_parse(self, repository: RepositoryState, parsed: RepositoryState) -> None:
+        repository.symbols.extend(parsed.symbols)
+        repository.endpoints.extend(parsed.endpoints)
+        repository.chunks.extend(parsed.chunks)
+        repository.graph_nodes.extend(parsed.graph_nodes)
+        repository.graph_edges.extend(parsed.graph_edges)
+        repository.warnings.extend(parsed.warnings)
+        repository.failed_files += parsed.failed_files
+        repository.failed_file_records.extend(parsed.failed_file_records)
+        repository.parse_diagnostics.extend(parsed.parse_diagnostics)
+
+    def _file_node_id(self, file_path: str) -> str:
+        from app.services.text_utils import node_id
+
+        return node_id("file", file_path)
 
     def _clear_index(self, repository: RepositoryState) -> None:
         repository.files = []

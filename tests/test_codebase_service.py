@@ -244,6 +244,33 @@ def test_force_reindex_replaces_index_records_without_duplicates() -> None:
     assert second_status.index_version == first_status.index_version + 1
 
 
+def test_incremental_indexing_parses_only_changed_files() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-incremental-index-test")
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    repository = service.repositories[created.repository_id]
+    changed_file = repository.source_path / "backend" / "app" / "services" / "auth_service.py"
+    changed_file.write_text(
+        changed_file.read_text(encoding="utf-8") + "\n\ndef audit_login(user):\n    return user.username\n",
+        encoding="utf-8",
+    )
+
+    parsed_paths: list[str] = []
+    original_parse_files = service.parser.parse_files
+
+    def capture_parse_files(parse_repository, before_file=None, after_file=None):
+        parsed_paths.extend(file.path for file in parse_repository.files)
+        return original_parse_files(parse_repository, before_file=before_file, after_file=after_file)
+
+    service.parser.parse_files = capture_parse_files
+    service.start_indexing(created.repository_id, force_reindex=False)
+
+    assert parsed_paths == ["backend/app/services/auth_service.py"]
+    assert any(symbol.name == "audit_login" for symbol in service.repositories[created.repository_id].symbols)
+    assert any("incremental_plan changed=1" in line for line in service.repositories[created.repository_id].logs)
+
+
 def test_failed_reindex_retains_previous_index() -> None:
     service = CodebaseService()
     created = import_fixture_folder(service, "fixture-retain-index-test")
