@@ -12,6 +12,7 @@ from app.services.parsing.parser_service import ParserService
 from app.services.retrieval.retrieval_service import RetrievalService
 from app.services.graph.graph_projection_service import GraphProjectionService
 from app.services.graph.graph_service import GraphService
+from app.services.impact.impact_analysis_service import ImpactAnalysisService
 
 
 def parse_python_source(tmp_path: Path, source_text: str) -> RepositoryState:
@@ -35,6 +36,36 @@ def parse_python_source(tmp_path: Path, source_text: str) -> RepositoryState:
         ],
     )
     ParserService(ChunkingService()).parse_files(repository)
+    return repository
+
+
+def parse_python_files(tmp_path: Path, files: dict[str, str]) -> RepositoryState:
+    records: list[FileRecord] = []
+    for relative_path, source_text in files.items():
+        path = tmp_path / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(source_text, encoding="utf-8")
+        records.append(
+            FileRecord(
+                path=relative_path,
+                absolute_path=path,
+                language="python",
+                file_type="source",
+                size_bytes=path.stat().st_size,
+                content_hash=f"hash-{relative_path}",
+            )
+        )
+    repository = RepositoryState(
+        id="repo_multi_file",
+        name="multi-file-test",
+        source_type="upload_folder",
+        source_uri=str(tmp_path),
+        source_path=tmp_path,
+        files=records,
+    )
+    ParserService(ChunkingService()).parse_files(repository)
+    ChunkingService().create_file_summary_chunks(repository)
+    GraphService().build_graph(repository)
     return repository
 
 
@@ -201,6 +232,49 @@ def test_hybrid_search_uses_fuzzy_symbol_matching(tmp_path: Path) -> None:
     matches = RetrievalService().hybrid_search(repository, "logn_user", limit=5)
 
     assert any(match.title == "login_user" for match in matches)
+
+
+def test_impact_analysis_finds_files_endpoints_and_tests(tmp_path: Path) -> None:
+    repository = parse_python_files(
+        tmp_path,
+        {
+            "app/auth.py": "def authenticate_user(username):\n    return username == 'admin'\n",
+            "app/routes.py": (
+                "from flask import Blueprint\n"
+                "from app.auth import authenticate_user\n\n"
+                "auth = Blueprint('auth', __name__)\n\n"
+                "@auth.route('/login', methods=['POST'])\n"
+                "def login():\n"
+                "    return authenticate_user('admin')\n"
+            ),
+            "tests/test_auth.py": "from app.auth import authenticate_user\n\n\ndef test_auth():\n    assert authenticate_user('admin')\n",
+        },
+    )
+
+    result = ImpactAnalysisService().analyze(repository, "file", "app/auth.py", max_depth=3)
+
+    assert result.target
+    assert result.target.file_path == "app/auth.py"
+    assert result.risk_level in {"medium", "high"}
+    assert any(item.file_path == "app/routes.py" for item in result.affected_files)
+    assert any(item.file_path == "tests/test_auth.py" for item in result.affected_tests)
+    assert any("/login" in item.label for item in result.affected_endpoints)
+    assert any("Run or inspect related test file tests/test_auth.py" in item for item in result.suggested_checks)
+
+
+def test_impact_analysis_reports_unresolved_target(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "def login():\n"
+        "    return True\n",
+    )
+    GraphService().build_graph(repository)
+
+    result = ImpactAnalysisService().analyze(repository, "symbol", "missing_symbol")
+
+    assert result.target is None
+    assert result.risk_level == "unknown"
+    assert result.missing_relations
 
 
 def test_parse_debug_output_contains_files_nodes_edges_and_diagnostics(tmp_path: Path) -> None:

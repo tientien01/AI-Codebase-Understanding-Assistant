@@ -18,6 +18,8 @@ from app.schemas.api import (
     GraphResponse,
     GitHubImportRequest,
     IgnorePatternsResponse,
+    ImpactAnalysisRequest,
+    ImpactAnalysisResponse,
     ImportCancelResponse,
     ImportConfirmRequest,
     ImportConfirmResponse,
@@ -241,6 +243,11 @@ def get_data_flow_graph(repository_id: str, symbol_id: str | None = None) -> Gra
 @router.post("/{repository_id}/graph/expand", response_model=GraphExpansionResponse)
 def expand_graph_area(repository_id: str, request: GraphExpansionRequest) -> GraphExpansionResponse:
     return codebase_service.expand_graph_area(repository_id, request.scope_path)
+
+
+@router.post("/{repository_id}/impact", response_model=ImpactAnalysisResponse)
+def analyze_impact(repository_id: str, request: ImpactAnalysisRequest) -> ImpactAnalysisResponse:
+    return codebase_service.analyze_impact(repository_id, request.target_type, request.target_ref, request.max_depth)
 
 
 @router.get("/{repository_id}/search", response_model=SearchResponse)

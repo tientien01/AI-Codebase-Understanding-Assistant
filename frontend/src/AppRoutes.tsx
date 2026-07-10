@@ -26,6 +26,7 @@ import type {
   FileTreeNode,
   GraphData,
   GraphView,
+  ImpactResult,
   ImportMode,
   ImportPreview,
   IndexStatus,
@@ -52,6 +53,9 @@ type AppRoutesProps = {
   chatMessages: ChatMessage[]
   searchQuery: string
   searchResults: SearchResult[]
+  impactTargetType: string
+  impactTargetRef: string
+  impactResult: ImpactResult | null
   projectName: string
   githubUrl: string
   importMode: ImportMode
@@ -63,6 +67,8 @@ type AppRoutesProps = {
   setPage: (page: Page) => void
   setChatInput: (value: string) => void
   setSearchQuery: (value: string) => void
+  setImpactTargetType: (value: string) => void
+  setImpactTargetRef: (value: string) => void
   setProjectName: (value: string) => void
   setGithubUrl: (value: string) => void
   setImportMode: (mode: ImportMode) => void
@@ -81,6 +87,7 @@ type AppRoutesProps = {
   sendChatMessage: (event?: FormEvent) => void
   openEvidence: (citation: Citation) => void
   runSearch: (event?: FormEvent) => void
+  runImpactAnalysis: (event?: FormEvent) => void
   analyzeGraphArea: (scopePath: string) => void
   changeGraphView: (view: GraphView) => void
   isWorkspacePage: boolean
@@ -103,6 +110,9 @@ export function AppRoutes(props: AppRoutesProps) {
     chatMessages,
     searchQuery,
     searchResults,
+    impactTargetType,
+    impactTargetRef,
+    impactResult,
     projectName,
     githubUrl,
     importMode,
@@ -184,7 +194,24 @@ export function AppRoutes(props: AppRoutesProps) {
   if (page === 'assistant') {
     return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />
   }
-  if (page === 'impact') return <WorkspacePage main={<ImpactPage overview={overview} />} side={<EvidenceSummary />} />
+  if (page === 'impact') {
+    return (
+      <WorkspacePage
+        main={
+          <ImpactPage
+            overview={overview}
+            targetType={impactTargetType}
+            targetRef={impactTargetRef}
+            result={impactResult}
+            onTargetType={props.setImpactTargetType}
+            onTargetRef={props.setImpactTargetRef}
+            onRun={props.runImpactAnalysis}
+          />
+        }
+        side={<EvidenceSummary />}
+      />
+    )
+  }
   if (page === 'search') return <WorkspacePage main={<SearchPage query={searchQuery} results={searchResults} onQuery={props.setSearchQuery} onSearch={props.runSearch} onEvidence={props.openEvidence} />} side={<SearchFilters />} />
   if (page === 'evidence') return <WorkspacePage main={<EvidencePage evidence={selectedEvidence} />} side={<EvidenceSummary />} />
   if (page === 'evaluation') return <WorkspacePage main={<EvaluationPage />} side={<EvidenceSummary />} />

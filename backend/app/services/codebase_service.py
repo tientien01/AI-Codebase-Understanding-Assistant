@@ -13,6 +13,7 @@ from app.schemas.api import (
     GraphExpansionResponse,
     GraphResponse,
     IgnorePatternsResponse,
+    ImpactAnalysisResponse,
     ImportCancelResponse,
     ImportConfirmResponse,
     ImportPreviewResponse,
@@ -38,6 +39,7 @@ from app.services.evidence.evidence_service import EvidenceService
 from app.services.files.file_service import FileService
 from app.services.graph.graph_service import GraphService
 from app.services.graph.graph_projection_service import GraphProjectionService
+from app.services.impact.impact_analysis_service import ImpactAnalysisService
 from app.services.indexing.indexing_job_service import IndexingJobService
 from app.services.indexing.indexing_service import IndexingService
 from app.services.ingestion.archive_service import ArchiveService
@@ -62,6 +64,7 @@ class CodebaseService:
         self.parser = ParserService(self.chunking)
         self.graph = GraphService()
         self.graph_projection = GraphProjectionService()
+        self.impact = ImpactAnalysisService()
         self.retrieval = RetrievalService()
         self.archive = ArchiveService()
         self.upload = UploadService(self.archive)
@@ -246,6 +249,10 @@ class CodebaseService:
             scope_path=scope_path,
             message="Detailed analysis was requested for this area. Current MVP refreshes the project graph while scoped indexing is being added.",
         )
+
+    def analyze_impact(self, repository_id: str, target_type: str, target_ref: str, max_depth: int = 2) -> ImpactAnalysisResponse:
+        repository = self.repositories_service.get_indexed_repository(repository_id)
+        return self.impact.analyze(repository, target_type, target_ref, max_depth)
 
     def get_file_tree(self, repository_id: str) -> list[FileTreeNodeDTO]:
         return self.file_service.get_file_tree(repository_id)

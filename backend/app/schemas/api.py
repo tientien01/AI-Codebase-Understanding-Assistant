@@ -416,6 +416,46 @@ class SearchResponse(BaseModel):
     results: list[SearchResultDTO]
 
 
+class ImpactAnalysisRequest(BaseModel):
+    target_type: str
+    target_ref: str
+    max_depth: int = 2
+
+
+class ImpactTargetDTO(BaseModel):
+    node_id: str
+    node_type: str
+    label: str
+    file_path: str | None = None
+    line_range: str | None = None
+
+
+class ImpactItemDTO(BaseModel):
+    node_id: str
+    node_type: str
+    label: str
+    file_path: str | None = None
+    depth: int
+    confidence: float
+    via_edge: str | None = None
+    reason: str
+
+
+class ImpactAnalysisResponse(BaseModel):
+    repository_id: str
+    target: ImpactTargetDTO | None = None
+    risk_level: str
+    risk_score: int
+    direct: list[ImpactItemDTO] = Field(default_factory=list)
+    indirect: list[ImpactItemDTO] = Field(default_factory=list)
+    affected_files: list[ImpactItemDTO] = Field(default_factory=list)
+    affected_endpoints: list[ImpactItemDTO] = Field(default_factory=list)
+    affected_tests: list[ImpactItemDTO] = Field(default_factory=list)
+    affected_symbols: list[ImpactItemDTO] = Field(default_factory=list)
+    suggested_checks: list[str] = Field(default_factory=list)
+    missing_relations: list[str] = Field(default_factory=list)
+
+
 class SymbolDTO(BaseModel):
     symbol_id: str
     file_path: str

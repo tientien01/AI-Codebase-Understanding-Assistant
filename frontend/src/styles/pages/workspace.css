@@ -333,6 +333,12 @@
   gap: 10px;
 }
 
+.impact-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .developing-inline {
   display: grid;
   gap: 10px;

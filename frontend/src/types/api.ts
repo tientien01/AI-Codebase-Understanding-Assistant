@@ -134,6 +134,38 @@ export type SearchResult = {
   is_stale?: boolean
 }
 
+export type ImpactItem = {
+  node_id: string
+  node_type: string
+  label: string
+  file_path?: string
+  depth: number
+  confidence: number
+  via_edge?: string
+  reason: string
+}
+
+export type ImpactResult = {
+  repository_id: string
+  target?: {
+    node_id: string
+    node_type: string
+    label: string
+    file_path?: string
+    line_range?: string
+  }
+  risk_level: string
+  risk_score: number
+  direct: ImpactItem[]
+  indirect: ImpactItem[]
+  affected_files: ImpactItem[]
+  affected_endpoints: ImpactItem[]
+  affected_tests: ImpactItem[]
+  affected_symbols: ImpactItem[]
+  suggested_checks: string[]
+  missing_relations: string[]
+}
+
 export type EvidenceValidationItem = {
   evidence_id: string
   is_valid: boolean

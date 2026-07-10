@@ -9,6 +9,7 @@ import type {
   FileTreeNode,
   GraphData,
   GraphView,
+  ImpactResult,
   IndexStatus,
   Overview,
   Page,
@@ -42,6 +43,9 @@ export function useAppController() {
   ])
   const [searchQuery, setSearchQuery] = useState('login auth token')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [impactTargetType, setImpactTargetType] = useState('symbol')
+  const [impactTargetRef, setImpactTargetRef] = useState('login')
+  const [impactResult, setImpactResult] = useState<ImpactResult | null>(null)
   const [apiError, setApiError] = useState('')
 
   const selectedRepository = useMemo(
@@ -261,6 +265,21 @@ export function useAppController() {
     await loadGraph(selectedRepository.id)
   }
 
+  async function runImpactAnalysis(event?: FormEvent) {
+    event?.preventDefault()
+    if (!selectedRepository || !impactTargetRef.trim()) return
+    const result = await request<ImpactResult>(`${API_V1}/repositories/${selectedRepository.id}/impact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target_type: impactTargetType,
+        target_ref: impactTargetRef.trim(),
+        max_depth: 3,
+      }),
+    })
+    setImpactResult(result)
+  }
+
   const importController = useImportController({
     request,
     apiV1: API_V1,
@@ -287,12 +306,17 @@ export function useAppController() {
     chatMessages,
     searchQuery,
     searchResults,
+    impactTargetType,
+    impactTargetRef,
+    impactResult,
     ...importController,
     apiError,
     isWorkspacePage,
     setPage,
     setChatInput,
     setSearchQuery,
+    setImpactTargetType,
+    setImpactTargetRef,
     openWorkspace,
     reindexRepository,
     pauseIndexingJob,
@@ -305,6 +329,7 @@ export function useAppController() {
     openEvidence,
     runSearch,
     analyzeGraphArea,
+    runImpactAnalysis,
     changeGraphView,
   }
 }
