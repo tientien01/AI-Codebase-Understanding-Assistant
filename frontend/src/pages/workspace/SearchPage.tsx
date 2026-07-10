@@ -51,6 +51,9 @@ export function SearchPage({
               <span>{result.file_path}</span>
               <strong>{result.title}</strong>
               <p>{result.preview}</p>
+              <span className="badge">{readableLabel(result.result_type ?? 'chunk')}</span>
+              <span className="badge">{readableLabel(result.retrieval_source ?? 'hybrid')}</span>
+              {result.matched_terms?.length ? <small>Matched: {result.matched_terms.slice(0, 5).join(', ')}</small> : null}
               {result.is_stale && <span className="badge amber">Stale evidence</span>}
               <em>{result.score}</em>
             </button>
@@ -61,4 +64,8 @@ export function SearchPage({
       </Panel>
     </div>
   )
+}
+
+function readableLabel(value: string) {
+  return value.replaceAll('_', ' ')
 }

@@ -405,6 +405,9 @@ class SearchResultDTO(BaseModel):
     start_line: int
     end_line: int
     score: float
+    result_type: str = "chunk"
+    retrieval_source: str = "hybrid"
+    matched_terms: list[str] = Field(default_factory=list)
     index_version: int = 0
     is_stale: bool = False
 

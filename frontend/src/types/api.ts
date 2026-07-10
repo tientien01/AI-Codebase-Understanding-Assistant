@@ -127,6 +127,9 @@ export type SearchResult = {
   start_line: number
   end_line: number
   score: number
+  result_type?: string
+  retrieval_source?: string
+  matched_terms?: string[]
   index_version?: number
   is_stale?: boolean
 }

@@ -9,6 +9,7 @@ from app.services.chunking_service import ChunkingService
 from app.services.index_models import FileRecord, RepositoryState
 from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.parsing.parser_service import ParserService
+from app.services.retrieval.retrieval_service import RetrievalService
 from app.services.graph.graph_projection_service import GraphProjectionService
 from app.services.graph.graph_service import GraphService
 
@@ -164,6 +165,42 @@ def test_graph_schema_normalizes_nodes_edges_and_metadata(tmp_path: Path) -> Non
     assert all(edge.weight is not None for edge in repository.graph_edges)
     assert all(edge.evidence_level in {"map", "deep", "inferred"} for edge in repository.graph_edges)
     assert any("Dropped graph edge with missing endpoint" in item["message"] for item in repository.parse_diagnostics)
+
+
+def test_hybrid_search_returns_endpoint_symbol_and_file_matches(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "from flask import Blueprint\n\n"
+        "auth = Blueprint('auth', __name__)\n\n"
+        "@auth.route('/login', methods=['GET', 'POST'])\n"
+        "def login():\n"
+        "    return 'ok'\n",
+    )
+    ChunkingService().create_file_summary_chunks(repository)
+    GraphService().build_graph(repository)
+
+    matches = RetrievalService().hybrid_search(repository, "GET login sample.py", limit=10)
+
+    assert matches
+    assert any(match.result_type == "endpoint" for match in matches)
+    assert any(match.result_type in {"function", "method"} and match.title == "login" for match in matches)
+    assert any(match.result_type == "file" and match.title == "sample.py" for match in matches)
+    assert all(match.retrieval_source in {"chunk", "symbol", "endpoint", "file", "graph", "graph_context"} for match in matches)
+    assert any("login" in match.matched_terms for match in matches)
+
+
+def test_hybrid_search_uses_fuzzy_symbol_matching(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "def login_user(account):\n"
+        "    return account\n",
+    )
+    ChunkingService().create_file_summary_chunks(repository)
+    GraphService().build_graph(repository)
+
+    matches = RetrievalService().hybrid_search(repository, "logn_user", limit=5)
+
+    assert any(match.title == "login_user" for match in matches)
 
 
 def test_parse_debug_output_contains_files_nodes_edges_and_diagnostics(tmp_path: Path) -> None:

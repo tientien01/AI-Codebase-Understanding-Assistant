@@ -22,19 +22,23 @@ class SearchService:
 
     def search(self, repository_id: str, query: str) -> SearchResponse:
         repository = self.repositories.get_indexed_repository(repository_id)
-        matches = self.retrieval.search_chunks(repository, query, limit=10)
+        matches = self.retrieval.hybrid_search(repository, query, limit=10)
         results = []
-        for chunk in matches:
-            citation = self.evidence.chunk_to_citation(repository, chunk, "search")
+        for match in matches:
+            chunk = match.chunk
+            citation = self.evidence.chunk_to_citation(repository, chunk, match.retrieval_source)
             results.append(
                 SearchResultDTO(
                     evidence_id=citation.evidence_id,
                     file_path=chunk.file_path,
-                    title=chunk.symbol_name or Path(chunk.file_path).name,
+                    title=match.title or chunk.symbol_name or Path(chunk.file_path).name,
                     preview=preview(chunk.content),
                     start_line=chunk.start_line,
                     end_line=chunk.end_line,
-                    score=round(chunk.score, 2),
+                    score=round(match.score, 2),
+                    result_type=match.result_type,
+                    retrieval_source=match.retrieval_source,
+                    matched_terms=match.matched_terms,
                     index_version=citation.index_version,
                     is_stale=citation.is_stale,
                 )
