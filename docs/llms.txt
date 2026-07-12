@@ -1,0 +1,21 @@
+# AI Codebase Assistant documentation map
+
+Agent rules: ../AGENTS.md
+Documentation authority: 00-governance/source-of-truth.md
+Current status: project-status.md
+Release levels: 00-governance/release-levels.md
+Production definition: 00-governance/definition-of-production-ready.md
+Product scope: 01-product/README.md
+System architecture: 02-system-architecture/architecture-at-a-glance.md
+Technology stack: 03-technology/README.md
+Data design: 04-domain-and-data/README.md
+Domain contracts: 05-domain-contracts/README.md
+Security: 07-security/README.md
+Reliability: 08-reliability-and-operations/README.md
+RAG and Agentic AI: 10-ai-rag-and-evaluation/README.md
+Current source baseline: 14-implementation-baseline/README.md
+Plans: 15-plans/master-roadmap.md
+Authorized tasks: 16-agent-tasks/README.md
+Production evidence: 18-production-evidence/README.md
+
+Research and 99-archive are non-authoritative. Do not implement from them.

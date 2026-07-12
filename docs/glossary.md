@@ -1,0 +1,34 @@
+# Canonical Glossary
+
+- **Repository:** source project registered with the product.
+- **Repository lifecycle:** `active`, `deleting`, or `deleted`; independent from import, job, index, freshness, and capability states.
+- **Import session:** temporary, reviewable source-ingestion workflow.
+- **Index job:** durable execution record for building an index version.
+- **Job attempt:** one leased execution attempt for a job, fenced by an incrementing lease generation.
+- **Source snapshot:** immutable repository-owned source bytes and canonical inventory/fingerprint used by an index version.
+- **Index version:** immutable set of validated code-intelligence artifacts.
+- **Active index:** the single version currently served for a repository.
+- **Index lifecycle:** `building`, `validating`, `ready`/`ready_with_warnings`, `active`, `superseded`, `expired`, with pre-activation terminal `failed` or `cancelled`.
+- **Artifact:** versioned output such as scan inventory, parsed facts, graph, or search index.
+- **Manifest:** immutable version record listing source/pipeline identity, artifacts, schemas, checksums, validation, coverage, readiness, and timestamps.
+- **Canonical key:** stable repository-local semantic identity using the versioned `kind:v1:` format; distinct from database and versioned observation IDs.
+- **Parsed fact:** file-local deterministic fact emitted by a parser.
+- **Resolved reference:** parsed reference mapped to a canonical entity.
+- **Graph candidate:** provenance-bearing node or edge before normalization.
+- **Canonical graph:** validated graph used as the source for queries and projections.
+- **Projection:** bounded view derived from the canonical graph for a task or UI.
+- **Evidence:** validated, versioned source material allowed to support an answer claim.
+- **Citation:** reference from an answer to evidence and its source range.
+- **Claim:** one atomic answer assertion linked to supporting citations and classified as direct, multi-hop, inferred, or insufficient.
+- **Retrieval candidate:** unvalidated retriever output; it cannot support a claim until promoted to evidence.
+- **Support type:** provenance-strength category (`source_exact`, `static_resolved`, `static_ambiguous`, `heuristic_inferred`, `llm_inferred`, or `user_supplied`); it cannot be upgraded by prose or score.
+- **Confidence:** optional method-specific calibrated value for ambiguous/inferred output; never a replacement for support type, provenance, or validation.
+- **Capability readiness:** `ready`, `limited`, `failed`, `unavailable`, or `stale`, computed from artifacts and validation.
+- **Source freshness:** `fresh`, `possibly_stale`, `stale`, `source_missing`, or `unverifiable`; independent from job, index, repository, and capability state.
+- **Agentic RAG:** bounded orchestration that selects retrieval tools, checks sufficiency, and may retry retrieval.
+- **Repository overview:** version-bound read model for product-facing summary, capabilities, coverage, entry points, modules and warnings.
+- **Project Mental Model:** optional structured derived overview/architecture/tour artifact; deterministic facts and inferred narrative remain labeled and source-linked. It is not a second source of truth.
+- **Ready:** always namespace-qualified: document accepted status, task readiness, index build readiness, or capability `ready`; these states are not interchangeable.
+- **Implemented:** behavior exists in source; it is not necessarily tested or release-qualified.
+- **Verified:** a claim is supported by the declared reproducible test/command/evidence for the referenced version.
+- **Production-ready:** the complete L3 definition and release checklist pass for one immutable candidate; no individual feature or demo can imply it.
