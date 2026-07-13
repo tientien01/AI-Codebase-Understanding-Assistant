@@ -16,6 +16,9 @@
 | Assistant | `backend/app/services/chat/` |
 | Impact | `backend/app/services/impact/` |
 | Persistence | `backend/app/db/`, `services/repositories/repository_store.py` |
+| Production PostgreSQL metadata | `backend/app/db/production_base.py`, `backend/app/db/production_models/` |
+| Alembic migrations | `backend/migrations/`, configured by `backend/alembic.ini` |
+| Supported legacy upgrade | `backend/app/db/legacy_upgrade.py`, `backend/scripts/migrate_legacy_sqlite.py` |
 | Frontend API/state | `frontend/src/api/`, `frontend/src/hooks/` |
 | Frontend surfaces | `frontend/src/pages/`, `frontend/src/components/` |
 | Tests/fixture | `tests/` |

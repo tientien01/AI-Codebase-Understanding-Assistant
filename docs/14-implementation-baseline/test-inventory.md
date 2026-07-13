@@ -7,14 +7,14 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 60 pytest tests across five modules. The canonical verified commands are:
+The repository contains 67 pytest tests: 60 existing behavior tests and 7 PostgreSQL migration tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
 backend\.venv-clean\Scripts\python.exe -m pytest -q
 ```
 
-The latest task-scoped run with the locked backend environment passed **60 tests with 1 warning** in 14.71 seconds. The warning is the existing duplicate-ZIP fixture warning.
+With `TEST_POSTGRES_ADMIN_URL` pointing to the pinned PostgreSQL 18.4 integration service, the latest locked-environment run passed **67 tests with 1 existing duplicate-ZIP warning**. `tests/migrations` separately passed **7 tests** covering fresh upgrade, table/index/trigger inspection, zero drift, constraint protection, empty downgrade/forward recovery, supported legacy mapping, and atomic rejection.
 
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
@@ -23,6 +23,7 @@ The latest task-scoped run with the locked backend environment passed **60 tests
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
+| `migrations/test_migrations.py` | 7 | PostgreSQL 18.4 empty install, drift, constraints, rollback/recovery, and supported SQLite mapping |
 
 ## Strong invariants already covered
 
@@ -38,7 +39,7 @@ The latest task-scoped run with the locked backend environment passed **60 tests
 ## Missing or incomplete suites
 
 - No end-to-end FastAPI `TestClient` behavior suite for all 43 handlers; structural route/auth coverage is present.
-- No PostgreSQL/Alembic migration or schema-drift suite.
+- PostgreSQL/Alembic migration coverage exists for DAT-002; backup/restore and live production upgrade drills remain future operational work.
 - No durable queue redelivery, worker crash, lease/heartbeat, broker outage, or recovery suite.
 - No formal full/incremental canonical artifact equivalence report across a fixture matrix.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.

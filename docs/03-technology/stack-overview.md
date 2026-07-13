@@ -8,6 +8,7 @@
 | Validation/config | Pydantic/Pydantic Settings | Existing typed boundaries | Accepted |
 | ORM/transactions | SQLAlchemy 2.x style | Mature PostgreSQL/SQLite support | Accepted direction |
 | Migrations | Alembic | Versioned production schema | Accepted |
+| PostgreSQL driver | Psycopg 3 binary | SQLAlchemy/Alembic PostgreSQL 18 migration and integration profile | Implemented by `DAT-002` |
 | Frontend | React + TypeScript + Vite | Existing SPA fits graph/workspace UX | Accepted |
 | Routing | React Router | Deep links and browser navigation | Accepted |
 | Server state | TanStack Query | Cache, retry, cancellation, invalidation | Accepted |
@@ -20,8 +21,8 @@
 
 | Concern | Choice | Boundary |
 | --- | --- | --- |
-| Local/test database | SQLite | Not the public production persistence profile |
-| Production database | PostgreSQL | Authoritative relational state |
+| Local application database | SQLite | Default developer runtime; no Docker requirement |
+| Production/integration database | PostgreSQL 18 | Authoritative relational state; disposable integration profile is pinned to 18.4 |
 | Job broker | Redis | Delivery/coordination only |
 | Queue library | RQ or Dramatiq | Must be selected by recovery/cancellation PoC and ADR |
 | Artifacts | Filesystem local; S3-compatible production | Access through `ArtifactStore` port |
