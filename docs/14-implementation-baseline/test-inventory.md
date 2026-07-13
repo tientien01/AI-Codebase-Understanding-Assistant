@@ -7,7 +7,7 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 215 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, and 18 ranking regression tests. The canonical verified commands are:
+The repository contains 229 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, and 14 evidence/context tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
@@ -32,6 +32,8 @@ The RET-001 typed retrieval gate passed **16 tests**, its retrieval/service/code
 
 The RET-002 ranking gate passed **18 tests**, its retrieval/service/code-analysis regression passed **61 tests**, and the local-profile full suite passed **186 tests with 29 integration-profile tests skipped**. The matrix verifies canonical configuration identity, hand-computed weighted RRF, bounded score projection, ownership/support/retriever/limit filters, source-span deduplication, deterministic contribution merging/ties, input-order/raw-scale invariance and insufficient-evidence preservation. Learned ranking and accepted quality/latency thresholds remain outside this evidence.
 
+The RET-003 evidence/context gate passed **14 tests**, its evidence/retrieval/service regression passed **80 tests**, and the local-profile full suite passed **200 tests with 29 integration-profile tests skipped**. The matrix verifies owner/freshness/source/hash/range/blocked/support validation, deterministic content-bound evidence identity, idempotent selected persistence, source diversity, input-order invariance, whole-block budget accounting, explicit omissions and insufficient multi-step coverage. Claim-level support validation and accepted quality/latency thresholds remain outside this evidence.
+
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
@@ -42,6 +44,7 @@ The RET-002 ranking gate passed **18 tests**, its retrieval/service/code-analysi
 | `intelligence/test_capability_readiness.py` | 11 | all readiness states, artifact/profile/validation/freshness/provider/dependency rules, activation summary, determinism and fail-closed input contracts |
 | `retrieval/test_typed_retrieval.py` | 16 | typed classification/request/candidates, all retriever adapters, stable identities/ranks/hybrid projection, ownership rejection and insufficient-evidence negatives |
 | `retrieval/test_ranking.py` | 18 | canonical ranking config identity/validation, hand-computed RRF, filters/limits, dedup/merge, support/tie order, raw-scale/input-order invariance and bounded projection |
+| `evidence/test_evidence_context.py` | 14 | ownership/freshness/source/hash/range/blocked/support validation, stable evidence IDs, idempotent persistence, diversity, whole-block budgets, omissions, insufficient coverage and workflow projection |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
@@ -74,11 +77,11 @@ The RET-002 ranking gate passed **18 tests**, its retrieval/service/code-analysi
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
-- RET-002 has deterministic typed RRF/configuration regression plus negative cases, but no versioned evaluation dataset or accepted quality/latency benchmark comparing keyword, naive vector, and production hybrid workflows.
+- RET-003 adds deterministic validated evidence selection and whole-span context budgeting, but no claim-level support validator, versioned evaluation dataset or accepted quality/latency benchmark comparing keyword, naive vector, and production hybrid workflows.
 
 ## Collection boundary
 
-Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The RET-002 local-profile run collected 215 project tests, passed 186 and skipped 29 integration-profile tests; no imported repository test participated.
+Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The RET-003 local-profile run collected 229 project tests, passed 200 and skipped 29 integration-profile tests; no imported repository test participated.
 
 ## Frontend gates
 

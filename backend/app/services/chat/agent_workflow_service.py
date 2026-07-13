@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from app.schemas.api import CitationDTO
 from app.services.evidence.evidence_service import EvidenceService
+from app.services.evidence.selection import EvidenceContextStatus
 from app.services.index_models import RepositoryState
 from app.services.retrieval.retrieval_service import RetrievalService
 
@@ -34,23 +35,31 @@ class AgentWorkflowService:
 
     def answer(self, repository: RepositoryState, message: str) -> AgentWorkflowResult:
         plan = self._plan(message)
-        matches = self.retrieval.hybrid_search(repository, message, limit=plan.evidence_limit)
-        if not matches:
+        request, ranked_candidates = self.retrieval.ranked_search(
+            repository, message, limit=plan.evidence_limit
+        )
+        context = self.evidence.select_context(
+            repository,
+            request,
+            ranked_candidates,
+            token_budget=self.retrieval.ranking_configuration.context_token_budget,
+        )
+        citations = self.evidence.context_to_citations(repository, context)
+        if not citations:
             return AgentWorkflowResult(
                 question_type=plan.question_type,
                 answer="Chua du bang chung de tra loi chac chan. He thong khong tim thay file, symbol hoac relation phu hop trong index hien tai.",
                 citations=[],
                 evidence_sufficient=False,
-                missing_evidence=["Expected code or document evidence", "Expected citation metadata"],
+                missing_evidence=(
+                    list(context.missing_requirements)
+                    or ["Expected code or document evidence", "Expected citation metadata"]
+                ),
                 plan=plan,
             )
 
-        citations = [
-            self.evidence.chunk_to_citation(repository, match.chunk, match.retrieval_source)
-            for match in matches
-        ]
-        missing = self._missing_evidence(plan, citations)
-        evidence_sufficient = not missing
+        missing = list(dict.fromkeys([*context.missing_requirements, *self._missing_evidence(plan, citations)]))
+        evidence_sufficient = context.status != EvidenceContextStatus.INSUFFICIENT and not missing
         return AgentWorkflowResult(
             question_type=plan.question_type,
             answer=self.retrieval.generate_grounded_answer(plan.question_type, message, citations),

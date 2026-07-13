@@ -16,7 +16,7 @@
 | Deterministic capability readiness calculator | `backend/app/services/code_analysis/capability_readiness.py`; output reuses `backend/app/services/indexing/validation_service.py::CapabilityReadiness` |
 | Graph/projections | `backend/app/services/graph/` |
 | Typed retrieval and ranking | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`, `ranking.py`; compatibility facade in `retrieval_service.py` |
-| Evidence | `backend/app/services/evidence/` |
+| Validated evidence selection and context budgeting | `backend/app/services/evidence/selection.py`; persistence/citation projection in `evidence_service.py` |
 | Assistant | `backend/app/services/chat/` |
 | Impact | `backend/app/services/impact/` |
 | Persistence | `backend/app/db/`, `services/repositories/repository_store.py` |
@@ -50,4 +50,4 @@ Resolved Python reference edges now pass through `graph-candidate/v1` and `norma
 
 Capability readiness can now be calculated deterministically from declared validated evidence into the accepted five states and manifest-compatible summaries. The calculator is an internal composition boundary; the current local indexer does not yet publish its output into a production manifest/activation transaction.
 
-Retrieval now crosses one immutable request/candidate contract with repository/index ownership, controlled retriever names, stable identities/ranks/reasons/support and a deterministic typed query classifier. Exact, lexical, symbol, endpoint, metadata, graph/context and optional local-semantic adapters feed a content-addressed `ranking-config/v1` and deterministic weighted reciprocal-rank fusion. The existing `RetrievalService` API projects bounded theoretical-max scores; evidence selection/context budgeting remains a later boundary.
+Retrieval now crosses one immutable request/candidate contract with repository/index ownership, controlled retriever names, stable identities/ranks/reasons/support and a deterministic typed query classifier. Exact, lexical, symbol, endpoint, metadata, graph/context and optional local-semantic adapters feed a content-addressed `ranking-config/v1` and deterministic weighted reciprocal-rank fusion. Ranked candidates are validated against the current source snapshot before deterministic whole-span selection within an inspectable token budget; only selected blocks are persisted and projected as citations. Claim extraction, claim-support validation and evaluation thresholds remain later boundaries.

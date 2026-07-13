@@ -5,13 +5,21 @@ from uuid import uuid4
 from app.core.errors import DomainError
 from app.schemas.api import CitationDTO, EvidenceDTO, EvidenceValidationItemDTO, EvidenceValidationResponse
 from app.services.index_models import ChunkRecord, RepositoryState
+from app.services.evidence.selection import (
+    EvidenceContext,
+    EvidenceSelectionPolicy,
+    EvidenceSelector,
+)
 from app.services.repositories.repository_port import RepositoryStorePort
+from app.services.retrieval.contracts import RetrievalRequest
+from app.services.retrieval.ranking import RankedCandidate
 from app.services.text_utils import preview, read_text
 
 
 class EvidenceService:
-    def __init__(self, store: RepositoryStorePort) -> None:
+    def __init__(self, store: RepositoryStorePort, selector: EvidenceSelector | None = None) -> None:
         self.store = store
+        self.selector = selector or EvidenceSelector()
         self.cache: dict[str, EvidenceDTO] = {}
 
     def get_evidence(self, repository_id: str, evidence_id: str) -> EvidenceDTO:
@@ -64,6 +72,75 @@ class EvidenceService:
             index_version=repository.current_index_version,
             is_stale=False,
         )
+
+    def select_context(
+        self,
+        repository: RepositoryState,
+        request: RetrievalRequest,
+        ranked_candidates: list[RankedCandidate],
+        token_budget: int,
+    ) -> EvidenceContext:
+        policy = EvidenceSelectionPolicy(
+            token_budget=token_budget,
+            max_evidence=request.limit,
+        )
+        return self.selector.select(repository, request, ranked_candidates, policy)
+
+    def context_to_citations(
+        self,
+        repository: RepositoryState,
+        context: EvidenceContext,
+    ) -> list[CitationDTO]:
+        if context.repository_id != repository.id:
+            raise ValueError("evidence context repository ownership mismatch")
+        expected_index_id = f"idx_compat_{max(repository.current_index_version, 0)}"
+        if context.index_version_id != expected_index_id:
+            raise ValueError("evidence context is not current")
+
+        citations: list[CitationDTO] = []
+        for block in context.selected:
+            evidence = EvidenceDTO(
+                evidence_id=block.evidence_id,
+                repository_id=repository.id,
+                source_type=block.source_type,
+                file_path=block.file_path,
+                symbol_name=block.symbol_name,
+                start_line=block.start_line,
+                end_line=block.end_line,
+                index_version=repository.current_index_version,
+                content_preview=preview(block.content),
+                relevance_reason=",".join(block.reason_codes),
+                confidence_score=round(block.normalized_score, 4),
+                retrieval_source=",".join(block.retrievers),
+                is_stale=False,
+                metadata={
+                    "candidate_ids": ",".join(block.candidate_ids),
+                    "chunk_sha256": block.chunk_sha256,
+                    "entity_key": block.entity_key,
+                    "index_version_id": block.index_version_id,
+                    "provenance_refs": ",".join(block.provenance_refs),
+                    "ranking_config_id": block.ranking_config_id,
+                    "selection_reason_codes": ",".join(block.reason_codes),
+                    "source_key": block.source_key,
+                    "source_sha256": block.source_sha256,
+                    "support_type": block.support_type.value,
+                    "token_estimate": str(block.token_estimate),
+                },
+            )
+            self.cache[evidence.evidence_id] = evidence
+            self.store.save_evidence(evidence)
+            citations.append(
+                CitationDTO(
+                    evidence_id=evidence.evidence_id,
+                    file_path=evidence.file_path,
+                    symbol_name=evidence.symbol_name,
+                    start_line=evidence.start_line,
+                    end_line=evidence.end_line,
+                    index_version=evidence.index_version,
+                    is_stale=False,
+                )
+            )
+        return citations
 
     def _validate_evidence_id(self, repository: RepositoryState, evidence_id: str) -> EvidenceValidationItemDTO:
         try:

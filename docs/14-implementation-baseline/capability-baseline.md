@@ -1,7 +1,7 @@
 # Current Capability Baseline
 
 Status: Source/test verified baseline  
-Authority: Current source plus the 215-test suite
+Authority: Current source plus the 229-test suite
 Owner: Product and intelligence owners  
 Verified: 2026-07-13
 
@@ -23,8 +23,8 @@ The source now includes a tested internal calculator for the target runtime stat
 | Endpoint detection | Partial | FastAPI and Flask decorators plus generic fallback tested; framework coverage and resolution accuracy are unmeasured |
 | Graph model/projections | Implemented MVP | Reference-derived Python edges have typed provenance/normalization and zero-critical gating; legacy CFG/DFG/non-Python/global normalization and large bounded server projection contracts remain incomplete |
 | Search/retrieval | Implemented typed deterministic baseline | Owned typed retrievers feed content-addressed rank-only weighted RRF with explicit filters/limits/dedup/ties and bounded score projection; no persistent BM25/vector index, learned reranker, versioned evaluation dataset or accepted quality/latency threshold |
-| Evidence/citations | Implemented MVP | Repository lookup, source existence, index version, staleness and line range validation exist; claim-level benchmark absent |
-| Assistant | Partial | The deterministic typed classifier feeds existing selected tools, evidence sufficiency and grounded fallback; no bounded multi-round repair or persistent structured trace |
+| Evidence/citations | Implemented deterministic baseline | Ranked support is revalidated for owner/current index/source/hash/range/blocked/support eligibility, selected as whole spans under an inspectable token budget, persisted idempotently with content-bound IDs and projected as citations; claim extraction/support validation and benchmark thresholds are absent |
+| Assistant | Partial | The deterministic typed classifier and ranking feed only validated selected context into evidence sufficiency and grounded fallback; no bounded multi-round repair, claim validator or persistent structured trace |
 | Real LLM provider | Unverified/optional | Provider boundary exists; default fake provider is deliberately not configured |
 | Impact analysis | Implemented MVP | Files/endpoints/tests and unresolved-target behavior tested; completeness/confidence benchmark absent |
 | Code/file/API/search UI | Implemented MVP | Pages call current APIs through the main controller; deep-link/router/query architecture absent |
