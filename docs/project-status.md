@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 1: production foundation |
-| Active task | None; `FND-002` and `FND-005` completed on 2026-07-13 |
-| Next task candidate | Prepare and authorize a scoped `FND-003` task for API contract-preserving route/schema separation |
+| Active task | None; `FND-002`, `FND-003`, and `FND-005` completed on 2026-07-13 |
+| Next task candidate | Prepare and authorize a scoped `FND-004` task to replace the broad application facade incrementally |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -37,9 +37,9 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the completed `FND-002` install and immutable CI evidence.
-2. Prepare a scoped `FND-003` task with exact API-regression gates and allowed paths.
-3. Do not change source for `FND-003` until that task is explicitly promoted to `ready` or `in_progress`.
+1. Review the completed `FND-003` OpenAPI and API contract regression evidence.
+2. Prepare `FND-004` with incremental service-boundary slices and exact behavior-regression gates.
+3. Do not change the broad application facade until `FND-004` is explicitly `ready` or `in_progress`.
 
 ## Status update rule
 

@@ -1,10 +1,11 @@
 # Detailed REST API Contract
 
-Status: Accepted semantic target; generated OpenAPI pending `FND-003`  
+Status: Accepted semantic target; current implementation OpenAPI baseline verified by `FND-003`
 Authority: HTTP semantics until verified OpenAPI becomes machine-readable authority  
 Owner: API owner  
 Dependencies: `../README.md`, domain/data/security/reliability/UX contracts  
 Related source: `../../14-implementation-baseline/api-coverage.md`  
+Related artifact: `../artifacts/openapi-v1.json`
 Related tests: OpenAPI drift, auth, idempotency, pagination, range, projection, error, and E2E contract suites  
 Last verified: 2026-07-12
 
@@ -228,4 +229,4 @@ OpenAPI owns the enumerations. Minimum families cover authentication/authorizati
 
 CI generates/checks OpenAPI, validates examples, detects breaking change, generates/checks frontend types, and runs authorization, pagination/cursor, idempotency/redelivery, explicit-version, range/projection limit, error-envelope/request-ID, insufficient-evidence and provider-degradation contract tests. Breaking changes require version/migration/deprecation and rollback policy; placeholder empty arrays may not impersonate an implemented capability.
 
-`FND-003` must generate the first OpenAPI artifact from these semantics before endpoint implementation tasks proceed. Any field/status divergence is resolved in the owning domain contract first, then this document and OpenAPI change together; application code is not the decision authority by itself.
+`FND-003` generated and drift-tested the first OpenAPI artifact for the current implementation without changing its wire surface. The artifact is the machine-readable regression baseline, not a claim that every semantic target above is implemented. Any field/status divergence is resolved in the owning domain contract first, then this document and OpenAPI change together; application code is not the decision authority by itself.
