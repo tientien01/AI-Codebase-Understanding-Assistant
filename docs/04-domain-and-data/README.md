@@ -48,5 +48,7 @@ Activation is atomic. A failed build never mutates or replaces the active versio
 
 - `specifications/detailed-data-model.md`: entity fields, enums, relationships, lifecycle, constraints, indexes, feature mapping, versions, artifacts, fingerprints, references, graph candidates, validation, readiness, and tours.
 - `specifications/detailed-storage-design.md`: source/import/upload/database/vector/graph/log/evaluation paths, cleanup, retention, manifests, atomic publish, and export artifacts.
+- `postgresql-physical-schema.md`: DAT-001 implementation design for exact production tables, columns, constraints, indexes, transaction boundaries, and migration order.
+- `postgresql-erd.md`: aggregate ERDs and the cross-aggregate foreign-key catalog matching the physical schema.
 
 The physical PostgreSQL schema and Alembic migrations must implement these semantics while following `database-design.md` and accepted ADRs.

@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 1: production foundation |
-| Active task | None; `FND-002`, `FND-003`, `FND-004`, and `FND-005` completed on 2026-07-13 |
-| Next task candidate | Prepare and authorize `DAT-001` for the PostgreSQL schema and ERD review boundary |
+| Active task | None; `DAT-001` completed on 2026-07-13 after the foundation tasks |
+| Next task candidate | Prepare and authorize `DAT-002` for Alembic setup and the baseline production migration |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -22,10 +22,11 @@ This page is the operational front door. It reports verified progress; it does n
 - Local FastAPI and React/Vite workspace with import, indexing, exploration, search, evidence, graph, impact, and assistant surfaces.
 - Safe archive controls, multi-language parsing, deep Python analysis foundations, deterministic retrieval, evidence IDs, stale evidence, incremental indexing, and grounded fallback.
 - Accepted target architecture, domain contracts, production foundation ADR, and a dependency-aware task register.
+- Accepted implementation-ready PostgreSQL schema/ERD covering 35 production tables, composite ownership, lifecycle constraints, access indexes, and migration order.
 
 ## Blocking gaps
 
-1. Production schema and migration path are not established.
+1. Production schema design is established, but Alembic migration history, supported upgrade, and schema-drift evidence are not.
 2. Index jobs are process-local rather than durable and recoverable.
 3. Index artifacts are not yet published through a validated immutable version boundary.
 4. Parser/code-analysis responsibilities overlap and equivalence is not proven.
@@ -37,9 +38,9 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the completed `FND-004` service-boundary and API contract regression evidence.
-2. Prepare `DAT-001` with an exact PostgreSQL schema/ERD review boundary and linked persistence contracts.
-3. Do not add migrations, repositories, or production database behavior until the owning data task is explicitly `ready` or `in_progress`.
+1. Review the completed `DAT-001` schema design and review evidence.
+2. Prepare `DAT-002` with exact Alembic revisions, supported-upgrade fixture, forward-recovery policy, constraint checks, and schema-drift gates.
+3. Do not add migrations, repositories, or production database behavior until `DAT-002` is explicitly `ready` or `in_progress`.
 
 ## Status update rule
 
