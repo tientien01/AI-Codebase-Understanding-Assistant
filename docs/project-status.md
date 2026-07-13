@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 2: durable and atomic indexing |
-| Active task | None; `IDX-002` typed phase/checkpoint evidence complete |
-| Next task candidate | `IDX-003` validation and atomic activation |
+| Active task | None; `IDX-003` validation/atomic-activation evidence complete |
+| Next task candidate | `IDX-004` incremental affected-set correctness and equivalence |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -30,21 +30,23 @@ This page is the operational front door. It reports verified progress; it does n
 - Production job delivery now uses PostgreSQL attempt leases, generation fencing, heartbeat, durable cancellation, bounded retry, and stale-worker recovery; the JOB-004 resilience suite passes.
 - Index artifacts now have a typed `index-manifest/v1`, safe repository/version-owned logical keys, checksum-verified immutable filesystem storage, and deterministic terminal publication; the IDX-001 suite passes.
 - Indexing now has strict production-v1 phase contracts, deterministic idempotency identities, classified failures, cancellation boundaries, immutable checkpoint envelopes, and prefix-only checksum-validated resume planning; the IDX-002 suite passes.
+- Candidate publication now deterministically checks issues, mandatory artifacts and capability readiness, then performs a lease/operation-fenced expected-previous-version activation that atomically persists readiness, supersedes the old version, switches the repository pointer, completes job/attempt state, and appends audit evidence; the IDX-003 PostgreSQL suite passes.
 
 ## Blocking gaps
 
-1. Validation, production worker composition, and atomic activation are not yet implemented over the typed phase boundary.
-2. Parser/code-analysis responsibilities overlap and equivalence is not proven.
-3. Retrieval, citation, graph, incremental, security, performance, and resilience gates lack complete release evidence.
-4. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
-5. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
+1. The production worker is not yet composed over the typed phase/checkpoint/activation boundary.
+2. Incremental affected-set correctness and full/incremental equivalence are not proven.
+3. Parser/code-analysis responsibilities overlap and equivalence is not proven.
+4. Retrieval, citation, graph, security, performance, and resilience gates lack complete release evidence.
+5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
+6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Publish and review the `IDX-002` phase/checkpoint evidence.
-2. Authorize `IDX-003` before implementing validation and atomic activation.
+1. Publish and review the `IDX-003` validation/atomic-activation evidence.
+2. Authorize `IDX-004` before implementing incremental affected-set equivalence.
 
 ## Status update rule
 

@@ -7,16 +7,16 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 121 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, and 9 typed phase/checkpoint tests. The canonical verified commands are:
+The repository contains 132 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, and 11 validation/atomic-activation tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
 backend\.venv-clean\Scripts\python.exe -m pytest -q
 ```
 
-With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integration services, the latest locked-environment run passed **112 tests with 1 existing duplicate-ZIP warning and 1 dependency deprecation warning**. PostgreSQL/Redis coverage includes migration, repository, job/version transition, active-job conflict, artifact metadata immutability, ownership, rollback, queue payload, broker outage, concurrent claim, lease heartbeat/fencing, bounded retry, durable cancellation, stale-attempt replacement, and worker-loss recovery gates. Filesystem coverage adds safe logical keys, immutable atomic finalization, exact checksum/size verification, deterministic manifests, corruption rejection, and concurrent idempotent writes.
+With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integration services, the latest locked-environment run passed **132 tests with 1 existing duplicate-ZIP warning and 1 dependency deprecation warning**. PostgreSQL/Redis coverage includes migration, repository, job/version transition, active-job conflict, artifact metadata immutability, ownership, rollback, queue payload, broker outage, concurrent claim, lease heartbeat/fencing, bounded retry, durable cancellation, stale-attempt replacement, worker-loss recovery, validation persistence, and atomic activation/failed-build-preservation gates. Filesystem coverage adds safe logical keys, immutable atomic finalization, exact checksum/size verification, deterministic manifests, corruption rejection, and concurrent idempotent writes.
 
-The IDX-002 declared local-profile regression collected all 121 tests and passed **97 with 24 production integration tests skipped** because no PostgreSQL/Redis test URLs were supplied. Its targeted phase suite passed all 9 deterministic tests and the artifact regression passed all 18 tests.
+The IDX-003 targeted local-profile indexing run passed **15 tests with 5 PostgreSQL activation tests skipped**. With the pinned integration profile enabled, its combined job-state/indexing gate passed all 24 tests and the full backend suite passed all 132 tests.
 
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
@@ -26,7 +26,7 @@ The IDX-002 declared local-profile regression collected all 121 tests and passed
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
 | `artifacts/test_artifact_store.py` and `test_manifest.py` | 18 | Safe keys, filesystem staging/finalization, immutable retries/conflicts, verified reads, canonical manifest validation and publication |
-| `indexing/test_phase_contracts.py` and `test_phase_pipeline.py` | 9 | Typed phase identities, canonical registry, resource bounds, failure classes, cancellation, immutable checkpoints, prefix-only validated resume |
+| `indexing/test_phase_contracts.py`, `test_phase_pipeline.py`, and `test_validation_activation.py` | 20 | Typed phases/checkpoints plus deterministic validation, optional degradation, fencing, corruption/conflict rejection, rollback, idempotent atomic activation, and failed-build preservation |
 | `migrations/test_migrations.py` | 7 | PostgreSQL 18.4 empty install, drift, constraints, rollback/recovery, and supported SQLite mapping |
 | `persistence/test_production_repository.py` | 13 | Production PostgreSQL/Redis/lease/artifact-root profile validation, adapter selection, lease-preserving compatibility progress, job building-to-active lifecycle, PostgreSQL repository/evidence CRUD, path and ownership rollback |
 | `jobs/test_job_state_store.py` | 4 | Transactional submission, declared/stale transitions, one-active-job conflict, immutable artifact ownership |
@@ -48,7 +48,7 @@ The IDX-002 declared local-profile regression collected all 121 tests and passed
 
 - No end-to-end FastAPI `TestClient` behavior suite for all 43 handlers; structural route/auth coverage is present.
 - PostgreSQL/Alembic migration coverage exists for DAT-002; backup/restore and live production upgrade drills remain future operational work.
-- Lease/heartbeat, bounded retry, durable cancellation, stale-generation fencing, and Redis worker-loss recovery are covered by JOB-004. Immutable filesystem artifacts and terminal manifest publication are covered by IDX-001. Typed phase contracts and storage-backed validated-prefix checkpoint resume are covered by IDX-002; production worker composition and atomic activation remain later authorized work.
+- Lease/heartbeat, bounded retry, durable cancellation, stale-generation fencing, and Redis worker-loss recovery are covered by JOB-004. Immutable filesystem artifacts and terminal manifest publication are covered by IDX-001. Typed phase contracts and storage-backed validated-prefix checkpoint resume are covered by IDX-002. Deterministic readiness validation and fenced atomic activation are covered by IDX-003; production worker composition and incremental equivalence remain later authorized work.
 - No formal full/incremental canonical artifact equivalence report across a fixture matrix.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
