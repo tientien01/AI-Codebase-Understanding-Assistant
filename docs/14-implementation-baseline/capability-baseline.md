@@ -1,7 +1,7 @@
 # Current Capability Baseline
 
 Status: Source/test verified baseline  
-Authority: Current source plus the 197-test suite
+Authority: Current source plus the 215-test suite
 Owner: Product and intelligence owners  
 Verified: 2026-07-13
 
@@ -22,7 +22,7 @@ The source now includes a tested internal calculator for the target runtime stat
 | JS/TS and other languages | Partial structural | Registry declares 18 language/file profiles and Tree-sitter fallbacks; depth/accuracy matrix is not generated |
 | Endpoint detection | Partial | FastAPI and Flask decorators plus generic fallback tested; framework coverage and resolution accuracy are unmeasured |
 | Graph model/projections | Implemented MVP | Reference-derived Python edges have typed provenance/normalization and zero-critical gating; legacy CFG/DFG/non-Python/global normalization and large bounded server projection contracts remain incomplete |
-| Search/retrieval | Implemented typed deterministic baseline | Exact, lexical, symbol, endpoint, metadata, graph/context and local sparse-semantic adapters share an owned typed candidate boundary and deterministic classifier; compatibility ranking is preserved, with no persistent BM25/vector index, versioned fusion config or accepted ranking benchmark |
+| Search/retrieval | Implemented typed deterministic baseline | Owned typed retrievers feed content-addressed rank-only weighted RRF with explicit filters/limits/dedup/ties and bounded score projection; no persistent BM25/vector index, learned reranker, versioned evaluation dataset or accepted quality/latency threshold |
 | Evidence/citations | Implemented MVP | Repository lookup, source existence, index version, staleness and line range validation exist; claim-level benchmark absent |
 | Assistant | Partial | The deterministic typed classifier feeds existing selected tools, evidence sufficiency and grounded fallback; no bounded multi-round repair or persistent structured trace |
 | Real LLM provider | Unverified/optional | Provider boundary exists; default fake provider is deliberately not configured |

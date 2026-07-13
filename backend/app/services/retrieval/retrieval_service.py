@@ -6,6 +6,11 @@ from app.schemas.api import CitationDTO
 from app.services.index_models import ChunkRecord, RepositoryState
 from app.services.retrieval.contracts import RetrievalCandidate, RetrievalRequest
 from app.services.retrieval.query_classifier import QueryClassifier
+from app.services.retrieval.ranking import (
+    RankingConfiguration,
+    ReciprocalRankRanker,
+    default_ranking_configuration,
+)
 from app.services.retrieval.retrievers import (
     EndpointRetriever,
     ExactRetriever,
@@ -32,17 +37,20 @@ class HybridSearchMatch:
 class RetrievalService:
     """Compatibility facade over typed deterministic retrievers.
 
-    Fusion and ranking configuration intentionally remain the existing max-score
-    projection until RET-002 introduces a benchmarked ranking contract.
+    RET-002 fuses incomparable retriever scores by typed rank only. The public
+    interface remains stable while ranking policy becomes inspectable/versioned.
     """
 
     def __init__(
         self,
         vector_search: LocalVectorSearchService | None = None,
         classifier: QueryClassifier | None = None,
+        ranking_configuration: RankingConfiguration | None = None,
     ) -> None:
         self.vector_search = vector_search or LocalVectorSearchService()
         self.classifier = classifier or QueryClassifier()
+        self.ranking_configuration = ranking_configuration or default_ranking_configuration()
+        self.ranker = ReciprocalRankRanker(self.ranking_configuration)
         scorer = RetrievalScorer()
         self.lexical_retriever = LexicalRetriever(scorer)
         self.semantic_retriever = SemanticRetriever(scorer, self.vector_search)
@@ -93,24 +101,23 @@ class RetrievalService:
         return request, candidates
 
     def hybrid_search(self, repository: RepositoryState, query: str, limit: int) -> list[HybridSearchMatch]:
-        _, candidates = self.retrieve_candidates(repository, query, limit)
-        matches: dict[str, HybridSearchMatch] = {}
-        for candidate in candidates:
-            score = round(min(0.99, candidate.raw_score / 8.0), 4)
-            scored_chunk = ChunkRecord(**{**candidate.chunk.__dict__, "score": score})
-            existing = matches.get(candidate.chunk.id)
-            if existing is None or score > existing.score:
-                matches[candidate.chunk.id] = HybridSearchMatch(
-                    chunk=scored_chunk,
-                    score=score,
-                    result_type=candidate.result_type,
-                    retrieval_source=candidate.compatibility_source,
-                    title=candidate.title,
-                    matched_terms=list(candidate.matched_terms),
-                )
-
-        ranked = sorted(matches.values(), key=lambda item: item.score, reverse=True)
-        return ranked[:limit]
+        request, candidates = self.retrieve_candidates(repository, query, limit)
+        return [
+            HybridSearchMatch(
+                chunk=ChunkRecord(
+                    **{
+                        **ranked.candidate.chunk.__dict__,
+                        "score": round(ranked.normalized_score, 4),
+                    }
+                ),
+                score=round(ranked.normalized_score, 4),
+                result_type=ranked.candidate.result_type,
+                retrieval_source=ranked.candidate.compatibility_source,
+                title=ranked.candidate.title,
+                matched_terms=list(ranked.matched_terms),
+            )
+            for ranked in self.ranker.rank(request, candidates)
+        ]
 
     def generate_grounded_answer(self, question_type: str, message: str, citations: list[CitationDTO]) -> str:
         first = citations[0]
