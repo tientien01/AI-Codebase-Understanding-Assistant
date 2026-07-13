@@ -13,3 +13,5 @@ Required constraints include:
 - Idempotency keys are unique within their operation scope.
 
 Required query indexes must be derived from endpoint and worker access patterns, not guessed. Migration tests cover empty install, upgrade from the supported previous release, rollback/recovery policy, and schema drift.
+
+`DAT-001` fixes the implementation-ready design in `postgresql-physical-schema.md` and `postgresql-erd.md`. `DAT-002` owns its Alembic translation and may not invent or weaken physical semantics outside a separately authorized contract amendment.
