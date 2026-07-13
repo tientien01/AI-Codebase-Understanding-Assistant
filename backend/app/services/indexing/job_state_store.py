@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 import re
+from typing import Callable
 from uuid import uuid4
 
 from sqlalchemy import Engine, func, insert, select, update
@@ -13,6 +14,11 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db.production_base import ProductionBase
 import app.db.production_models  # noqa: F401
+from app.services.artifacts.store import StoredArtifact
+from app.services.indexing.validation_service import (
+    ValidatedCandidate,
+    artifact_storage_key,
+)
 
 
 JOB_TRANSITIONS = {
@@ -35,6 +41,14 @@ class LeaseLostError(StateTransitionError):
 
 
 class CancellationRequested(StateTransitionError):
+    pass
+
+
+class ActivationConflictError(StateTransitionError):
+    pass
+
+
+class ActivationValidationError(StateTransitionError):
     pass
 
 
@@ -74,6 +88,25 @@ class JobSubmission:
     request_sha256: str
     repository_generation: int = 0
     build_kind: str = "full"
+    base_index_version_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ActivationCommand:
+    lease: JobLease
+    candidate: ValidatedCandidate
+    manifest_artifact: StoredArtifact
+    expected_previous_version_id: str | None
+    audit_event_id: str
+
+
+@dataclass(frozen=True)
+class ActivationResult:
+    repository_id: str
+    active_index_version_id: str
+    previous_index_version_id: str | None
+    job_state: str
+    already_active: bool = False
 
 
 class JobStateStore:
@@ -97,6 +130,7 @@ class JobStateStore:
                     id=command.version_id, repository_id=command.repository_id,
                     version_number=command.version_number, source_snapshot_id=command.source_snapshot_id,
                     build_kind=command.build_kind, lifecycle="building",
+                    base_index_version_id=command.base_index_version_id,
                     manifest_schema_version="index-manifest/v1", producer_version="job-state/v1",
                     configuration_sha256=command.request_sha256, critical_issue_count=0, coverage={},
                 ))
@@ -105,6 +139,7 @@ class JobStateStore:
                     source_snapshot_id=command.source_snapshot_id,
                     requested_build_kind=command.build_kind, effective_build_kind=command.build_kind,
                     target_index_version_id=command.version_id, state="queued",
+                    base_index_version_id=command.base_index_version_id,
                     idempotency_record_id=command.idempotency_record_id,
                     repository_generation=command.repository_generation,
                 ))
@@ -374,6 +409,8 @@ class JobStateStore:
             ).mappings().first()
             if job is None:
                 raise StateTransitionError("Index job does not exist")
+            if job["state"] in {"succeeded", "succeeded_with_warnings"}:
+                return "too_late"
             if job["state"] == "queued":
                 self._cancel_locked(connection, job, now)
                 return "cancelled"
@@ -384,6 +421,266 @@ class JobStateStore:
                     )
                 )
             return job["state"]
+
+    def activate(
+        self,
+        command: ActivationCommand,
+        *,
+        now: datetime | None = None,
+        fault_injector: Callable[[], None] | None = None,
+    ) -> ActivationResult:
+        """Validate fencing and switch the active version in one transaction."""
+        now = now or datetime.now(UTC)
+        lease = command.lease
+        manifest = command.candidate.manifest
+        repositories = self.t["repositories"]
+        jobs = self.t["index_jobs"]
+        attempts = self.t["job_attempts"]
+        versions = self.t["index_versions"]
+        artifacts = self.t["index_artifacts"]
+        issues = self.t["validation_issues"]
+        capabilities = self.t["capability_readiness"]
+        audits = self.t["audit_events"]
+
+        with self.engine.begin() as connection:
+            repository = connection.execute(
+                select(repositories)
+                .where(repositories.c.id == lease.repository_id)
+                .with_for_update()
+            ).mappings().one()
+            job = connection.execute(
+                select(jobs).where(jobs.c.id == lease.job_id).with_for_update()
+            ).mappings().one()
+            attempt = connection.execute(
+                select(attempts)
+                .where(attempts.c.id == lease.attempt_id)
+                .with_for_update()
+            ).mappings().first()
+            candidate = connection.execute(
+                select(versions)
+                .where(versions.c.id == manifest.index_version_id)
+                .with_for_update()
+            ).mappings().one()
+
+            if (
+                repository["active_index_version_id"] == candidate["id"]
+                and candidate["lifecycle"] == "active"
+                and job["state"] in {"succeeded", "succeeded_with_warnings"}
+                and attempt is not None
+                and attempt["state"] == "succeeded"
+                and candidate["manifest_storage_key"] == command.manifest_artifact.key
+                and candidate["manifest_sha256"] == command.manifest_artifact.sha256
+                and candidate["base_index_version_id"]
+                == command.expected_previous_version_id
+                and job["base_index_version_id"]
+                == command.expected_previous_version_id
+            ):
+                return ActivationResult(
+                    repository_id=repository["id"],
+                    active_index_version_id=candidate["id"],
+                    previous_index_version_id=command.expected_previous_version_id,
+                    job_state=job["state"],
+                    already_active=True,
+                )
+
+            self._validate_activation_fence(
+                repository, job, attempt, candidate, command, now
+            )
+            previous = None
+            if command.expected_previous_version_id is not None:
+                previous = connection.execute(
+                    select(versions)
+                    .where(
+                        versions.c.id == command.expected_previous_version_id,
+                        versions.c.repository_id == lease.repository_id,
+                    )
+                    .with_for_update()
+                ).mappings().first()
+                if previous is None or previous["lifecycle"] != "active":
+                    raise ActivationConflictError("EXPECTED_ACTIVE_VERSION_CHANGED")
+
+            registered = connection.execute(
+                select(artifacts).where(
+                    artifacts.c.repository_id == lease.repository_id,
+                    artifacts.c.index_version_id == candidate["id"],
+                )
+            ).mappings().all()
+            self._validate_registered_artifacts(command.candidate, registered)
+
+            for issue in command.candidate.issues:
+                connection.execute(
+                    insert(issues).values(
+                        id=issue.id,
+                        repository_id=lease.repository_id,
+                        index_version_id=candidate["id"],
+                        code=issue.code,
+                        severity=issue.severity,
+                        entity_type=issue.entity_type,
+                        entity_key=issue.entity_key,
+                        file_key=issue.file_key,
+                        start_line=issue.start_line,
+                        end_line=issue.end_line,
+                        message_safe=issue.message_safe,
+                        details=issue.details,
+                    )
+                )
+            for readiness in command.candidate.capabilities:
+                connection.execute(
+                    insert(capabilities).values(
+                        id=readiness.id,
+                        repository_id=lease.repository_id,
+                        index_version_id=candidate["id"],
+                        capability=readiness.capability,
+                        state=readiness.state,
+                        reason_codes=list(readiness.reason_codes),
+                        required_artifact_types=list(
+                            readiness.required_artifact_types
+                        ),
+                        validation_issue_id=readiness.validation_issue_id,
+                        coverage=readiness.coverage,
+                        remediation=readiness.remediation,
+                    )
+                )
+
+            warning_count = sum(
+                issue.severity in {"warning", "error"}
+                for issue in command.candidate.issues
+            )
+            if previous is not None:
+                connection.execute(
+                    update(versions)
+                    .where(versions.c.id == previous["id"])
+                    .values(lifecycle="superseded", superseded_at=now)
+                )
+            connection.execute(
+                update(versions)
+                .where(versions.c.id == candidate["id"])
+                .values(
+                    lifecycle="active",
+                    manifest_storage_key=command.manifest_artifact.key,
+                    manifest_sha256=command.manifest_artifact.sha256,
+                    validation_status=manifest.validation.status,
+                    critical_issue_count=manifest.validation.critical_issues,
+                    coverage=manifest.coverage,
+                    finished_at=manifest.timestamps.finished_at,
+                    activated_at=now,
+                )
+            )
+            connection.execute(
+                update(repositories)
+                .where(repositories.c.id == repository["id"])
+                .values(active_index_version_id=candidate["id"])
+            )
+            job_state = "succeeded_with_warnings" if warning_count else "succeeded"
+            connection.execute(
+                update(attempts)
+                .where(attempts.c.id == lease.attempt_id)
+                .values(state="succeeded", finished_at=now)
+            )
+            connection.execute(
+                update(jobs)
+                .where(jobs.c.id == lease.job_id)
+                .values(
+                    state=job_state,
+                    stage_code="activated",
+                    warning_count=warning_count,
+                    finished_at=now,
+                )
+            )
+            connection.execute(
+                insert(audits).values(
+                    id=command.audit_event_id,
+                    principal_id=repository["owner_principal_id"],
+                    repository_id=repository["id"],
+                    event_type="index_version_activated",
+                    outcome="succeeded",
+                    resource_type="index_version",
+                    resource_id=candidate["id"],
+                    details={
+                        "previous_index_version_id": command.expected_previous_version_id,
+                        "job_id": lease.job_id,
+                        "attempt_id": lease.attempt_id,
+                        "lease_generation": lease.generation,
+                    },
+                )
+            )
+            if fault_injector is not None:
+                fault_injector()
+            return ActivationResult(
+                repository_id=repository["id"],
+                active_index_version_id=candidate["id"],
+                previous_index_version_id=command.expected_previous_version_id,
+                job_state=job_state,
+            )
+
+    def _validate_activation_fence(
+        self, repository, job, attempt, candidate, command, now: datetime
+    ) -> None:
+        lease = command.lease
+        manifest = command.candidate.manifest
+        if job["cancellation_requested_at"] is not None:
+            raise CancellationRequested("CANCELLATION_REQUESTED")
+        valid_lease = (
+            repository["id"] == lease.repository_id
+            and repository["lifecycle"] == "active"
+            and repository["operation_generation"] == lease.repository_generation
+            and job["repository_id"] == lease.repository_id
+            and job["state"] == "running"
+            and job["current_attempt_id"] == lease.attempt_id
+            and job["lease_generation"] == lease.generation
+            and job["repository_generation"] == lease.repository_generation
+            and job["target_index_version_id"] == candidate["id"]
+            and attempt is not None
+            and attempt["job_id"] == lease.job_id
+            and attempt["repository_id"] == lease.repository_id
+            and attempt["lease_generation"] == lease.generation
+            and attempt["state"] in {"claimed", "running"}
+            and attempt["lease_expires_at"] > now
+        )
+        if not valid_lease:
+            raise LeaseLostError("LEASE_LOST")
+        if (
+            candidate["repository_id"] != manifest.repository_id
+            or candidate["id"] != manifest.index_version_id
+            or candidate["lifecycle"] not in {"building", "validating"}
+            or candidate["base_index_version_id"]
+            != command.expected_previous_version_id
+            or job["base_index_version_id"]
+            != command.expected_previous_version_id
+        ):
+            raise ActivationValidationError("CANDIDATE_IDENTITY_INVALID")
+        if (
+            repository["active_index_version_id"]
+            != command.expected_previous_version_id
+        ):
+            raise ActivationConflictError("EXPECTED_ACTIVE_VERSION_CHANGED")
+
+    def _validate_registered_artifacts(self, candidate, registered) -> None:
+        manifest = candidate.manifest
+        by_key = {row["storage_key"]: row for row in registered}
+        manifest_keys = {
+            artifact_storage_key(manifest, artifact.uri)
+            for artifact in manifest.artifacts
+        }
+        if any(
+            row["required"] and row["storage_key"] not in manifest_keys
+            for row in registered
+        ):
+            raise ActivationValidationError("REGISTERED_ARTIFACT_MISMATCH")
+        for artifact in manifest.artifacts:
+            key = artifact_storage_key(manifest, artifact.uri)
+            row = by_key.get(key)
+            if row is None or (
+                row["artifact_type"] != artifact.type
+                or row["schema_version"] != artifact.schema_version
+                or row["sha256"] != artifact.sha256
+                or row["byte_size"] != artifact.byte_size
+                or row["record_count"] != artifact.records
+                or row["required"] != artifact.required
+            ):
+                raise ActivationValidationError(
+                    "REGISTERED_ARTIFACT_MISMATCH"
+                )
 
     def cancel(self, lease: JobLease, *, now: datetime | None = None) -> None:
         now = now or datetime.now(UTC)
