@@ -15,6 +15,7 @@ from app.services.code_analysis.models import (
     IRNode,
     IRParameter,
     IRStatement,
+    ParseRequest,
 )
 from app.services.code_analysis.stable_ids import stable_ast_id, stable_file_id, stable_hash
 
@@ -23,8 +24,20 @@ class PythonAdapter(LanguageAdapter):
     language = "python"
     parser_version = "python-ast-ir-v1"
 
-    def parse(self, repository_id: str, file_path: str, source: str) -> IRModule:
+    def parse(self, request: ParseRequest) -> IRModule:
+        if request.language != self.language:
+            raise ValueError(f"PythonAdapter cannot parse language '{request.language}'")
+        repository_id = request.repository_id
+        file_path = request.file_path
+        source = request.source
         module = IRModule(
+            schema_version="parsed-file/v1",
+            repository_id=repository_id,
+            index_version_id=request.index_version_id,
+            file_key=request.file_key,
+            content_hash=request.content_hash,
+            adapter_name="python-ast",
+            adapter_version=self.parser_version,
             id=stable_file_id(repository_id, file_path),
             file_path=file_path,
             language=self.language,

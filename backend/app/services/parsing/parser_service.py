@@ -7,7 +7,7 @@ from app.services.index_models import RepositoryState
 from app.services.language_registry import LANGUAGE_DEFINITIONS, SOURCE_LANGUAGES
 from app.services.parsing.base import LanguageParser
 from app.services.parsing.javascript_parser import JavaScriptTypeScriptParser
-from app.services.parsing.python_ast_parser import PythonAstParser
+from app.services.parsing.canonical_python_parser import CanonicalPythonParser
 from app.services.parsing.source_fallback_parser import SourceFallbackParser
 from app.services.parsing.tree_sitter_parser import TreeSitterLanguageParser
 from app.services.text_utils import read_text
@@ -79,7 +79,7 @@ class ParserService:
     def _build_parser_registry(self) -> dict[str, LanguageParser]:
         definitions = {definition.language: definition for definition in LANGUAGE_DEFINITIONS}
         parsers: dict[str, LanguageParser] = {
-            "python": PythonAstParser(self.chunking),
+            "python": CanonicalPythonParser(self.chunking),
             "markdown": self.fallback_parser,
             "config": self.fallback_parser,
             "docker": self.fallback_parser,

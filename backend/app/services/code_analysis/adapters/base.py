@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from app.services.code_analysis.models import IRModule
+from app.services.code_analysis.models import IRModule, ParseRequest
 
 
 class LanguageAdapter(ABC):
@@ -10,5 +10,5 @@ class LanguageAdapter(ABC):
     parser_version: str
 
     @abstractmethod
-    def parse(self, repository_id: str, file_path: str, source: str) -> IRModule:
+    def parse(self, request: ParseRequest) -> IRModule:
         """Parse source code into the language-independent IR."""

@@ -1,6 +1,6 @@
 # Phase 3 — Canonical Code Intelligence
 
-Status: Approved; blocked by typed artifact/index foundations
+Status: Approved; active
 
 ## Outcome
 

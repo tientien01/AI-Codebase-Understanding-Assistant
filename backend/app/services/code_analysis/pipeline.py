@@ -7,7 +7,7 @@ from app.services.code_analysis.cfg.builder import CFGBuilder
 from app.services.code_analysis.cpg.emitter import CPGEmitter
 from app.services.code_analysis.dfg.builder import DFGBuilder
 from app.services.code_analysis.frameworks.endpoints import EndpointDetectorRegistry
-from app.services.code_analysis.models import CPGResult, IRClass, IRFunction, IRModule
+from app.services.code_analysis.models import CPGResult, IRClass, IRFunction, IRModule, ParseRequest
 from app.services.index_models import FileRecord, RepositoryState
 
 
@@ -21,7 +21,15 @@ class CodeAnalysisPipeline:
         self.emitter = CPGEmitter(chunking)
 
     def parse_python(self, repository: RepositoryState, file_record: FileRecord, text: str) -> bool:
-        module = self.python_adapter.parse(repository.id, file_record.path, text)
+        request = ParseRequest.from_compatibility_state(
+            repository_id=repository.id,
+            index_version=repository.current_index_version,
+            file_path=file_record.path,
+            language=file_record.language,
+            declared_content_hash=file_record.content_hash,
+            source=text,
+        )
+        module = self.parse_ir(request)
         if module.diagnostics:
             for diagnostic in module.diagnostics:
                 repository.parse_diagnostics.append(diagnostic)
@@ -32,6 +40,12 @@ class CodeAnalysisPipeline:
         result = self._analyze_module(repository.id, module)
         self.emitter.apply(repository, result)
         return True
+
+    def parse_ir(self, request: ParseRequest) -> IRModule:
+        """Run the single authoritative file-local adapter without side effects."""
+        if request.language != self.python_adapter.language:
+            raise ValueError(f"No canonical adapter registered for '{request.language}'")
+        return self.python_adapter.parse(request)
 
     def _analyze_module(self, repository_id: str, module: IRModule) -> CPGResult:
         functions = self._functions(module)
