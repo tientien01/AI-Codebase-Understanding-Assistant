@@ -1,6 +1,6 @@
 # Development Setup
 
-Status: Clean local install verified; CI verification pending `FND-002`
+Status: Clean local and PostgreSQL integration profiles verified
 Owner: Project maintainer  
 Verified: 2026-07-13
 Platform verified: Windows PowerShell
@@ -13,7 +13,7 @@ This runbook avoids secret files and imported runtime repositories. Python and n
 - `uv==0.11.28`, installed from the official release/Python package source and verified with `uv --version`.
 - Node.js `>=24,<25` and npm `>=11,<12`. `.nvmrc` declares Node 24; Node 24.14.0/npm 11.9.0 were verified.
 - Git for public GitHub import development.
-- Free local ports 8000 and 5173.
+- Free local ports 8000 and 5173. Port 55432 is additionally required only for the Docker PostgreSQL integration profile.
 
 ## Backend setup
 
@@ -41,6 +41,28 @@ backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --rel
 ```
 
 Check `http://localhost:8000/health` and the development OpenAPI UI at `http://localhost:8000/docs`. The default profile creates local SQLite/storage state under `storage/`; this is ignored development state and not production persistence.
+
+## PostgreSQL migration profile
+
+The normal local application still uses SQLite and does not require Docker. Start the disposable PostgreSQL profile only for migration/integration work:
+
+```powershell
+docker compose -f compose.integration.yml up -d postgres
+$env:TEST_POSTGRES_ADMIN_URL='postgresql+psycopg://postgres:postgres@127.0.0.1:55432/postgres'
+backend\.venv\Scripts\python.exe -m pytest tests/migrations -q
+docker compose -f compose.integration.yml down
+```
+
+The tests create and drop only databases whose names start with `aica_test_`. PostgreSQL may instead run as a native service or remote managed database when the corresponding non-secret URL is supplied; Docker is not a production runtime requirement.
+
+Alembic reads `TEST_DATABASE_URL` for an explicitly selected disposable database, then `DATABASE_URL`. A fresh production-schema upgrade is:
+
+```powershell
+$env:DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST/DATABASE'
+backend\.venv\Scripts\python.exe -m alembic -c backend/alembic.ini upgrade head
+```
+
+Do not run baseline downgrade after data import. Restore the pre-migration backup or apply a reviewed forward-recovery revision.
 
 ## Frontend setup
 
