@@ -1,6 +1,6 @@
 # Phase 4 — Retrieval and Evidence
 
-Status: Approved; blocked by Phase 3 readiness
+Status: Approved; RET-001 planning unblocked, production entry evidence remains scoped by Phase 3 limitations
 
 ## Outcome
 

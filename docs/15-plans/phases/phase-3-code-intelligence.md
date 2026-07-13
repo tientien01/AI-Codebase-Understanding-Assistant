@@ -1,6 +1,6 @@
 # Phase 3 — Canonical Code Intelligence
 
-Status: Approved; active
+Status: Approved; INT-001 through INT-004 complete, production composition/equivalence evidence open
 
 ## Outcome
 

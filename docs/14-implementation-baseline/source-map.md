@@ -13,6 +13,7 @@
 | Canonical Python adapter/IR boundary | `backend/app/services/code_analysis/adapters/python_adapter.py`, `models.py`, `pipeline.py`; current-state projection in `backend/app/services/parsing/canonical_python_parser.py` |
 | Canonical Python reference resolver | `backend/app/services/code_analysis/resolver.py`; typed compatibility projection in `backend/app/services/code_analysis/cpg/emitter.py` |
 | Reference-derived graph candidate normalization | `backend/app/services/code_analysis/graph_candidates.py`; in-memory audit/report state in `backend/app/services/index_models.py` |
+| Deterministic capability readiness calculator | `backend/app/services/code_analysis/capability_readiness.py`; output reuses `backend/app/services/indexing/validation_service.py::CapabilityReadiness` |
 | Graph/projections | `backend/app/services/graph/` |
 | Retrieval | `backend/app/services/retrieval/` |
 | Evidence | `backend/app/services/evidence/` |
@@ -46,3 +47,5 @@ Agents use this map for targeted inspection and must not scan ignored dependency
 The Python pipeline now retains a deterministic `resolved-reference-set/v1` artifact for imports and calls before graph compatibility output. `CPGEmitter` projects typed outcomes and no longer owns target selection. Cross-file symbol/inheritance/dynamic resolution and CFG/DFG/non-Python/global candidate normalization remain future boundaries.
 
 Resolved Python reference edges now pass through `graph-candidate/v1` and `normalized-graph/v1` contracts with origin, producer, support and SHA-256-bound spans. Changed/dropped candidates and issues remain auditable in memory; resolved compatibility edges are emitted only from zero-critical active output. CFG/DFG, non-Python and legacy `GraphSchemaService` outputs remain compatibility boundaries.
+
+Capability readiness can now be calculated deterministically from declared validated evidence into the accepted five states and manifest-compatible summaries. The calculator is an internal composition boundary; the current local indexer does not yet publish its output into a production manifest/activation transaction.
