@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 3: canonical code intelligence |
-| Active task | None; `INT-002` canonical resolver/reference evidence complete |
-| Next task candidate | `INT-003` graph candidate provenance and normalization |
+| Active task | None; `INT-003` graph candidate validation evidence complete |
+| Next task candidate | `INT-004` capability readiness computation |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -34,12 +34,13 @@ This page is the operational front door. It reports verified progress; it does n
 - Incremental planning now classifies fingerprint changes and exact move candidates, validates producer/configuration compatibility, expands typed reverse dependencies within explicit budgets, and falls back to full with stable reason codes. An exact, bounded canonical-family comparator provides the synthetic equivalence gate required by IDX-004.
 - Python parsing now crosses one immutable parse-request and `parsed-file/v1` adapter/IR boundary before an explicit current-state compatibility projection. The duplicate legacy Python AST extractor has been removed, and the INT-001 golden/regression suites pass.
 - Python imports and calls now produce deterministic `resolved-reference-set/v1` artifacts retaining resolved, ambiguous and unresolved outcomes with canonical ownership/provenance. Compatibility graph emission consumes those typed outcomes, and the INT-002 resolution matrix passes.
+- Resolved Python reference edges now produce provenance-bearing `graph-candidate/v1` records, deterministic accepted/changed/dropped normalization audit and stable issues. Only zero-critical active candidates reach resolved compatibility edges; the INT-003 valid/invalid matrices pass.
 
 ## Blocking gaps
 
 1. The production worker is not yet composed over the typed phase/checkpoint/activation boundary.
 2. The incremental planner and synthetic equivalence harness are verified, but production pipeline composition and real parser/resolver/graph canonical equivalence are not proven.
-3. Cross-file symbol/inheritance/dynamic and non-Python resolver coverage, canonical graph candidates, and production-output equivalence are not proven.
+3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates, global canonical graph composition, and production-output equivalence are not proven.
 4. Retrieval, citation, graph, security, performance, and resilience gates lack complete release evidence.
 5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
@@ -48,8 +49,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the `INT-002` resolution accuracy evidence.
-2. Authorize `INT-003` before enforcing graph candidate provenance and normalization.
+1. Review the `INT-003` graph validation evidence.
+2. Authorize `INT-004` before computing capability readiness from validated artifacts and coverage.
 
 ## Status update rule
 

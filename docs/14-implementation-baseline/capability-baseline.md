@@ -19,7 +19,7 @@ States in this document describe the MVP only: `implemented`, `partial`, `placeh
 | Python structure | Implemented deep baseline | Canonical AST/IR boundary, typed deterministic import/call outcomes, stable IDs, endpoints, CFG/DFG and compatibility graph tests exist; cross-file symbol/inheritance/dynamic resolver coverage remains partial |
 | JS/TS and other languages | Partial structural | Registry declares 18 language/file profiles and Tree-sitter fallbacks; depth/accuracy matrix is not generated |
 | Endpoint detection | Partial | FastAPI and Flask decorators plus generic fallback tested; framework coverage and resolution accuracy are unmeasured |
-| Graph model/projections | Implemented MVP | Normalization and project/dependency/API/function/data projections exist; large bounded server projection contract is incomplete |
+| Graph model/projections | Implemented MVP | Reference-derived Python edges have typed provenance/normalization and zero-critical gating; legacy CFG/DFG/non-Python/global normalization and large bounded server projection contracts remain incomplete |
 | Search/retrieval | Implemented deterministic baseline | Exact/fuzzy/metadata/graph context and local sparse token-vector retrieval tested; no persistent BM25/vector index or versioned ranking benchmark |
 | Evidence/citations | Implemented MVP | Repository lookup, source existence, index version, staleness and line range validation exist; claim-level benchmark absent |
 | Assistant | Partial | Heuristic classifier, selected tools, evidence sufficiency and grounded fallback exist; no bounded multi-round repair or persistent structured trace |

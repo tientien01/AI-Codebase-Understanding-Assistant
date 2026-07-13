@@ -33,7 +33,6 @@ Expected relationships include frontend component → API client, API client →
 | `typescript_react_cases` | exports, components, hooks, path aliases, fetch clients and dynamic imports | structural TS capability claim |
 | `multi_framework_endpoints` | FastAPI, Flask and explicitly unsupported/dynamic routing | endpoint accuracy report |
 | `incremental_change_matrix` | edit/add/delete/move/rename/signature changes | `IDX-004` equivalence gate |
-| `graph_invalid_candidates` | dangling, duplicate, invalid-type and low-confidence edges | `INT-003` validation gate |
 | `evidence_security_cases` | stale, missing, out-of-range, secret-like and cross-repository evidence | `RET-003` |
 | `retrieval_benchmark_repo` | exact, lexical, semantic, graph, negative and ambiguous questions | `EVA-001` |
 | `large_projection_synthetic` | bounded graph/coverage/performance behavior | `UI-003` |
@@ -54,6 +53,14 @@ Path: `tests/intelligence/test_resolver_accuracy.py` (inline synthetic source an
 Purpose: exercise absolute/relative imports, aliases, local functions, `self.method`, qualified class methods, duplicate-name ambiguity, builtin/stdlib/framework/external classification, missing targets, dynamic attributes, deterministic catalog ordering and ambiguous internal module candidates.
 
 Every discovered import/call has one reviewed `resolved`, `ambiguous`, or `unresolved` outcome. The fixture does not claim cross-file symbol resolution, inheritance/MRO, dynamic dispatch, non-Python rules, framework route-handler resolution or canonical graph validation.
+
+## `graph_invalid_candidates`
+
+Path: `tests/intelligence/test_graph_candidates.py` (inline synthetic candidates and a valid Python pipeline fixture)
+
+Purpose: verify provenance-bearing reference-derived nodes/edges, zero-critical valid output, canonical inverse-direction conversion, exact duplicate audit, deterministic input ordering, and critical rejection of dangling endpoints, conflicting canonical keys, invalid shape/relation/key, missing provenance, ownership mismatch and below-policy inferred confidence.
+
+The confidence minimum is an explicit synthetic policy input and is not a universal production threshold. This fixture does not cover CFG/DFG candidate conversion, non-Python producers, graph query/projection behavior, persisted candidates or capability readiness.
 
 ## Fixture acceptance
 
