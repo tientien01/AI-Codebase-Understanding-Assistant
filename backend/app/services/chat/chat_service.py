@@ -38,8 +38,14 @@ class ChatService:
                 missing_evidence=result.missing_evidence,
             )
 
-        generated = self.llm.generate_grounded_answer(message, result.question_type, result.citations)
-        if generated:
+        generated = (
+            self.llm.generate_grounded_answer(message, result.question_type, result.citations)
+            if result.evidence_sufficient
+            else None
+        )
+        if generated and self.agent.validate_generated_answer(
+            repository, generated.answer, generated.citation_ids, result.citations
+        ).valid:
             return ChatResponse(
                 conversation_id=conversation_id or f"conv_{uuid4().hex[:8]}",
                 message_id=f"msg_{uuid4().hex[:10]}",
@@ -95,8 +101,14 @@ class ChatService:
         evidences = [self.evidence.get_evidence(repository.id, evidence_id) for evidence_id in evidence_ids]
         citations = [self._citation_from_evidence(evidence) for evidence in evidences]
         agent_result = self.agent.answer_from_citations(repository, message, citations)
-        generated = self.llm.generate_grounded_answer(message, question_type, citations)
-        if generated:
+        generated = (
+            self.llm.generate_grounded_answer(message, question_type, citations)
+            if agent_result.evidence_sufficient
+            else None
+        )
+        if generated and self.agent.validate_generated_answer(
+            repository, generated.answer, generated.citation_ids, citations
+        ).valid:
             return ChatResponse(
                 conversation_id=conversation_id or f"conv_{uuid4().hex[:8]}",
                 message_id=f"msg_{uuid4().hex[:10]}",

@@ -5,6 +5,18 @@ from time import monotonic
 from typing import Callable
 
 from app.schemas.api import CitationDTO
+from app.services.chat.citation_validation import (
+    AnswerClaim,
+    CitationValidationResult,
+    ClaimCitationValidator,
+    ClaimSupportLevel,
+)
+from app.services.chat.sufficiency import (
+    SufficiencyAction,
+    SufficiencyDecision,
+    SufficiencyPolicy,
+    merge_ranked_candidates,
+)
 from app.services.chat.tool_registry import ToolExecution, ToolRegistry
 from app.services.chat.workflow_contracts import (
     ToolCallStatus,
@@ -20,9 +32,7 @@ from app.services.chat.workflow_contracts import (
     tool_call_id,
 )
 from app.services.evidence.evidence_service import EvidenceService
-from app.services.evidence.selection import EvidenceContextStatus
 from app.services.index_models import RepositoryState
-from app.services.retrieval.contracts import RetrievalRequest
 from app.services.retrieval.retrieval_service import RetrievalService
 
 
@@ -44,6 +54,8 @@ class AgentWorkflowResult:
     missing_evidence: list[str] = field(default_factory=list)
     plan: AgentRetrievalPlan | None = None
     diagnostics: WorkflowDiagnostics | None = None
+    sufficiency: SufficiencyDecision | None = None
+    citation_validation: CitationValidationResult | None = None
 
 
 class AgentWorkflowService:
@@ -55,6 +67,8 @@ class AgentWorkflowService:
         evidence: EvidenceService,
         configuration: WorkflowConfiguration | None = None,
         registry: ToolRegistry | None = None,
+        sufficiency: SufficiencyPolicy | None = None,
+        citation_validator: ClaimCitationValidator | None = None,
         clock: Callable[[], float] = monotonic,
     ) -> None:
         self.retrieval = retrieval
@@ -63,6 +77,8 @@ class AgentWorkflowService:
             context_token_budget=retrieval.ranking_configuration.context_token_budget
         )
         self.registry = registry or ToolRegistry.default(retrieval)
+        self.sufficiency = sufficiency or SufficiencyPolicy()
+        self.citation_validator = citation_validator or ClaimCitationValidator(evidence)
         self.clock = clock
 
     def answer(
@@ -212,6 +228,115 @@ class AgentWorkflowService:
                 self.retrieval.ranking_configuration.context_token_budget,
             ),
         )
+        decision = self.sufficiency.evaluate(
+            plan.question_type,
+            message,
+            context,
+            allow_repair=(
+                terminal_reason is None
+                and self.configuration.max_rounds >= 2
+                and tool_calls_used < self.configuration.max_tool_calls
+            ),
+        )
+        if decision.action is SufficiencyAction.REPAIR:
+            repair_name = ToolName.HYBRID_RETRIEVAL
+            repair_id = tool_call_id(
+                workflow_request.request_id,
+                self.configuration.config_id,
+                repair_name,
+                len(observations) + 1,
+            )
+            stop_reason = self._stop_reason(started, tool_calls_used, is_cancelled)
+            if stop_reason:
+                terminal_reason = stop_reason
+                observations.append(
+                    ToolObservation(
+                        repair_id,
+                        repair_name,
+                        ToolCallStatus.CANCELLED if stop_reason == "workflow_cancelled" else ToolCallStatus.REJECTED,
+                        stop_reason,
+                    )
+                )
+            else:
+                repair_input = ToolInput(
+                    call_id=repair_id,
+                    tool_name=repair_name,
+                    tool_version="1",
+                    repository_id=workflow_request.repository_id,
+                    index_version_id=workflow_request.index_version_id,
+                    query=decision.repair_query or message,
+                    question_type=workflow_request.question_type,
+                    limit=min(
+                        self.configuration.max_candidates_per_tool,
+                        self.configuration.max_selected_evidence,
+                    ),
+                    round_number=2,
+                )
+                tool_calls_used += 1
+                try:
+                    repaired = self.registry.execute(repair_input, repository)
+                    merged = merge_ranked_candidates(
+                        execution.ranked_candidates,
+                        repaired.ranked_candidates,
+                    )
+                    before_ids = {
+                        candidate_id
+                        for item in execution.ranked_candidates
+                        for candidate_id in item.candidate_ids
+                    }
+                    repaired_ids = {
+                        candidate_id
+                        for item in repaired.ranked_candidates
+                        for candidate_id in item.candidate_ids
+                    }
+                    observations.append(
+                        ToolObservation(
+                            repair_id,
+                            repair_name,
+                            ToolCallStatus.COMPLETED,
+                            (
+                                "repair_tool_completed"
+                                if repaired_ids - before_ids
+                                else "repair_unchanged"
+                            ),
+                            repaired.output,
+                        )
+                    )
+                    context = self.evidence.select_context(
+                        repository,
+                        execution.retrieval_request,
+                        list(merged),
+                        token_budget=min(
+                            self.configuration.context_token_budget,
+                            self.retrieval.ranking_configuration.context_token_budget,
+                        ),
+                    )
+                    terminal_reason = self._post_tool_stop_reason(started, is_cancelled)
+                except ValueError:
+                    terminal_reason = "repair_contract_rejected"
+                    observations.append(
+                        ToolObservation(
+                            repair_id,
+                            repair_name,
+                            ToolCallStatus.FAILED,
+                            terminal_reason,
+                        )
+                    )
+            decision = self.sufficiency.evaluate(
+                plan.question_type,
+                message,
+                context,
+                allow_repair=False,
+            )
+        if terminal_reason == "workflow_cancelled":
+            return self._terminal_result(
+                plan,
+                WorkflowOutcome.CANCELLED,
+                (terminal_reason,),
+                observations,
+                started,
+                tool_calls_used,
+            )
         citations = self.evidence.context_to_citations(repository, context)
         elapsed_ms = self._elapsed_ms(started)
         if not citations:
@@ -239,18 +364,39 @@ class AgentWorkflowService:
                 missing_evidence=list(context.missing_requirements) or ["Expected code or document evidence"],
                 plan=plan,
                 diagnostics=diagnostics,
+                sufficiency=decision,
             )
 
-        missing = list(
-            dict.fromkeys([*context.missing_requirements, *self._missing_evidence(plan, citations)])
+        missing = list(decision.missing_requirements)
+        answer = self.retrieval.generate_grounded_answer(plan.question_type, message, citations)
+        support = (
+            ClaimSupportLevel.MULTI_HOP
+            if plan.question_type in {"flow_tracing", "api_question", "impact_analysis"}
+            else ClaimSupportLevel.DIRECT
         )
-        limited = bool(terminal_reason) or context.status != EvidenceContextStatus.READY or bool(missing)
+        claim = AnswerClaim.from_answer(
+            answer,
+            tuple(citation.evidence_id for citation in citations),
+            support,
+        )
+        citation_validation = self.citation_validator.validate(
+            repository,
+            (claim,),
+            citations,
+            tuple(block.evidence_id for block in context.selected),
+        )
+        limited = (
+            bool(terminal_reason)
+            or decision.action is not SufficiencyAction.ANSWER
+            or not citation_validation.valid
+        )
         outcome = WorkflowOutcome.LIMITED if limited else WorkflowOutcome.ANSWERED
         reasons = tuple(
             dict.fromkeys(
                 [
                     *(filter(None, (terminal_reason,))),
-                    *(missing or ["workflow_completed"]),
+                    *(missing or ([] if citation_validation.valid else ["citation_validation_failed"])),
+                    *(["workflow_completed"] if not limited else []),
                 ]
             )
         )
@@ -264,12 +410,14 @@ class AgentWorkflowService:
         )
         return AgentWorkflowResult(
             question_type=plan.question_type,
-            answer=self.retrieval.generate_grounded_answer(plan.question_type, message, citations),
+            answer=answer,
             citations=citations,
             evidence_sufficient=not limited,
             missing_evidence=missing,
             plan=plan,
             diagnostics=diagnostics,
+            sufficiency=decision,
+            citation_validation=citation_validation,
         )
 
     def answer_from_citations(
@@ -295,6 +443,21 @@ class AgentWorkflowService:
             evidence_sufficient=not missing,
             missing_evidence=missing,
             plan=plan,
+        )
+
+    def validate_generated_answer(
+        self,
+        repository: RepositoryState,
+        answer: str,
+        citation_ids: tuple[str, ...],
+        citations: list[CitationDTO],
+    ) -> CitationValidationResult:
+        claim = AnswerClaim.from_answer(answer, citation_ids, ClaimSupportLevel.DIRECT)
+        return self.citation_validator.validate(
+            repository,
+            (claim,),
+            citations,
+            tuple(citation.evidence_id for citation in citations),
         )
 
     def _plan(self, request: WorkflowRequest) -> WorkflowPlan:
@@ -370,7 +533,11 @@ class AgentWorkflowService:
             reason_codes=reasons,
             observations=tuple(observations),
             budget=WorkflowBudgetUsage(
-                rounds_used=1 if tool_calls_used else 0,
+                rounds_used=(
+                    2
+                    if any(item.reason_code.startswith("repair_") for item in observations)
+                    else (1 if tool_calls_used else 0)
+                ),
                 tool_calls_used=tool_calls_used,
                 context_tokens_used=context_tokens_used,
                 elapsed_ms=elapsed_ms,

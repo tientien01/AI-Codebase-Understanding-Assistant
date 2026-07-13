@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 5: bounded assistant foundation (incremental delivery; Phase 3 composition and Phase 4 evaluation evidence remain open) |
-| Active task | None; `AGT-001` bounded workflow/tool implementation is verified pending review/merge |
-| Next task candidate | `AGT-002` sufficiency, repair and citation validation |
+| Active task | None; `AGT-002` sufficiency/repair/citation implementation is verified pending review/merge |
+| Next task candidate | `AGT-003` structured trace/conversation persistence |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -40,6 +40,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Retrieval candidates now pass through a content-addressed immutable configuration, pre-fusion ownership/support/limit filters, owned source-span deduplication and deterministic weighted RRF with bounded score projection. The RET-002 formula, ordering, invariance and negative regression matrix passes.
 - Ranked support is now revalidated against current owner/index/source/hash/range/blocked/support policy, selected deterministically as diverse whole spans under a recorded token budget, and persisted with content-bound idempotent evidence identities. The RET-003 positive, rejection, budget and insufficient-evidence matrix passes.
 - Assistant routing now uses immutable versioned workflow/tool contracts and an explicit exact/hybrid allowlist. Exact hits avoid hybrid/semantic work, exact misses fall back once, multi-step types route directly to hybrid, and call/time/context/cancellation/deduplication boundaries emit safe observations. The AGT-001 routing/tool matrix passes.
+- Assistant sufficiency now requires question-specific strong support/source/endpoint/graph coverage, permits only one controlled budgeted repair, validates claims against selected current citation IDs/scope and rejects optional provider output without valid declarations. The AGT-002 positive/refusal/repair/citation matrix passes.
 
 ## Blocking gaps
 
@@ -54,8 +55,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review and merge the `AGT-001` routing/tool evidence.
-2. Authorize `AGT-002` sufficiency, repair and citation validation work.
+1. Review and merge the `AGT-002` sufficiency/citation evidence.
+2. Authorize `AGT-003` structured trace/conversation persistence work.
 
 ## Status update rule
 

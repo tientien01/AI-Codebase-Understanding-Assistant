@@ -43,8 +43,8 @@ class ToolCallStatus(str, Enum):
 
 @dataclass(frozen=True)
 class WorkflowConfiguration:
-    max_rounds: int = 1
-    max_tool_calls: int = 2
+    max_rounds: int = 2
+    max_tool_calls: int = 3
     max_candidates_per_tool: int = 6
     max_selected_evidence: int = 6
     context_token_budget: int = 8_000

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 
 from app.core.config import settings
 from app.schemas.api import CitationDTO
@@ -10,6 +11,7 @@ from app.schemas.api import CitationDTO
 class LLMResult:
     answer: str
     provider: str
+    citation_ids: tuple[str, ...] = ()
 
 
 class LLMClient:
@@ -34,13 +36,14 @@ class LLMClient:
 
         client = OpenAI(api_key=self.api_key)
         evidence = "\n".join(
-            f"- {citation.file_path}:{citation.start_line}-{citation.end_line} "
+            f"- {citation.evidence_id} {citation.file_path}:{citation.start_line}-{citation.end_line} "
             f"{citation.symbol_name or ''}".strip()
             for citation in citations
         )
         prompt = (
-            "Answer the user's codebase question using only the cited evidence. "
-            "If the evidence is insufficient, say that clearly and list what is missing.\n\n"
+            "Answer using only the cited evidence. Return one JSON object with keys "
+            "answer (string) and citation_ids (array chosen only from the supplied evidence IDs). "
+            "If evidence is insufficient, return an empty citation_ids array and say what is missing.\n\n"
             f"Question type: {question_type}\n"
             f"Question: {question}\n"
             f"Evidence:\n{evidence}"
@@ -54,4 +57,33 @@ class LLMClient:
             temperature=0.1,
         )
         content = response.choices[0].message.content or ""
-        return LLMResult(answer=content.strip(), provider=self.provider)
+        return self.parse_grounded_response(
+            content,
+            self.provider,
+            tuple(citation.evidence_id for citation in citations),
+        )
+
+    @staticmethod
+    def parse_grounded_response(
+        content: str,
+        provider: str,
+        allowed_citation_ids: tuple[str, ...],
+    ) -> LLMResult | None:
+        try:
+            payload = json.loads(content)
+        except (TypeError, json.JSONDecodeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        answer = payload.get("answer")
+        citation_ids = payload.get("citation_ids")
+        if not isinstance(answer, str) or not answer.strip() or not isinstance(citation_ids, list):
+            return None
+        if any(not isinstance(item, str) for item in citation_ids):
+            return None
+        normalized = tuple(citation_ids)
+        if not normalized or len(normalized) != len(set(normalized)):
+            return None
+        if not set(normalized).issubset(allowed_citation_ids):
+            return None
+        return LLMResult(answer.strip(), provider, normalized)

@@ -7,7 +7,7 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 241 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, and 12 bounded workflow/tool tests. The canonical verified commands are:
+The repository contains 251 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, 12 bounded workflow/tool tests, and 10 sufficiency/citation tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
@@ -36,6 +36,8 @@ The RET-003 evidence/context gate passed **14 tests**, its evidence/retrieval/se
 
 The AGT-001 bounded workflow/tool gate passed **12 tests**, its assistant/evidence/retrieval/service regression passed **92 tests**, and the local-profile full suite passed **212 tests with 29 integration-profile tests skipped**. The matrix verifies canonical workflow configuration, typed serializable interchange, registry identity/allowlist/version/ownership, exact avoidance, one-time hybrid fallback, multi-step routing, tool-call/time/cancellation boundaries, equivalent-call deduplication, safe tool failures and prompt-like input isolation. Multi-round sufficiency repair, claim/citation validation and persistent traces remain outside this evidence.
 
+The AGT-002 sufficiency/citation gate passed **10 tests**, its assistant/evidence/retrieval/service regression passed **102 tests**, and the local-profile full suite passed **222 tests with 29 integration-profile tests skipped**. The matrix verifies question-specific strong-support/coverage requirements, controlled repair decisions, heuristic-only refusal, selected/current citation binding, duplicate/unbound/scope/stale/cross-owner rejection, provider response parsing and provider avoidance for insufficient evidence. Semantic entailment benchmarks and persistent traces remain outside this evidence.
+
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
@@ -48,6 +50,7 @@ The AGT-001 bounded workflow/tool gate passed **12 tests**, its assistant/eviden
 | `retrieval/test_ranking.py` | 18 | canonical ranking config identity/validation, hand-computed RRF, filters/limits, dedup/merge, support/tie order, raw-scale/input-order invariance and bounded projection |
 | `evidence/test_evidence_context.py` | 14 | ownership/freshness/source/hash/range/blocked/support validation, stable evidence IDs, idempotent persistence, diversity, whole-block budgets, omissions, insufficient coverage and workflow projection |
 | `assistant/test_bounded_workflow_tools.py` | 12 | canonical workflow configuration, typed tool interchange, immutable allowlist identity, ownership/version rejection, exact/hybrid routing, budgets, cancellation, deduplication, safe failures and prompt-like input isolation |
+| `assistant/test_sufficiency_citation_repair.py` | 10 | question-specific sufficiency, controlled repair decisions, heuristic refusal, current/selected claim-citation binding, duplicate/scope/stale/cross-owner rejection and provider fail-closed behavior |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
@@ -82,10 +85,11 @@ The AGT-001 bounded workflow/tool gate passed **12 tests**, its assistant/eviden
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
 - RET-003 adds deterministic validated evidence selection and whole-span context budgeting, but no claim-level support validator, versioned evaluation dataset or accepted quality/latency benchmark comparing keyword, naive vector, and production hybrid workflows.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
+- AGT-002 adds one bounded deterministic repair and structural claim/citation validation, but no semantic entailment model/benchmark, persistent trace or accepted agent threshold.
 
 ## Collection boundary
 
-Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The AGT-001 local-profile run collected 241 project tests, passed 212 and skipped 29 integration-profile tests; no imported repository test participated.
+Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The AGT-002 local-profile run collected 251 project tests, passed 222 and skipped 29 integration-profile tests; no imported repository test participated.
 
 ## Frontend gates
 
