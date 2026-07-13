@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 1: production foundation |
-| Active task | None; `FND-002`, `FND-003`, and `FND-005` completed on 2026-07-13 |
-| Next task candidate | Prepare and authorize a scoped `FND-004` task to replace the broad application facade incrementally |
+| Active task | None; `FND-002`, `FND-003`, `FND-004`, and `FND-005` completed on 2026-07-13 |
+| Next task candidate | Prepare and authorize `DAT-001` for the PostgreSQL schema and ERD review boundary |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -37,9 +37,9 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the completed `FND-003` OpenAPI and API contract regression evidence.
-2. Prepare `FND-004` with incremental service-boundary slices and exact behavior-regression gates.
-3. Do not change the broad application facade until `FND-004` is explicitly `ready` or `in_progress`.
+1. Review the completed `FND-004` service-boundary and API contract regression evidence.
+2. Prepare `DAT-001` with an exact PostgreSQL schema/ERD review boundary and linked persistence contracts.
+3. Do not add migrations, repositories, or production database behavior until the owning data task is explicitly `ready` or `in_progress`.
 
 ## Status update rule
 

@@ -1,7 +1,21 @@
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
 
+from fastapi.routing import APIRoute
+
+from app.api.dependencies import (
+    application_container,
+    get_assistant_use_cases,
+    get_exploration_use_cases,
+    get_graph_use_cases,
+    get_import_session_service,
+    get_indexing_use_cases,
+    get_repository_use_cases,
+    get_search_use_cases,
+    get_settings_service,
+)
 from app.schemas.api import GraphNodeDTO
 from app.services.chat.llm_client import LLMClient
 from app.services.chunking_service import ChunkingService
@@ -11,6 +25,55 @@ from app.services.parsing.parser_service import ParserService
 from app.services.retrieval.retrieval_service import RetrievalService
 from app.services.scanning.scanner_service import ScannerService
 from app.services.text_utils import node_id
+
+
+ROUTE_DEPENDENCIES = {
+    "app.api.v1.routes.assistant": get_assistant_use_cases,
+    "app.api.v1.routes.exploration": get_exploration_use_cases,
+    "app.api.v1.routes.graph": get_graph_use_cases,
+    "app.api.v1.routes.import_sessions": get_import_session_service,
+    "app.api.v1.routes.indexing": get_indexing_use_cases,
+    "app.api.v1.routes.repositories": get_repository_use_cases,
+    "app.api.v1.routes.search": get_search_use_cases,
+    "app.api.v1.routes.settings": get_settings_service,
+}
+
+
+def test_api_routes_use_domain_specific_dependencies() -> None:
+    for module_name, expected_dependency in ROUTE_DEPENDENCIES.items():
+        module = import_module(module_name)
+        for route in module.router.routes:
+            if isinstance(route, APIRoute):
+                dependency_calls = {dependency.call for dependency in route.dependant.dependencies}
+                assert expected_dependency in dependency_calls
+
+
+def test_api_routes_do_not_import_the_compatibility_facade() -> None:
+    for module_name in ROUTE_DEPENDENCIES:
+        module = import_module(module_name)
+        source = Path(module.__file__).read_text(encoding="utf-8")
+
+        assert "app.services.codebase_service" not in source
+        assert "codebase_service" not in source
+
+
+def test_application_dependencies_share_one_composition_root() -> None:
+    assert get_repository_use_cases() is application_container.repository_use_cases
+    assert get_import_session_service() is application_container.ingestion
+    assert get_indexing_use_cases() is application_container.indexing_use_cases
+    assert get_exploration_use_cases() is application_container.exploration_use_cases
+    assert get_assistant_use_cases() is application_container.assistant_use_cases
+    assert get_graph_use_cases() is application_container.graph_use_cases
+    assert get_search_use_cases() is application_container.search_use_cases
+    assert get_settings_service() is application_container.settings_service
+
+    repositories = application_container.repositories_service
+    assert application_container.repository_use_cases.repositories is repositories
+    assert application_container.ingestion.repositories is repositories
+    assert application_container.indexing.repositories is repositories
+    assert application_container.exploration_use_cases.repositories is repositories
+    assert application_container.assistant_use_cases.repositories is repositories
+    assert application_container.graph_use_cases.repositories is repositories
 
 
 def test_scanner_skips_secret_and_dependency_files(tmp_path: Path) -> None:

@@ -3,7 +3,9 @@
 | Domain | Source |
 | --- | --- |
 | API | `backend/app/api/v1/routes/` |
+| API dependency providers | `backend/app/api/dependencies.py` |
 | Schemas | `backend/app/schemas/api.py` |
+| Application composition/use cases | `backend/app/services/application/` |
 | Ingestion | `backend/app/services/ingestion/` |
 | Indexing | `backend/app/services/indexing/` |
 | Parsing | `backend/app/services/parsing/` |
@@ -17,5 +19,9 @@
 | Frontend API/state | `frontend/src/api/`, `frontend/src/hooks/` |
 | Frontend surfaces | `frontend/src/pages/`, `frontend/src/components/` |
 | Tests/fixture | `tests/` |
+
+The versioned API routes resolve domain-specific application boundaries from one
+single-process composition root. `backend/app/services/codebase_service.py` remains
+a compatibility adapter for direct callers; versioned routes no longer import it.
 
 Agents use this map for targeted inspection and must not scan ignored dependency/build/runtime storage directories.
