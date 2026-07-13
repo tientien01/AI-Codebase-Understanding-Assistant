@@ -7,21 +7,22 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 52 pytest tests across four modules. The canonical verified commands are:
+The repository contains 60 pytest tests across five modules. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
 backend\.venv-clean\Scripts\python.exe -m pytest -q
 ```
 
-Result on the verification date from a clean lock install: **52 passed, 1 warning** for both commands. The explicit run took 38.95 seconds and the root run took 43.08 seconds.
+The latest task-scoped run with the locked backend environment passed **60 tests with 1 warning** in 14.71 seconds. The warning is the existing duplicate-ZIP fixture warning.
 
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
 | `test_code_analysis.py` | 18 | stable symbol IDs, CFG/DFG/CPG-related graph behavior, resolver, projections, hybrid retrieval, impact, enrichment, diagnostics |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
-| `test_service_boundaries.py` | 6 | scanner/parser/graph/retrieval/LLM boundary smoke behavior |
+| `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
+| `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
 
 ## Strong invariants already covered
 
@@ -36,8 +37,7 @@ Result on the verification date from a clean lock install: **52 passed, 1 warnin
 
 ## Missing or incomplete suites
 
-- No FastAPI `TestClient`/HTTP contract suite for all 43 handlers.
-- No OpenAPI snapshot/drift test.
+- No end-to-end FastAPI `TestClient` behavior suite for all 43 handlers; structural route/auth coverage is present.
 - No PostgreSQL/Alembic migration or schema-drift suite.
 - No durable queue redelivery, worker crash, lease/heartbeat, broker outage, or recovery suite.
 - No formal full/incremental canonical artifact equivalence report across a fixture matrix.

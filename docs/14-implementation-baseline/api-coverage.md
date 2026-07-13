@@ -79,4 +79,4 @@ GET    /health  # unversioned
 
 The 42 versioned handlers are now owned by eight route modules: import sessions, repository management, indexing, exploration, assistant/evidence, graph/impact, search/files, and settings. Their 63 existing Pydantic models are owned by eight matching schema modules; `app.schemas.api` remains a compatibility export surface for services that will migrate in later boundary tasks.
 
-`FND-003` preserved the complete pre-split OpenAPI artifact byte-for-byte. The remaining concentration is the broad `codebase_service` facade behind these thin routes, owned by `FND-004`.
+`FND-003` preserved the complete pre-split OpenAPI artifact byte-for-byte. `FND-004` then replaced every versioned route dependency on the broad `codebase_service` facade with one of eight typed dependency providers. The providers return stable domain-specific service instances from one composition root, while `CodebaseService` remains a compatibility adapter for existing direct callers. The OpenAPI artifact remains byte-for-byte unchanged.

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
+from app.api.dependencies import get_import_session_service
 from app.core.auth import require_api_auth
 from app.schemas.imports import (
     GitHubImportRequest,
@@ -11,15 +12,19 @@ from app.schemas.imports import (
     ImportPreviewResponse,
     ImportSessionCreateResponse,
 )
-from app.services.codebase_service import codebase_service
+from app.services.ingestion.import_session_service import ImportSessionService
 
 
 router = APIRouter(prefix="/import-sessions", tags=["import-sessions"], dependencies=[Depends(require_api_auth)])
 
 
 @router.post("/upload-zip", response_model=ImportSessionCreateResponse)
-async def create_zip_import_session(file: UploadFile = File(...), name: str | None = Form(default=None)) -> ImportSessionCreateResponse:
-    return await codebase_service.create_zip_import_session(file, name)
+async def create_zip_import_session(
+    file: UploadFile = File(...),
+    name: str | None = Form(default=None),
+    service: ImportSessionService = Depends(get_import_session_service),
+) -> ImportSessionCreateResponse:
+    return await service.create_zip_import_session(file, name)
 
 
 @router.post("/upload-folder", response_model=ImportSessionCreateResponse)
@@ -27,23 +32,34 @@ async def create_folder_import_session(
     files: list[UploadFile] = File(...),
     relative_paths: list[str] = Form(...),
     name: str | None = Form(default=None),
+    service: ImportSessionService = Depends(get_import_session_service),
 ) -> ImportSessionCreateResponse:
-    return await codebase_service.create_folder_import_session(files, relative_paths, name)
+    return await service.create_folder_import_session(files, relative_paths, name)
 
 
 @router.post("/github", response_model=ImportSessionCreateResponse)
-def create_github_import_session(request: GitHubImportRequest) -> ImportSessionCreateResponse:
-    return codebase_service.create_github_import_session(request.url, request.name, request.branch)
+def create_github_import_session(
+    request: GitHubImportRequest,
+    service: ImportSessionService = Depends(get_import_session_service),
+) -> ImportSessionCreateResponse:
+    return service.create_github_import_session(request.url, request.name, request.branch)
 
 
 @router.get("/{import_session_id}/preview", response_model=ImportPreviewResponse)
-def get_import_preview(import_session_id: str) -> ImportPreviewResponse:
-    return codebase_service.get_import_preview(import_session_id)
+def get_import_preview(
+    import_session_id: str,
+    service: ImportSessionService = Depends(get_import_session_service),
+) -> ImportPreviewResponse:
+    return service.get_import_preview(import_session_id)
 
 
 @router.post("/{import_session_id}/confirm", response_model=ImportConfirmResponse)
-def confirm_import_session(import_session_id: str, request: ImportConfirmRequest) -> ImportConfirmResponse:
-    return codebase_service.confirm_import_session(
+def confirm_import_session(
+    import_session_id: str,
+    request: ImportConfirmRequest,
+    service: ImportSessionService = Depends(get_import_session_service),
+) -> ImportConfirmResponse:
+    return service.confirm_import_session(
         import_session_id,
         request.name,
         request.start_indexing,
@@ -53,5 +69,8 @@ def confirm_import_session(import_session_id: str, request: ImportConfirmRequest
 
 
 @router.delete("/{import_session_id}", response_model=ImportCancelResponse)
-def cancel_import_session(import_session_id: str) -> ImportCancelResponse:
-    return codebase_service.cancel_import_session(import_session_id)
+def cancel_import_session(
+    import_session_id: str,
+    service: ImportSessionService = Depends(get_import_session_service),
+) -> ImportCancelResponse:
+    return service.cancel_import_session(import_session_id)
