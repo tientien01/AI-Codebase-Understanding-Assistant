@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 2: durable and atomic indexing |
-| Active task | None; `IDX-001` implementation and local artifact evidence complete |
-| Next task candidate | `IDX-002` resumable indexing state machine and checkpoints |
+| Active task | None; `IDX-002` typed phase/checkpoint evidence complete |
+| Next task candidate | `IDX-003` validation and atomic activation |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -29,10 +29,11 @@ This page is the operational front door. It reports verified progress; it does n
 - Production background dispatch now persists queued PostgreSQL jobs, publishes one-ID Dramatiq messages, and runs through a dedicated worker boundary; duplicate, broker-outage, and worker-restart tests pass under `JOB-003`.
 - Production job delivery now uses PostgreSQL attempt leases, generation fencing, heartbeat, durable cancellation, bounded retry, and stale-worker recovery; the JOB-004 resilience suite passes.
 - Index artifacts now have a typed `index-manifest/v1`, safe repository/version-owned logical keys, checksum-verified immutable filesystem storage, and deterministic terminal publication; the IDX-001 suite passes.
+- Indexing now has strict production-v1 phase contracts, deterministic idempotency identities, classified failures, cancellation boundaries, immutable checkpoint envelopes, and prefix-only checksum-validated resume planning; the IDX-002 suite passes.
 
 ## Blocking gaps
 
-1. Stage checkpoint artifacts and atomic activation are not yet implemented.
+1. Validation, production worker composition, and atomic activation are not yet implemented over the typed phase boundary.
 2. Parser/code-analysis responsibilities overlap and equivalence is not proven.
 3. Retrieval, citation, graph, incremental, security, performance, and resilience gates lack complete release evidence.
 4. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
@@ -42,8 +43,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Publish and review the `IDX-001` immutable artifact evidence.
-2. Authorize `IDX-002` before implementing resumable indexing checkpoints.
+1. Publish and review the `IDX-002` phase/checkpoint evidence.
+2. Authorize `IDX-003` before implementing validation and atomic activation.
 
 ## Status update rule
 
