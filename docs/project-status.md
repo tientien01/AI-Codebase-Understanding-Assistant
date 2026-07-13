@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 2: durable and atomic indexing |
-| Active task | None; `IDX-003` validation/atomic-activation evidence complete |
-| Next task candidate | `IDX-004` incremental affected-set correctness and equivalence |
+| Active delivery phase | Phase 3: canonical code intelligence |
+| Active task | None; `IDX-004` incremental planner/equivalence harness evidence complete |
+| Next task candidate | `INT-001` parser and code-analysis boundary consolidation |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -31,12 +31,13 @@ This page is the operational front door. It reports verified progress; it does n
 - Index artifacts now have a typed `index-manifest/v1`, safe repository/version-owned logical keys, checksum-verified immutable filesystem storage, and deterministic terminal publication; the IDX-001 suite passes.
 - Indexing now has strict production-v1 phase contracts, deterministic idempotency identities, classified failures, cancellation boundaries, immutable checkpoint envelopes, and prefix-only checksum-validated resume planning; the IDX-002 suite passes.
 - Candidate publication now deterministically checks issues, mandatory artifacts and capability readiness, then performs a lease/operation-fenced expected-previous-version activation that atomically persists readiness, supersedes the old version, switches the repository pointer, completes job/attempt state, and appends audit evidence; the IDX-003 PostgreSQL suite passes.
+- Incremental planning now classifies fingerprint changes and exact move candidates, validates producer/configuration compatibility, expands typed reverse dependencies within explicit budgets, and falls back to full with stable reason codes. An exact, bounded canonical-family comparator provides the synthetic equivalence gate required by IDX-004.
 
 ## Blocking gaps
 
 1. The production worker is not yet composed over the typed phase/checkpoint/activation boundary.
-2. Incremental affected-set correctness and full/incremental equivalence are not proven.
-3. Parser/code-analysis responsibilities overlap and equivalence is not proven.
+2. The incremental planner and synthetic equivalence harness are verified, but production pipeline composition and real parser/resolver/graph canonical equivalence are not proven.
+3. Parser/code-analysis responsibilities overlap and production-output equivalence is not proven.
 4. Retrieval, citation, graph, security, performance, and resilience gates lack complete release evidence.
 5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
@@ -45,8 +46,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Publish and review the `IDX-003` validation/atomic-activation evidence.
-2. Authorize `IDX-004` before implementing incremental affected-set equivalence.
+1. Publish and review the `IDX-004` incremental planner/equivalence evidence.
+2. Authorize `INT-001` before consolidating parser and code-analysis boundaries.
 
 ## Status update rule
 
