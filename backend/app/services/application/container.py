@@ -8,6 +8,7 @@ from app.services.application.use_cases import (
     RepositoryUseCases,
     SearchUseCases,
 )
+from app.services.artifacts.store import FilesystemArtifactStore
 from app.services.chat.chat_service import ChatService
 from app.services.chunking_service import ChunkingService
 from app.services.evidence.evidence_service import EvidenceService
@@ -47,11 +48,18 @@ def create_index_job_queue():
     return DramatiqIndexJobQueue(create_dramatiq_broker(settings.redis_url))
 
 
+def create_artifact_store():
+    """Select the accepted filesystem artifact adapter at composition."""
+
+    return FilesystemArtifactStore(settings.artifact_root)
+
+
 class ApplicationContainer:
     """Composition root for the current single-process application profile."""
 
     def __init__(self) -> None:
         self.store = create_repository_store()
+        self.artifact_store = create_artifact_store()
         self.index_job_queue = create_index_job_queue()
         self.job_state_store = (
             JobStateStore(self.store.engine)

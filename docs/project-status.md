@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 2: durable and atomic indexing |
-| Active task | None; `JOB-004` implementation and local resilience evidence complete |
-| Next task candidate | `IDX-001` immutable artifact manifest and storage boundary |
+| Active task | None; `IDX-001` implementation and local artifact evidence complete |
+| Next task candidate | `IDX-002` resumable indexing state machine and checkpoints |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -28,22 +28,22 @@ This page is the operational front door. It reports verified progress; it does n
 - Dramatiq 2.2.0 selected by `ADR-0003` after passing 15/15 Redis recovery/cancellation PoC runs.
 - Production background dispatch now persists queued PostgreSQL jobs, publishes one-ID Dramatiq messages, and runs through a dedicated worker boundary; duplicate, broker-outage, and worker-restart tests pass under `JOB-003`.
 - Production job delivery now uses PostgreSQL attempt leases, generation fencing, heartbeat, durable cancellation, bounded retry, and stale-worker recovery; the JOB-004 resilience suite passes.
+- Index artifacts now have a typed `index-manifest/v1`, safe repository/version-owned logical keys, checksum-verified immutable filesystem storage, and deterministic terminal publication; the IDX-001 suite passes.
 
 ## Blocking gaps
 
-1. Index artifacts are not yet published through a validated immutable version boundary.
-2. Stage checkpoint artifacts and atomic activation are not yet implemented.
-3. Parser/code-analysis responsibilities overlap and equivalence is not proven.
-4. Retrieval, citation, graph, incremental, security, performance, and resilience gates lack complete release evidence.
-5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
-6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
+1. Stage checkpoint artifacts and atomic activation are not yet implemented.
+2. Parser/code-analysis responsibilities overlap and equivalence is not proven.
+3. Retrieval, citation, graph, incremental, security, performance, and resilience gates lack complete release evidence.
+4. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
+5. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Publish and review the `JOB-004` lease/recovery evidence.
-2. Authorize `IDX-001` before implementing immutable artifact publication.
+1. Publish and review the `IDX-001` immutable artifact evidence.
+2. Authorize `IDX-002` before implementing resumable indexing checkpoints.
 
 ## Status update rule
 
