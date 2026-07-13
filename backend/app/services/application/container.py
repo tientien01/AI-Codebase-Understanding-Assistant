@@ -23,17 +23,25 @@ from app.services.ingestion.upload_service import UploadService
 from app.services.parsing.parser_service import ParserService
 from app.services.repositories.repository_service import RepositoryService
 from app.services.repositories.repository_store import RepositoryStore
+from app.services.repositories.production_repository_store import ProductionRepositoryStore
+from app.core.config import settings
 from app.services.retrieval.retrieval_service import RetrievalService
 from app.services.retrieval.search_service import SearchService
 from app.services.scanning.scanner_service import ScannerService
 from app.services.settings.settings_service import SettingsService
 
 
+def create_repository_store():
+    """Select persistence only at the composition root."""
+
+    return ProductionRepositoryStore() if settings.app_env == "production" else RepositoryStore()
+
+
 class ApplicationContainer:
     """Composition root for the current single-process application profile."""
 
     def __init__(self) -> None:
-        self.store = RepositoryStore()
+        self.store = create_repository_store()
         self.chunking = ChunkingService()
         self.scanner = ScannerService()
         self.parser = ParserService(self.chunking)

@@ -19,6 +19,8 @@
 | Production PostgreSQL metadata | `backend/app/db/production_base.py`, `backend/app/db/production_models/` |
 | Alembic migrations | `backend/migrations/`, configured by `backend/alembic.ini` |
 | Supported legacy upgrade | `backend/app/db/legacy_upgrade.py`, `backend/scripts/migrate_legacy_sqlite.py` |
+| Production DB session/profile | `backend/app/db/production_session.py`, `backend/app/core/config.py` |
+| Repository persistence port/adapters | `backend/app/services/repositories/repository_port.py`, `repository_store.py`, `production_repository_store.py` |
 | Frontend API/state | `frontend/src/api/`, `frontend/src/hooks/` |
 | Frontend surfaces | `frontend/src/pages/`, `frontend/src/components/` |
 | Tests/fixture | `tests/` |
