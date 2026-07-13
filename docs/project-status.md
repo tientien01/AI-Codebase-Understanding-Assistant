@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 4: retrieval and evidence (incremental delivery; Phase 3 production composition evidence remains open) |
-| Active task | None; `INT-004` capability readiness evidence complete |
-| Next task candidate | `RET-001` typed retrievers and query classifier |
+| Active task | None; `RET-001` typed retrieval boundary evidence complete |
+| Next task candidate | `RET-002` score normalization and ranker configuration |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -36,13 +36,14 @@ This page is the operational front door. It reports verified progress; it does n
 - Python imports and calls now produce deterministic `resolved-reference-set/v1` artifacts retaining resolved, ambiguous and unresolved outcomes with canonical ownership/provenance. Compatibility graph emission consumes those typed outcomes, and the INT-002 resolution matrix passes.
 - Resolved Python reference edges now produce provenance-bearing `graph-candidate/v1` records, deterministic accepted/changed/dropped normalization audit and stable issues. Only zero-critical active candidates reach resolved compatibility edges; the INT-003 valid/invalid matrices pass.
 - Capability readiness now deterministically maps declared artifact/profile/coverage/reference/validation/freshness/provider/dependency evidence into the accepted five states and manifest-compatible summaries. Mandatory activation permits only ready/limited, and the INT-004 invariant matrix passes.
+- Retrieval now uses an owned immutable request/candidate contract, deterministic typed query classifier, and exact/lexical/symbol/endpoint/metadata/graph/semantic adapters while preserving the current search/assistant compatibility projection. The RET-001 positive and insufficient-evidence regression matrix passes.
 
 ## Blocking gaps
 
 1. The production worker is not yet composed over the typed phase/checkpoint/activation boundary.
 2. The incremental planner, intelligence artifacts and readiness calculator are verified independently, but production pipeline/manifest composition and real parser/resolver/graph/readiness equivalence are not proven.
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
-4. Retrieval, citation, graph, security, performance, and resilience gates lack complete release evidence.
+4. Retrieval ranking/fusion, citation, graph, security, performance, and resilience gates lack complete release evidence.
 5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
@@ -50,8 +51,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the `INT-004` capability readiness evidence.
-2. Authorize `RET-001` before splitting typed retrievers and the query classifier.
+1. Review the `RET-001` typed retrieval boundary evidence.
+2. Authorize `RET-002` before changing score normalization or fusion behavior.
 
 ## Status update rule
 
