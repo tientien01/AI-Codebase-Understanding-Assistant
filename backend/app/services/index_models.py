@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO, ImportPreviewResponse
+from app.services.code_analysis.models import ResolvedReference
 
 
 @dataclass
@@ -116,6 +117,7 @@ class RepositoryState:
     skipped_file_records: list[dict[str, str | None]] = field(default_factory=list)
     failed_file_records: list[dict[str, str | int | None]] = field(default_factory=list)
     parse_diagnostics: list[dict[str, str | int | None]] = field(default_factory=list)
+    resolved_references: list[ResolvedReference] = field(default_factory=list)
     failed_files: int = 0
     current_step: str = "created"
     started_at: str | None = None

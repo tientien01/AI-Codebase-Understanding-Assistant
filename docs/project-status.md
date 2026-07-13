@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 3: canonical code intelligence |
-| Active task | None; `INT-001` parser/code-analysis boundary evidence complete |
-| Next task candidate | `INT-002` canonical resolver/reference artifacts |
+| Active task | None; `INT-002` canonical resolver/reference evidence complete |
+| Next task candidate | `INT-003` graph candidate provenance and normalization |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -33,12 +33,13 @@ This page is the operational front door. It reports verified progress; it does n
 - Candidate publication now deterministically checks issues, mandatory artifacts and capability readiness, then performs a lease/operation-fenced expected-previous-version activation that atomically persists readiness, supersedes the old version, switches the repository pointer, completes job/attempt state, and appends audit evidence; the IDX-003 PostgreSQL suite passes.
 - Incremental planning now classifies fingerprint changes and exact move candidates, validates producer/configuration compatibility, expands typed reverse dependencies within explicit budgets, and falls back to full with stable reason codes. An exact, bounded canonical-family comparator provides the synthetic equivalence gate required by IDX-004.
 - Python parsing now crosses one immutable parse-request and `parsed-file/v1` adapter/IR boundary before an explicit current-state compatibility projection. The duplicate legacy Python AST extractor has been removed, and the INT-001 golden/regression suites pass.
+- Python imports and calls now produce deterministic `resolved-reference-set/v1` artifacts retaining resolved, ambiguous and unresolved outcomes with canonical ownership/provenance. Compatibility graph emission consumes those typed outcomes, and the INT-002 resolution matrix passes.
 
 ## Blocking gaps
 
 1. The production worker is not yet composed over the typed phase/checkpoint/activation boundary.
 2. The incremental planner and synthetic equivalence harness are verified, but production pipeline composition and real parser/resolver/graph canonical equivalence are not proven.
-3. Non-Python adapters, typed resolver/reference output, canonical graph candidates, and production-output equivalence are not proven.
+3. Cross-file symbol/inheritance/dynamic and non-Python resolver coverage, canonical graph candidates, and production-output equivalence are not proven.
 4. Retrieval, citation, graph, security, performance, and resilience gates lack complete release evidence.
 5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
@@ -47,8 +48,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the `INT-001` parser golden evidence.
-2. Authorize `INT-002` before adding canonical resolver/reference artifacts.
+1. Review the `INT-002` resolution accuracy evidence.
+2. Authorize `INT-003` before enforcing graph candidate provenance and normalization.
 
 ## Status update rule
 

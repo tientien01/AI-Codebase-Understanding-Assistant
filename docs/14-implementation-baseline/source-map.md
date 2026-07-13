@@ -11,6 +11,7 @@
 | Parsing | `backend/app/services/parsing/` |
 | Deep code analysis | `backend/app/services/code_analysis/` |
 | Canonical Python adapter/IR boundary | `backend/app/services/code_analysis/adapters/python_adapter.py`, `models.py`, `pipeline.py`; current-state projection in `backend/app/services/parsing/canonical_python_parser.py` |
+| Canonical Python reference resolver | `backend/app/services/code_analysis/resolver.py`; typed compatibility projection in `backend/app/services/code_analysis/cpg/emitter.py` |
 | Graph/projections | `backend/app/services/graph/` |
 | Retrieval | `backend/app/services/retrieval/` |
 | Evidence | `backend/app/services/evidence/` |
@@ -40,3 +41,5 @@ a compatibility adapter for direct callers; versioned routes no longer import it
 Agents use this map for targeted inspection and must not scan ignored dependency/build/runtime storage directories.
 
 `ParserService` now routes Python through one `PythonAdapter -> IRModule` authority. `CanonicalPythonParser` is the explicit projection into the current mutable `RepositoryState`; `PythonAstParser` remains only as a deprecated import-compatible class name and contains no second AST extractor. Other language parsers still use the compatibility `LanguageParser` boundary and do not yet claim production-v1 IR capability.
+
+The Python pipeline now retains a deterministic `resolved-reference-set/v1` artifact for imports and calls before graph compatibility output. `CPGEmitter` projects typed outcomes and no longer owns target selection. Cross-file symbol/inheritance/dynamic resolution and graph-candidate normalization remain future boundaries.

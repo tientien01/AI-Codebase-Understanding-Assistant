@@ -1,19 +1,21 @@
 from __future__ import annotations
 
-import builtins
-import sys
-
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
 from app.services.chunking_service import ChunkingService
-from app.services.code_analysis.models import CFGGraph, CPGResult, DFGGraph, IRClass, IRFunction, IRModule, IRNode
+from app.services.code_analysis.models import (
+    CFGGraph,
+    CPGResult,
+    DFGGraph,
+    IRClass,
+    IRFunction,
+    IRModule,
+    IRNode,
+    ResolvedReference,
+    canonical_symbol_key,
+)
 from app.services.code_analysis.stable_ids import stable_node_id, stable_symbol_id
 from app.services.index_models import EndpointRecord, RepositoryState, SymbolRecord
 from app.services.text_utils import node_id
-
-
-BUILTIN_NAMES = set(dir(builtins))
-STDLIB_MODULES = getattr(sys, "stdlib_module_names", set())
-FRAMEWORK_MODULES = {"flask", "fastapi", "django", "sqlalchemy", "celery", "click"}
 
 
 class CPGEmitter:
@@ -21,13 +23,10 @@ class CPGEmitter:
         self.chunking = chunking
 
     def apply(self, repository: RepositoryState, result: CPGResult) -> None:
-        symbol_index = self._symbol_index(repository.id, result.module)
-        import_index = self._import_index(result.module)
-        self._emit_imports(repository, result.module)
         for item in result.module.classes:
-            self._emit_class(repository, item, symbol_index, import_index)
+            self._emit_class(repository, item)
         for function in result.module.functions:
-            self._emit_function(repository, function, "function", symbol_index, import_index)
+            self._emit_function(repository, function, "function")
         for endpoint in result.module.endpoints:
             repository.endpoints.append(
                 EndpointRecord(
@@ -49,64 +48,36 @@ class CPGEmitter:
                 endpoint.end_line,
                 endpoint.handler,
             )
+        if result.references is not None:
+            repository.resolved_references.extend(result.references.references)
+            self._emit_references(repository, result.module, result.references.references)
         self._emit_cfg(repository, result.cfg_graphs)
         self._emit_dfg(repository, result.dfg_graphs)
-
-    def _emit_imports(self, repository: RepositoryState, module: IRModule) -> None:
-        file_node = node_id("file", module.file_path)
-        for import_item in module.imports:
-            self._add_import_edge(repository, file_node, import_item.module, 0.95)
-            self._add_internal_import_edge(repository, module.file_path, file_node, import_item.module, 0.88)
-            if import_item.imported_name:
-                self._add_import_edge(repository, file_node, f"{import_item.module}.{import_item.imported_name}", 0.86)
 
     def _add_import_edge(self, repository: RepositoryState, file_node: str, module_label: str, confidence: float) -> None:
         module_node = node_id("module", module_label)
         repository.graph_nodes.append(GraphNodeDTO(id=module_node, type="module", label=module_label, file_path=None))
         repository.graph_edges.append(GraphEdgeDTO(source=file_node, target=module_node, type="imports", confidence=confidence))
 
-    def _add_internal_import_edge(
-        self,
-        repository: RepositoryState,
-        owning_file_path: str,
-        file_node: str,
-        module_label: str,
-        confidence: float,
-    ) -> None:
-        target_file = self._module_to_file_path(repository, owning_file_path, module_label)
-        if not target_file:
-            return
-        repository.graph_edges.append(
-            GraphEdgeDTO(
-                source=file_node,
-                target=node_id("file", target_file),
-                type="imports_internal",
-                confidence=confidence,
-            )
-        )
 
     def _emit_class(
         self,
         repository: RepositoryState,
         item: IRClass,
-        symbol_index: dict[str, str],
-        import_index: dict[str, str],
     ) -> None:
         symbol_type = self._class_symbol_type(item)
         self._add_symbol(repository, item, item.name, item.qualified_name, symbol_type, f"class {item.name}")
         for child in item.body:
             if isinstance(child, IRFunction):
-                self._emit_function(repository, child, "method", symbol_index, import_index)
+                self._emit_function(repository, child, "method")
             elif isinstance(child, IRClass):
-                self._emit_class(repository, child, symbol_index, import_index)
+                self._emit_class(repository, child)
 
     def _emit_function(
         self,
         repository: RepositoryState,
         function: IRFunction,
         default_type: str,
-        symbol_index: dict[str, str],
-        import_index: dict[str, str],
     ) -> None:
         self._add_symbol(
             repository,
@@ -116,7 +87,6 @@ class CPGEmitter:
             default_type,
             function.metadata.get("signature", f"def {function.name}"),
         )
-        self._emit_call_edges(repository, function, default_type, symbol_index, import_index)
 
     def _add_symbol(
         self,
@@ -140,78 +110,83 @@ class CPGEmitter:
         )
         self.chunking.add_chunk(repository, node.file_path, symbol_type, node.text, node.start_line, node.end_line, name)
 
-    def _emit_call_edges(
+    def _emit_references(
         self,
         repository: RepositoryState,
-        function: IRFunction,
-        default_type: str,
-        symbol_index: dict[str, str],
-        import_index: dict[str, str],
+        module: IRModule,
+        references: tuple[ResolvedReference, ...],
     ) -> None:
-        source = stable_symbol_id(repository.id, function.file_path, function.qualified_name, default_type)
-        for call_name in self._call_names(function.body):
-            target, edge_type, confidence = self._resolve_call_target(repository, function.file_path, call_name, symbol_index, import_index)
-            repository.graph_edges.append(GraphEdgeDTO(source=source, target=target, type=edge_type, confidence=confidence))
-            call_site_id = stable_node_id(repository.id, "call_site", f"{function.file_path}:{function.qualified_name}:{call_name}")
-            repository.graph_nodes.append(
-                GraphNodeDTO(
-                    id=call_site_id,
-                    type="call_site",
-                    label=call_name,
-                    file_path=function.file_path,
-                    scope_path=function.file_path,
-                    role="Call site",
-                )
-            )
-            repository.graph_edges.append(GraphEdgeDTO(source=source, target=call_site_id, type="contains_call", confidence=0.8))
+        symbol_targets = self._canonical_symbol_targets(repository.id, module)
+        for reference in references:
+            if reference.reference_type == "import":
+                self._emit_import_reference(repository, module, reference)
+            else:
+                self._emit_call_reference(repository, module, reference, symbol_targets)
 
-    def _resolve_call_target(
+    def _emit_import_reference(self, repository: RepositoryState, module: IRModule, reference: ResolvedReference) -> None:
+        source = node_id("file", module.file_path)
+        module_label = reference.raw_reference.rsplit(".", 1)[0] if "." in reference.raw_reference else reference.raw_reference
+        self._add_import_edge(repository, source, module_label, 0.95)
+        if reference.outcome == "resolved":
+            target_path = self._file_path_from_key(reference.target_keys[0])
+            repository.graph_edges.append(
+                GraphEdgeDTO(source=source, target=node_id("file", target_path), type="imports_internal", confidence=0.88)
+            )
+
+    def _emit_call_reference(
         self,
         repository: RepositoryState,
-        file_path: str,
-        call_name: str,
-        symbol_index: dict[str, str],
-        import_index: dict[str, str],
-    ) -> tuple[str, str, float]:
-        candidates = [call_name, call_name.split(".")[-1]]
-        for candidate in candidates:
-            target = symbol_index.get(candidate)
-            if target:
-                return target, "calls", 0.76
-        root_name = call_name.split(".", 1)[0]
-        imported_module = import_index.get(root_name)
-        if root_name in BUILTIN_NAMES:
-            return self._external_call_node(repository, file_path, call_name, "builtin_call"), "calls_builtin", 0.92
-        if imported_module:
-            module_root = imported_module.lstrip(".").split(".", 1)[0]
-            if module_root in FRAMEWORK_MODULES:
-                return self._external_call_node(repository, file_path, call_name, "framework_call"), "calls_framework", 0.86
-            if module_root in STDLIB_MODULES:
-                return self._external_call_node(repository, file_path, call_name, "stdlib_call"), "calls_stdlib", 0.84
-            return self._external_call_node(repository, file_path, call_name, "external_call"), "calls_external", 0.68
-        unresolved_id = stable_node_id(repository.id, "unresolved_call", f"{file_path}:{call_name}")
+        module: IRModule,
+        reference: ResolvedReference,
+        symbol_targets: dict[str, str],
+    ) -> None:
+        source = symbol_targets.get(reference.source_entity_key or "", node_id("file", module.file_path))
+        if reference.outcome == "resolved":
+            target = symbol_targets[reference.target_keys[0]]
+            edge_type, confidence = "calls", 0.76
+        else:
+            node_type, edge_type, confidence = self._unresolved_projection(reference)
+            target = self._external_call_node(repository, module.file_path, reference.raw_reference, node_type)
+            if reference.unresolved_reason == "target_not_found" or reference.outcome == "ambiguous":
+                repository.parse_diagnostics.append(
+                    {
+                        "file_path": module.file_path,
+                        "language": "python",
+                        "parser": "python-static-resolver/1",
+                        "stage": "call_resolution",
+                        "severity": "warning",
+                        "message": (
+                            f"Ambiguous call target '{reference.raw_reference}'."
+                            if reference.outcome == "ambiguous"
+                            else f"Could not resolve call target '{reference.raw_reference}'."
+                        ),
+                        "line": reference.source_spans[0].start_line,
+                    }
+                )
+        repository.graph_edges.append(GraphEdgeDTO(source=source, target=target, type=edge_type, confidence=confidence))
+        call_site_id = stable_node_id(repository.id, "call_site", reference.canonical_key)
         repository.graph_nodes.append(
             GraphNodeDTO(
-                id=unresolved_id,
-                type="unresolved_call",
-                label=call_name,
-                file_path=file_path,
-                scope_path=file_path,
-                role="Unresolved call",
+                id=call_site_id,
+                type="call_site",
+                label=reference.raw_reference,
+                file_path=module.file_path,
+                start_line=reference.source_spans[0].start_line,
+                end_line=reference.source_spans[0].end_line,
+                scope_path=module.file_path,
+                role="Call site",
             )
         )
-        repository.parse_diagnostics.append(
-            {
-                "file_path": file_path,
-                "language": "python",
-                "parser": "python-ast-ir-v1",
-                "stage": "call_resolution",
-                "severity": "warning",
-                "message": f"Could not resolve call target '{call_name}'.",
-                "line": None,
-            }
-        )
-        return unresolved_id, "calls_unresolved", 0.25
+        repository.graph_edges.append(GraphEdgeDTO(source=source, target=call_site_id, type="contains_call", confidence=0.8))
+
+    def _unresolved_projection(self, reference: ResolvedReference) -> tuple[str, str, float]:
+        mapping = {
+            "builtin_target": ("builtin_call", "calls_builtin", 0.92),
+            "stdlib_target": ("stdlib_call", "calls_stdlib", 0.84),
+            "framework_target": ("framework_call", "calls_framework", 0.86),
+            "external_target": ("external_call", "calls_external", 0.68),
+        }
+        return mapping.get(reference.unresolved_reason or "", ("unresolved_call", "calls_unresolved", 0.25))
 
     def _external_call_node(self, repository: RepositoryState, file_path: str, call_name: str, node_type: str) -> str:
         node_id_value = stable_node_id(repository.id, node_type, f"{file_path}:{call_name}")
@@ -227,83 +202,27 @@ class CPGEmitter:
         )
         return node_id_value
 
-    def _import_index(self, module: IRModule) -> dict[str, str]:
-        index: dict[str, str] = {}
-        for item in module.imports:
-            if item.imported_name:
-                local_name = item.alias or item.imported_name
-                index[local_name] = f"{item.module}.{item.imported_name}".strip(".")
-            else:
-                local_name = item.alias or item.module.split(".", 1)[0]
-                index[local_name] = item.module
-        return index
-
-    def _module_to_file_path(self, repository: RepositoryState, owning_file_path: str, module_label: str) -> str | None:
-        normalized = self._normalize_module_path(owning_file_path, module_label)
-        candidates = {
-            f"{normalized}.py",
-            f"{normalized}/__init__.py",
-        }
-        for file_record in repository.files:
-            path = file_record.path
-            if path in candidates or any(path.endswith(f"/{candidate}") for candidate in candidates):
-                return path
-        return None
-
-    def _normalize_module_path(self, owning_file_path: str, module_label: str) -> str:
-        leading_dots = len(module_label) - len(module_label.lstrip("."))
-        raw_module = module_label.lstrip(".")
-        if leading_dots == 0:
-            return raw_module.replace(".", "/")
-        parent_parts = owning_file_path.rsplit("/", 1)[0].split("/")
-        keep_count = max(0, len(parent_parts) - leading_dots + 1)
-        parts = parent_parts[:keep_count]
-        if raw_module:
-            parts.extend(raw_module.split("."))
-        return "/".join(part for part in parts if part)
-
-    def _symbol_index(self, repository_id: str, module: IRModule) -> dict[str, str]:
+    def _canonical_symbol_targets(self, repository_id: str, module: IRModule) -> dict[str, str]:
         index: dict[str, str] = {}
         for function in module.functions:
             symbol_id = stable_symbol_id(repository_id, function.file_path, function.qualified_name, "function")
-            index[function.name] = symbol_id
-            index[function.qualified_name] = symbol_id
+            index[canonical_symbol_key(module.file_key, function.qualified_name, "function")] = symbol_id
         for item in module.classes:
-            class_type = self._class_symbol_type(item)
-            class_id = stable_symbol_id(repository_id, item.file_path, item.qualified_name, class_type)
-            index[item.name] = class_id
-            index[item.qualified_name] = class_id
-            self._index_class_symbols(repository_id, index, item)
+            self._index_class_symbols(repository_id, module.file_key, index, item)
         return index
 
-    def _index_class_symbols(self, repository_id: str, index: dict[str, str], item: IRClass) -> None:
+    def _index_class_symbols(self, repository_id: str, file_key: str, index: dict[str, str], item: IRClass) -> None:
         for child in item.body:
             if isinstance(child, IRFunction):
                 symbol_id = stable_symbol_id(repository_id, child.file_path, child.qualified_name, "method")
-                index[child.name] = symbol_id
-                index[child.qualified_name] = symbol_id
+                index[canonical_symbol_key(file_key, child.qualified_name, "method")] = symbol_id
             elif isinstance(child, IRClass):
-                class_type = self._class_symbol_type(child)
-                class_id = stable_symbol_id(repository_id, child.file_path, child.qualified_name, class_type)
-                index[child.name] = class_id
-                index[child.qualified_name] = class_id
-                self._index_class_symbols(repository_id, index, child)
+                self._index_class_symbols(repository_id, file_key, index, child)
 
-    def _call_names(self, statements) -> list[str]:
-        names: list[str] = []
-        for statement in statements:
-            for expression in [*statement.expressions, *statement.targets]:
-                names.extend(self._call_names_from_expression(expression))
-            names.extend(self._call_names(statement.body))
-            names.extend(self._call_names(statement.orelse))
-            names.extend(self._call_names(statement.handlers))
-        return names
+    def _file_path_from_key(self, file_key: str) -> str:
+        from urllib.parse import unquote
 
-    def _call_names_from_expression(self, expression) -> list[str]:
-        names = [expression.name] if expression.kind == "call" and expression.name else []
-        for child in expression.children:
-            names.extend(self._call_names_from_expression(child))
-        return names
+        return unquote(file_key.removeprefix("file:v1:"))
 
     def _emit_cfg(self, repository: RepositoryState, graphs: list[CFGGraph]) -> None:
         for graph in graphs:
