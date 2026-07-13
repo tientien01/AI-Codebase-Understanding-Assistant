@@ -22,6 +22,8 @@
 | Production DB session/profile | `backend/app/db/production_session.py`, `backend/app/core/config.py` |
 | Repository persistence port/adapters | `backend/app/services/repositories/repository_port.py`, `repository_store.py`, `production_repository_store.py` |
 | Persisted job/version/artifact commands | `backend/app/services/indexing/job_state_store.py` |
+| Job queue/delivery boundary | `backend/app/services/indexing/job_queue.py`, `job_delivery_service.py` |
+| Dedicated indexing worker | `backend/app/workers/indexing_worker.py` |
 | Frontend API/state | `frontend/src/api/`, `frontend/src/hooks/` |
 | Frontend surfaces | `frontend/src/pages/`, `frontend/src/components/` |
 | Tests/fixture | `tests/` |

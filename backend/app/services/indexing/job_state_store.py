@@ -123,3 +123,11 @@ class JobStateStore:
     def job_state(self, job_id: str) -> str | None:
         with self.engine.connect() as connection:
             return connection.scalar(select(self.t["index_jobs"].c.state).where(self.t["index_jobs"].c.id == job_id))
+
+    def job_repository_id(self, job_id: str) -> str | None:
+        with self.engine.connect() as connection:
+            return connection.scalar(
+                select(self.t["index_jobs"].c.repository_id).where(
+                    self.t["index_jobs"].c.id == job_id
+                )
+            )

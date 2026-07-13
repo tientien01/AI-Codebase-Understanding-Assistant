@@ -14,6 +14,7 @@ jobs:
     timeout-minutes: 20
     env:
       TEST_POSTGRES_ADMIN_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/postgres
+      TEST_REDIS_URL: redis://127.0.0.1:6379/15
     services:
       postgres:
         image: postgres:18.4-bookworm@sha256:d9c83446333daec3f0588cc709adb80c26090b7f9f0f7ec8d43c243385d79818
@@ -27,6 +28,15 @@ jobs:
           --health-cmd "pg_isready -U postgres -d postgres"
           --health-interval 2s
           --health-timeout 3s
+          --health-retries 15
+      redis:
+        image: redis:8.2.7-bookworm@sha256:ccc02ba721bd2ddaf793bea8085c9079ce051f95a5142a2ac049a4b91954bd60
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 1s
+          --health-timeout 2s
           --health-retries 15
     steps:
       - name: Check out repository
