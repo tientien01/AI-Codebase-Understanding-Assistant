@@ -1,16 +1,16 @@
 # Development Install Report
 
-Status: Local verification passed; GitHub Actions evidence pending
+Status: Local and GitHub Actions verification passed
 
 Owner: Project maintainer
 
 Verified: 2026-07-13
 
-Revision: `a394abe518489e044482cc14f51d385b00410bb9` plus the uncommitted `FND-002` working-tree diff
+Revision: `fe91e5fe729b446ab989d03bcc81d3d711846669`
 
 ## Scope
 
-This report records the Windows clean-environment verification for `FND-002`: declared runtimes, preserved dependency versions, hashed Python lock installation, npm lock stability, scoped Pytest discovery, frontend gates, and CI workflow structure. It is not immutable CI or release evidence.
+This report records the local Windows clean-environment verification and immutable GitHub Actions evidence for `FND-002`: declared runtimes, preserved dependency versions, hashed Python lock installation, npm lock stability, scoped Pytest discovery, and frontend gates. It is task evidence, not a claim that the complete product is production ready.
 
 ## Environment and artifacts
 
@@ -44,6 +44,13 @@ The Python lock was initially seeded from the existing verified virtualenv so no
 
 An earlier intentionally concurrent pair of backend test commands contended for the same test artifact and produced one Windows `PermissionError`; the required commands were then run sequentially, matching CI job order, and both passed. An initial lock attempt was rejected on hash mismatch and was not accepted; regenerating hashes for the preserved versions produced the successful clean install above.
 
-## CI evidence still required
+## Immutable CI evidence
 
-`.github/workflows/ci.yml` pins checkout, setup-uv, and setup-node to full commit SHAs, uses read-only contents permission, installs the exact locks, and runs backend targeted/root tests plus frontend test/lint/build gates. The workflow has not run on GitHub because this working tree is not committed or pushed. `FND-002` remains `in_progress` until an immutable successful workflow run is linked here.
+The workflow pins checkout, setup-uv, and setup-node to full commit SHAs, uses read-only contents permission, and ran against head revision `fe91e5fe729b446ab989d03bcc81d3d711846669`.
+
+| Event | Workflow run | Backend tests | Frontend quality gates |
+| --- | --- | --- | --- |
+| Push | [CI run 29223127315](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29223127315) | Pass: clean locked install, dependency check, targeted/root Pytest, lock regeneration | Pass: `npm ci`, 4 tests, lint, production build |
+| Pull request | [CI run 29223163997](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29223163997) | Pass: clean locked install, dependency check, targeted/root Pytest, lock regeneration | Pass: `npm ci`, 4 tests, lint, production build |
+
+Both runs completed successfully on 2026-07-13. This closes the immutable-CI blocker and completes `FND-002`.

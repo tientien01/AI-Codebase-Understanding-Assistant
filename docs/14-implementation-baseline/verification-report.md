@@ -18,7 +18,7 @@ This report describes the checked-out source and commands executed on the verifi
 | npm | 11.9.0 | Invoked through `npm.cmd` because PowerShell blocks `npm.ps1` |
 | uv | 0.11.28 | Generated and installed the hashed Python 3.11 lock |
 
-The repository now declares Python 3.11 and Node 24, has Python project metadata, hashed Python and npm locks, scoped Pytest configuration, and a minimal pinned GitHub Actions workflow. Clean local install evidence passed; immutable GitHub Actions evidence remains pending. Dockerfile and Compose manifests are still absent.
+The repository now declares Python 3.11 and Node 24, has Python project metadata, hashed Python and npm locks, scoped Pytest configuration, and a minimal pinned GitHub Actions workflow. Clean local install evidence passed, and both push and pull-request workflow runs passed for revision `fe91e5fe729b446ab989d03bcc81d3d711846669`. Dockerfile and Compose manifests are still absent.
 
 ## Commands and results
 
@@ -50,9 +50,9 @@ The repository now declares Python 3.11 and Node 24, has Python project metadata
 | P0 | `create_all` and manual schema patches | No supported production migration history/drift guarantee | `DAT-002` |
 | P0 | Process-local worker controls | Restart/recovery/cancel are not production durable | `JOB-002..004` |
 | P1 | Frontend coverage is limited to four foundation tests; no E2E configuration | Broad UI behavior is not regression protected | `UI-001..005` foundation |
-| P1 | CI workflow is defined but has no immutable successful run yet; containers/deployment remain absent | CI/L2 evidence and L3 deployment reproducibility are unproven | `FND-002`, `OPS-002` |
+| P1 | CI verifies locked install/test/lint/build, but containers/deployment remain absent | L3 deployment reproducibility is unproven | `OPS-002` |
 | P1 | No generated/checked OpenAPI artifact | Markdown/API implementation drift is not automatically detected | `FND-003` |
 
 ## Reproduction boundary
 
-The clean local backend environment and npm install passed from committed lock content. This verifies lock completeness on Windows/Python 3.11/Node 24, not a second operating system or immutable CI run. `FND-002` remains incomplete until the GitHub Actions workflow passes on the committed revision.
+The clean local backend environment and npm install passed from committed lock content. GitHub Actions independently reproduced the locked backend and frontend gates on Ubuntu for the committed revision. This verifies the `FND-002` development/CI boundary on Windows and Linux; it does not verify the future container/deployment profile.

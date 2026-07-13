@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 0: verified baseline and executable governance |
-| Active task | `FND-002` is `in_progress`; `FND-005` completed on 2026-07-13 |
-| Next task candidate | Commit/push the reviewed `FND-002` diff, obtain a successful immutable GitHub Actions run, and link it in the install report before completion |
+| Active delivery phase | Phase 1: production foundation |
+| Active task | None; `FND-002` and `FND-005` completed on 2026-07-13 |
+| Next task candidate | Prepare and authorize a scoped `FND-003` task for API contract-preserving route/schema separation |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -37,10 +37,9 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the Phase 0 verification reports and accepted cross-cutting contracts.
-2. Review and publish the scoped `FND-002` revision so its pinned GitHub Actions workflow can run.
-3. Link successful backend/frontend job evidence in `development-install-report.md`, then complete `FND-002`.
-4. Update baseline, evidence, and this page only after every required gate passes.
+1. Review the completed `FND-002` install and immutable CI evidence.
+2. Prepare a scoped `FND-003` task with exact API-regression gates and allowed paths.
+3. Do not change source for `FND-003` until that task is explicitly promoted to `ready` or `in_progress`.
 
 ## Status update rule
 

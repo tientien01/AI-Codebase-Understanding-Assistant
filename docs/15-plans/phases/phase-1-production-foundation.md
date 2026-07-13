@@ -1,6 +1,6 @@
 # Phase 1 — Production Foundation
 
-Status: Approved; blocked by Phase 0 exit
+Status: In progress
 
 ## Outcome
 

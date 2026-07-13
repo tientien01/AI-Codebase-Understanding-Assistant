@@ -1,7 +1,7 @@
 ---
 id: FND-002
 title: Establish reproducible Python and Node project metadata
-status: in_progress
+status: completed
 priority: P0
 phase: 1
 owner: project-maintainer
@@ -151,6 +151,8 @@ Update development setup, baseline, stack profiles, task status, project status 
 
 Verified on 2026-07-13 with Python 3.11.9, `uv==0.11.28`, Node 24.14.0, and npm 11.9.0: clean Python sync installed 107 packages with zero baseline version drift; `uv pip check` passed; targeted and root Pytest each passed 52 tests with one expected warning; canonical lock regeneration was hash-stable; `npm ci` preserved its lock hash; 4 frontend tests, lint, and production build passed; and the pinned CI YAML parsed with backend/frontend jobs. See `docs/18-production-evidence/development-install-report.md`.
 
-## Completion blocker
+## Completion evidence
 
-- The mandatory GitHub Actions workflow has not run on an immutable committed revision. Keep this task `in_progress` until both jobs pass and the run URL/revision are recorded in the development install report; do not substitute the local YAML parse for CI evidence.
+- Commit `fe91e5fe729b446ab989d03bcc81d3d711846669` passed both mandatory jobs in the immutable [push workflow run](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29223127315) and the independent [pull-request workflow run](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29223163997) on 2026-07-13.
+- The backend job installed the hashed Python lock, validated dependencies, passed targeted and root-scoped Pytest, and reproduced the lock. The frontend job passed locked install, targeted tests, lint, and production build.
+- All acceptance criteria and required production evidence are satisfied. `FND-002` completed on 2026-07-13.
