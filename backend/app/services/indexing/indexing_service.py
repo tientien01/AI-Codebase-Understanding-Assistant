@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 from inspect import signature
 from threading import Event, Lock, Thread
+from typing import Callable
 from uuid import uuid4
 
 from app.core.errors import DomainError
@@ -15,6 +16,7 @@ from app.services.enrichment.semantic_enrichment_service import SemanticEnrichme
 from app.services.graph.graph_service import GraphService
 from app.services.index_models import IndexingJobRecord, RepositoryState
 from app.services.indexing.job_queue import IndexJobQueuePort, QueueUnavailableError
+from app.services.indexing.job_state_store import JobStateStore
 from app.services.parsing.parser_service import ParserService
 from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.repositories.repository_service import RepositoryService
@@ -27,12 +29,17 @@ class IndexingCancelled(Exception):
     pass
 
 
+class IndexingAuthorityLost(Exception):
+    """Stop a stale production worker without persisting another side effect."""
+
+
 class IndexingJobControl:
-    def __init__(self) -> None:
+    def __init__(self, authority_check: Callable[[], None] | None = None) -> None:
         self.pause_requested = Event()
         self.resume_requested = Event()
         self.cancel_requested = Event()
         self.resume_requested.set()
+        self.authority_check = authority_check
 
     def pause(self) -> None:
         self.pause_requested.set()
@@ -58,6 +65,7 @@ class IndexingService:
         chunking: ChunkingService,
         graph: GraphService,
         job_queue: IndexJobQueuePort | None = None,
+        job_state_store: JobStateStore | None = None,
     ) -> None:
         self.store = store
         self.repositories = repositories
@@ -67,6 +75,7 @@ class IndexingService:
         self.chunking = chunking
         self.graph = graph
         self.job_queue = job_queue
+        self.job_state_store = job_state_store
         self.enrichment = SemanticEnrichmentService(chunking)
         self.parse_debug_output = ParseDebugOutputService()
         self._controls: dict[str, IndexingJobControl] = {}
@@ -106,7 +115,12 @@ class IndexingService:
         ).start()
         return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
 
-    def execute_persisted_job(self, job_id: str, repository_id: str) -> None:
+    def execute_persisted_job(
+        self,
+        job_id: str,
+        repository_id: str,
+        authority_check: Callable[[], None] | None = None,
+    ) -> None:
         """Reload and execute an already claimed production job in a worker."""
         repository = self.repositories.get_repository(repository_id)
         job = self.store.get_indexing_job(repository_id, job_id)
@@ -120,7 +134,7 @@ class IndexingService:
         previous_status = "created"
         if repository.current_index_version > 0:
             previous_status = "indexed_with_warnings" if repository.warnings else "indexed"
-        control = IndexingJobControl()
+        control = IndexingJobControl(authority_check)
         with self._controls_lock:
             self._controls[job.id] = control
         self._execute_indexing(
@@ -158,6 +172,17 @@ class IndexingService:
 
     def cancel_indexing_job(self, repository_id: str, job_id: str) -> IndexResponse:
         repository = self.repositories.get_repository(repository_id)
+        if self.job_state_store is not None:
+            job = self.store.get_indexing_job(repository.id, job_id)
+            if job is None:
+                raise DomainError("INDEXING_JOB_NOT_FOUND", "Indexing job not found.", 404, {"job_id": job_id})
+            state = self.job_state_store.request_cancellation(job_id)
+            return IndexResponse(
+                indexing_job_id=job.id,
+                repository_id=repository.id,
+                status="cancelling" if state == "running" else state,
+                index_version=job.index_version,
+            )
         job = self._get_controllable_job(repository.id, job_id)
         if job.status not in {"running", "paused"}:
             raise DomainError("INDEXING_JOB_NOT_RUNNING", "Only a running or paused indexing job can be cancelled.", 409, {"job_id": job_id})
@@ -207,6 +232,8 @@ class IndexingService:
         working_repository = deepcopy(repository)
         try:
             self._index_repository(working_repository, job, control, previous_status, force_reindex)
+        except IndexingAuthorityLost:
+            raise
         except IndexingCancelled:
             if previous_status in {"indexed", "indexed_with_warnings"}:
                 repository.status = previous_status
@@ -243,6 +270,8 @@ class IndexingService:
             if raise_errors:
                 raise
         else:
+            if control.authority_check is not None:
+                control.authority_check()
             self.repositories.replace_repository_index(repository, working_repository)
             self.repositories.persist_repository(repository)
             self.store.mark_stale_evidence(repository.id, repository.current_index_version)
@@ -547,6 +576,8 @@ class IndexingService:
         return digest.hexdigest()
 
     def _check_control(self, repository: RepositoryState, job: IndexingJobRecord, control: IndexingJobControl) -> None:
+        if control.authority_check is not None:
+            control.authority_check()
         if control.cancel_requested.is_set():
             raise IndexingCancelled()
         if not control.pause_requested.is_set():

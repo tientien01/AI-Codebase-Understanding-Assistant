@@ -18,6 +18,7 @@ from app.services.impact.impact_analysis_service import ImpactAnalysisService
 from app.services.indexing.indexing_job_service import IndexingJobService
 from app.services.indexing.indexing_service import IndexingService
 from app.services.indexing.job_queue import DramatiqIndexJobQueue, create_dramatiq_broker
+from app.services.indexing.job_state_store import JobStateStore
 from app.services.ingestion.archive_service import ArchiveService
 from app.services.ingestion.import_session_service import ImportSessionService
 from app.services.ingestion.upload_service import UploadService
@@ -52,6 +53,11 @@ class ApplicationContainer:
     def __init__(self) -> None:
         self.store = create_repository_store()
         self.index_job_queue = create_index_job_queue()
+        self.job_state_store = (
+            JobStateStore(self.store.engine)
+            if isinstance(self.store, ProductionRepositoryStore)
+            else None
+        )
         self.chunking = ChunkingService()
         self.scanner = ScannerService()
         self.parser = ParserService(self.chunking)
@@ -72,6 +78,7 @@ class ApplicationContainer:
             self.chunking,
             self.graph,
             self.index_job_queue,
+            self.job_state_store,
         )
         self.indexing_jobs = IndexingJobService(self.store, self.repositories_service)
         self.ingestion = ImportSessionService(

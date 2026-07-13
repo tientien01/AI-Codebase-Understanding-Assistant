@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     database_url: str = f"sqlite:///{PROJECT_ROOT / 'storage/app.db'}"
     redis_url: str = ""
+    index_lease_seconds: int = 60
+    index_heartbeat_seconds: int = 15
+    index_max_attempts: int = 3
     repository_storage_dir: Path = PROJECT_ROOT / "storage/repositories"
     upload_storage_dir: Path = PROJECT_ROOT / "storage/uploads"
     max_upload_size_mb: int = 2048
@@ -50,6 +53,25 @@ class Settings(BaseSettings):
             ("redis://", "rediss://")
         ):
             raise ValueError("Production profile requires a Redis REDIS_URL")
+        if min(
+            self.index_lease_seconds,
+            self.index_heartbeat_seconds,
+            self.index_max_attempts,
+        ) <= 0:
+            raise ValueError("Index lease, heartbeat, and attempt settings must be positive")
+        if self.index_heartbeat_seconds >= self.index_lease_seconds:
+            raise ValueError("INDEX_HEARTBEAT_SECONDS must be shorter than INDEX_LEASE_SECONDS")
+        required_job_settings = {
+            "index_lease_seconds",
+            "index_heartbeat_seconds",
+            "index_max_attempts",
+        }
+        if self.app_env == "production" and not required_job_settings.issubset(
+            self.model_fields_set
+        ):
+            raise ValueError(
+                "Production profile requires explicit index lease, heartbeat, and attempt settings"
+            )
         return self
 
 
