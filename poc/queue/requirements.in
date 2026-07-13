@@ -1,0 +1,2 @@
+dramatiq[redis]==2.2.0
+rq==2.10.0

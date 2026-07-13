@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 1: production foundation |
-| Active task | None; `JOB-001` implementation and local evidence complete |
-| Next task candidate | `JOB-002` queue implementation selection by PoC/ADR |
+| Active task | None; `JOB-002` implementation and measured evidence complete |
+| Next task candidate | `JOB-003` queue adapter and dedicated worker |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -25,6 +25,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Accepted implementation-ready PostgreSQL schema/ERD covering 35 production tables, composite ownership, lifecycle constraints, access indexes, and migration order.
 - Alembic production baseline, PostgreSQL 18.4 integration profile, zero-drift gate, and supported nine-table SQLite upgrade mapper verified by `DAT-002`.
 - Explicit production PostgreSQL profile, Alembic-head startup guard, typed repository port, and PostgreSQL repository/evidence adapter verified by `DAT-003`; SQLite remains the local default.
+- Dramatiq 2.2.0 selected by `ADR-0003` after passing 15/15 Redis recovery/cancellation PoC runs; production adapter and worker remain deferred to `JOB-003`.
 
 ## Blocking gaps
 
@@ -40,8 +41,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Publish and review the `DAT-003` PostgreSQL repository integration evidence and CI result.
-2. Authorize `JOB-001` before implementing durable job/version/artifact state transitions.
+1. Publish and review the `JOB-002` queue selection ADR and measured evidence.
+2. Authorize `JOB-003` before adding the Dramatiq adapter and dedicated worker.
 3. Authorize `IDX-001` before implementing immutable artifact publication.
 
 ## Status update rule

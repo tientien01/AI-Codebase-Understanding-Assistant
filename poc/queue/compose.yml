@@ -1,0 +1,20 @@
+services:
+  redis:
+    image: redis:8.2.7-bookworm@sha256:ccc02ba721bd2ddaf793bea8085c9079ce051f95a5142a2ac049a4b91954bd60
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 2s
+      retries: 15
+
+  benchmark:
+    build: .
+    environment:
+      POC_DATABASE_PATH: /tmp/queue-poc-state.db
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./:/poc

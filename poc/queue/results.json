@@ -1,0 +1,247 @@
+{
+  "schema_version": "queue-poc/v1",
+  "runs_per_scenario": 3,
+  "timeout_seconds": 30.0,
+  "results": [
+    {
+      "candidate": "rq",
+      "run": 1,
+      "scenario": "json_payload",
+      "passed": true,
+      "elapsed_ms": 35,
+      "detail": "decoded args contain only the opaque job ID"
+    },
+    {
+      "candidate": "rq",
+      "run": 1,
+      "scenario": "worker_loss_recovery",
+      "passed": false,
+      "elapsed_ms": 30293,
+      "detail": "TimeoutError: Timed out waiting for rq-1-worker_loss_recovery: {'id': 'rq-1-worker_loss_recovery', 'duration_seconds': 1.0, 'cancel_requested': 0, 'state': 'running', 'attempts': 1, 'started_at': 4286.089778572, 'finished_at': None}"
+    },
+    {
+      "candidate": "rq",
+      "run": 1,
+      "scenario": "queued_cancellation",
+      "passed": true,
+      "elapsed_ms": 315,
+      "detail": "durable cancellation prevented work from starting"
+    },
+    {
+      "candidate": "rq",
+      "run": 1,
+      "scenario": "running_cancellation",
+      "passed": true,
+      "elapsed_ms": 274,
+      "detail": "cooperative stop observed in 70 ms"
+    },
+    {
+      "candidate": "rq",
+      "run": 1,
+      "scenario": "broker_outage",
+      "passed": true,
+      "elapsed_ms": 37,
+      "detail": "submission raised ConnectionError without execution"
+    },
+    {
+      "candidate": "rq",
+      "run": 2,
+      "scenario": "json_payload",
+      "passed": true,
+      "elapsed_ms": 6,
+      "detail": "decoded args contain only the opaque job ID"
+    },
+    {
+      "candidate": "rq",
+      "run": 2,
+      "scenario": "worker_loss_recovery",
+      "passed": false,
+      "elapsed_ms": 30254,
+      "detail": "TimeoutError: Timed out waiting for rq-2-worker_loss_recovery: {'id': 'rq-2-worker_loss_recovery', 'duration_seconds': 1.0, 'cancel_requested': 0, 'state': 'running', 'attempts': 1, 'started_at': 4316.992604909, 'finished_at': None}"
+    },
+    {
+      "candidate": "rq",
+      "run": 2,
+      "scenario": "queued_cancellation",
+      "passed": true,
+      "elapsed_ms": 198,
+      "detail": "durable cancellation prevented work from starting"
+    },
+    {
+      "candidate": "rq",
+      "run": 2,
+      "scenario": "running_cancellation",
+      "passed": true,
+      "elapsed_ms": 274,
+      "detail": "cooperative stop observed in 70 ms"
+    },
+    {
+      "candidate": "rq",
+      "run": 2,
+      "scenario": "broker_outage",
+      "passed": true,
+      "elapsed_ms": 44,
+      "detail": "submission raised ConnectionError without execution"
+    },
+    {
+      "candidate": "rq",
+      "run": 3,
+      "scenario": "json_payload",
+      "passed": true,
+      "elapsed_ms": 6,
+      "detail": "decoded args contain only the opaque job ID"
+    },
+    {
+      "candidate": "rq",
+      "run": 3,
+      "scenario": "worker_loss_recovery",
+      "passed": false,
+      "elapsed_ms": 30266,
+      "detail": "TimeoutError: Timed out waiting for rq-3-worker_loss_recovery: {'id': 'rq-3-worker_loss_recovery', 'duration_seconds': 1.0, 'cancel_requested': 0, 'state': 'running', 'attempts': 1, 'started_at': 4347.786573088, 'finished_at': None}"
+    },
+    {
+      "candidate": "rq",
+      "run": 3,
+      "scenario": "queued_cancellation",
+      "passed": true,
+      "elapsed_ms": 195,
+      "detail": "durable cancellation prevented work from starting"
+    },
+    {
+      "candidate": "rq",
+      "run": 3,
+      "scenario": "running_cancellation",
+      "passed": true,
+      "elapsed_ms": 284,
+      "detail": "cooperative stop observed in 78 ms"
+    },
+    {
+      "candidate": "rq",
+      "run": 3,
+      "scenario": "broker_outage",
+      "passed": true,
+      "elapsed_ms": 45,
+      "detail": "submission raised ConnectionError without execution"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 1,
+      "scenario": "json_payload",
+      "passed": true,
+      "elapsed_ms": 17,
+      "detail": "decoded args contain only the opaque job ID"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 1,
+      "scenario": "worker_loss_recovery",
+      "passed": true,
+      "elapsed_ms": 3405,
+      "detail": "replacement completed after 2 attempts"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 1,
+      "scenario": "queued_cancellation",
+      "passed": true,
+      "elapsed_ms": 195,
+      "detail": "durable cancellation prevented work from starting"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 1,
+      "scenario": "running_cancellation",
+      "passed": true,
+      "elapsed_ms": 278,
+      "detail": "cooperative stop observed in 84 ms"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 1,
+      "scenario": "broker_outage",
+      "passed": true,
+      "elapsed_ms": 37,
+      "detail": "submission raised ConnectionError without execution"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 2,
+      "scenario": "json_payload",
+      "passed": true,
+      "elapsed_ms": 5,
+      "detail": "decoded args contain only the opaque job ID"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 2,
+      "scenario": "worker_loss_recovery",
+      "passed": true,
+      "elapsed_ms": 3181,
+      "detail": "replacement completed after 2 attempts"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 2,
+      "scenario": "queued_cancellation",
+      "passed": true,
+      "elapsed_ms": 193,
+      "detail": "durable cancellation prevented work from starting"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 2,
+      "scenario": "running_cancellation",
+      "passed": true,
+      "elapsed_ms": 281,
+      "detail": "cooperative stop observed in 79 ms"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 2,
+      "scenario": "broker_outage",
+      "passed": true,
+      "elapsed_ms": 22,
+      "detail": "submission raised ConnectionError without execution"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 3,
+      "scenario": "json_payload",
+      "passed": true,
+      "elapsed_ms": 6,
+      "detail": "decoded args contain only the opaque job ID"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 3,
+      "scenario": "worker_loss_recovery",
+      "passed": true,
+      "elapsed_ms": 3894,
+      "detail": "replacement completed after 2 attempts"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 3,
+      "scenario": "queued_cancellation",
+      "passed": true,
+      "elapsed_ms": 205,
+      "detail": "durable cancellation prevented work from starting"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 3,
+      "scenario": "running_cancellation",
+      "passed": true,
+      "elapsed_ms": 288,
+      "detail": "cooperative stop observed in 85 ms"
+    },
+    {
+      "candidate": "dramatiq",
+      "run": 3,
+      "scenario": "broker_outage",
+      "passed": true,
+      "elapsed_ms": 19,
+      "detail": "submission raised ConnectionError without execution"
+    }
+  ]
+}
