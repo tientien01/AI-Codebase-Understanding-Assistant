@@ -3,7 +3,8 @@
 | Technology | Status | Evaluation trigger |
 | --- | --- | --- |
 | FastAPI, React, PostgreSQL, Alembic, Docker | Adopt | Production foundation |
-| RQ vs Dramatiq | Assess | Durable job PoC measuring recovery/cancellation |
+| Dramatiq 2.2.0 | Adopt | JOB-002 passed 15/15 recovery/cancellation PoC runs; integrate in JOB-003 |
+| RQ 2.10.0 | Hold | JOB-002 forced-worker-loss recovery failed 3/3 runs within 30 seconds |
 | pgvector | Trial later | Semantic recall below accepted threshold |
 | Qdrant | Hold | Vector workload exceeds PostgreSQL capacity |
 | Neo4j/FalkorDB | Hold | Validated multi-hop query bottleneck |

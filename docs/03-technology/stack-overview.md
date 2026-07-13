@@ -16,6 +16,7 @@
 | Backend tests | Pytest | Existing suite | Accepted |
 | Frontend/E2E | Vitest + Testing Library + MSW + Playwright | Layered behavior/contract/E2E coverage | Accepted direction |
 | Development lock tooling | `uv==0.11.28` | Universal hashed Python 3.11 requirements lock and exact environment sync | Accepted by `ADR-0002` |
+| Production job queue | Dramatiq `2.2.0` | Redis-backed at-least-once ID delivery; PostgreSQL owns lifecycle, lease, retry, and cancellation | Accepted by `ADR-0003`; integration deferred to `JOB-003` |
 
 ## Infrastructure stack
 
@@ -24,7 +25,7 @@
 | Local application database | SQLite | Default developer runtime; no Docker requirement |
 | Production/integration database | PostgreSQL 18 | Authoritative relational state; disposable integration profile is pinned to 18.4 |
 | Job broker | Redis | Delivery/coordination only |
-| Queue library | RQ or Dramatiq | Must be selected by recovery/cancellation PoC and ADR |
+| Queue library | Dramatiq 2.2.0 | Selected by the JOB-002 recovery/cancellation PoC and `ADR-0003` |
 | Artifacts | Filesystem local; S3-compatible production | Access through `ArtifactStore` port |
 | Vector retrieval | Existing deterministic baseline | pgvector only after quality/scale benchmark |
 | Telemetry | Structured logging + OpenTelemetry + Prometheus-compatible metrics | Export backend is deployment-configurable |
