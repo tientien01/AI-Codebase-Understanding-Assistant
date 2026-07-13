@@ -22,7 +22,7 @@ class QueueUnavailableError(RuntimeError):
 
 
 class IndexJobQueuePort(Protocol):
-    def enqueue(self, job_id: str) -> str: ...
+    def enqueue(self, job_id: str, *, delay_ms: int = 0) -> str: ...
 
 
 def validate_job_id(job_id: str) -> str:
@@ -43,7 +43,9 @@ class DramatiqIndexJobQueue:
     def __init__(self, broker: Broker) -> None:
         self.broker = broker
 
-    def enqueue(self, job_id: str) -> str:
+    def enqueue(self, job_id: str, *, delay_ms: int = 0) -> str:
+        if delay_ms < 0:
+            raise ValueError("delay_ms must be non-negative")
         message = Message(
             queue_name=INDEX_JOB_QUEUE,
             actor_name=INDEX_JOB_ACTOR,
@@ -52,7 +54,7 @@ class DramatiqIndexJobQueue:
             options={},
         )
         try:
-            published = self.broker.enqueue(message)
+            published = self.broker.enqueue(message, delay=delay_ms or None)
         except (BrokerConnectionError, RedisError) as exc:
             raise QueueUnavailableError("Index job queue is unavailable") from exc
         return published.message_id

@@ -13,6 +13,7 @@ from app.db.production_base import ProductionBase
 from app.db.production_session import ProductionDatabaseError, create_production_engine
 from app.schemas.api import EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
 from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, IndexingJobRecord, RepositoryState, SymbolRecord
+from app.services.indexing.job_state_store import JobStateStore
 from app.services.repositories.production_repository_store import ProductionRepositoryError, ProductionRepositoryStore
 
 
@@ -56,6 +57,31 @@ def test_production_profile_requires_redis() -> None:
 def test_local_profile_does_not_require_redis() -> None:
     configured = Settings(_env_file=None, app_env="local", redis_url="")
     assert configured.redis_url == ""
+
+
+def test_production_profile_requires_explicit_safe_job_timing() -> None:
+    base = {
+        "_env_file": None,
+        "app_env": "production",
+        "database_url": "postgresql+psycopg://localhost/app",
+        "redis_url": "redis://localhost:6379/0",
+    }
+    with pytest.raises(ValidationError, match="explicit index lease"):
+        Settings(**base)
+    with pytest.raises(ValidationError, match="shorter than"):
+        Settings(
+            **base,
+            index_lease_seconds=10,
+            index_heartbeat_seconds=10,
+            index_max_attempts=3,
+        )
+    configured = Settings(
+        **base,
+        index_lease_seconds=30,
+        index_heartbeat_seconds=10,
+        index_max_attempts=3,
+    )
+    assert configured.index_max_attempts == 3
 
 
 def test_production_engine_requires_alembic_head(production_database) -> None:
@@ -146,6 +172,44 @@ def test_job_target_version_transitions_from_building_to_active(production_datab
     versions = ProductionBase.metadata.tables["index_versions"]
     with engine.connect() as connection:
         assert connection.scalar(select(versions.c.lifecycle).where(versions.c.repository_id == repository.id)) == "active"
+
+
+def test_compatibility_progress_write_preserves_active_job_lease(production_database, tmp_path: Path, monkeypatch) -> None:
+    _, engine, _ = production_database
+    monkeypatch.setattr(settings, "repository_storage_dir", tmp_path)
+    store = ProductionRepositoryStore(engine)
+    repository = _repository(tmp_path)
+    empty = RepositoryState(
+        id=repository.id,
+        name=repository.name,
+        source_type=repository.source_type,
+        source_uri=None,
+        source_path=repository.source_path,
+    )
+    store.save_repository_metadata(empty)
+    job = IndexingJobRecord(
+        id="job_lease_progress",
+        repository_id=repository.id,
+        status="queued",
+        index_version=1,
+        started_at="2026-07-13T00:00:00+00:00",
+    )
+    store.save_indexing_job(job)
+    state = JobStateStore(engine)
+    lease = state.claim(
+        job.id, "worker_progress", lease_seconds=30, max_attempts=3
+    ).lease
+    assert lease is not None
+
+    job.status = "completed"
+    job.current_step = "completed"
+    job.finished_at = "2026-07-13T00:00:01+00:00"
+    store.save_indexing_job(job)
+
+    persisted = state.job_details(job.id)
+    assert persisted["state"] == "running"
+    assert persisted["lease_generation"] == lease.generation
+    assert persisted["current_attempt_id"] == lease.attempt_id
 
 
 def test_source_path_must_match_managed_repository_root(production_database, tmp_path: Path, monkeypatch) -> None:

@@ -36,14 +36,16 @@ DIGEST = "b" * 64
 class RecordingBroker:
     def __init__(self) -> None:
         self.message = None
+        self.delay = None
 
-    def enqueue(self, message):
+    def enqueue(self, message, *, delay=None):
         self.message = message
+        self.delay = delay
         return message
 
 
 class UnavailableQueue:
-    def enqueue(self, _job_id: str) -> str:
+    def enqueue(self, _job_id: str, *, delay_ms: int = 0) -> str:
         raise QueueUnavailableError("unavailable")
 
 
@@ -51,7 +53,9 @@ class UnavailableQueue:
 class RecordingRunner:
     calls: list[tuple[str, str]]
 
-    def execute_persisted_job(self, job_id: str, repository_id: str) -> None:
+    def execute_persisted_job(self, job_id: str, repository_id: str, authority_check=None) -> None:
+        if authority_check is not None:
+            authority_check()
         self.calls.append((job_id, repository_id))
 
 
@@ -140,7 +144,7 @@ def test_duplicate_delivery_starts_persisted_job_once(production_database) -> No
     assert dispositions.count(DeliveryDisposition.STARTED) == 1
     assert dispositions.count(DeliveryDisposition.DUPLICATE) == 1
     assert runner.calls == [(ids["job"], ids["repository"])]
-    assert state.job_state(ids["job"]) == "running"
+    assert state.job_state(ids["job"]) == "succeeded"
 
 
 def test_broker_outage_preserves_queued_job(production_database) -> None:
