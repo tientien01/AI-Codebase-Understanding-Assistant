@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     index_lease_seconds: int = 60
     index_heartbeat_seconds: int = 15
     index_max_attempts: int = 3
+    artifact_root: Path = PROJECT_ROOT / "storage/artifacts"
     repository_storage_dir: Path = PROJECT_ROOT / "storage/repositories"
     upload_storage_dir: Path = PROJECT_ROOT / "storage/uploads"
     max_upload_size_mb: int = 2048
@@ -72,6 +73,8 @@ class Settings(BaseSettings):
             raise ValueError(
                 "Production profile requires explicit index lease, heartbeat, and attempt settings"
             )
+        if self.app_env == "production" and "artifact_root" not in self.model_fields_set:
+            raise ValueError("Production profile requires an explicit ARTIFACT_ROOT")
         return self
 
 
@@ -93,6 +96,7 @@ def _resolve_sqlite_url(database_url: str) -> str:
     return f"{sqlite_prefix}{(PROJECT_ROOT / database_path).as_posix()}"
 
 
+settings.artifact_root = _resolve_project_path(settings.artifact_root)
 settings.repository_storage_dir = _resolve_project_path(settings.repository_storage_dir)
 settings.upload_storage_dir = _resolve_project_path(settings.upload_storage_dir)
 settings.database_url = _resolve_sqlite_url(settings.database_url)

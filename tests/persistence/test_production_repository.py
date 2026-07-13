@@ -65,6 +65,7 @@ def test_production_profile_requires_explicit_safe_job_timing() -> None:
         "app_env": "production",
         "database_url": "postgresql+psycopg://localhost/app",
         "redis_url": "redis://localhost:6379/0",
+        "artifact_root": "storage/artifacts",
     }
     with pytest.raises(ValidationError, match="explicit index lease"):
         Settings(**base)
@@ -82,6 +83,19 @@ def test_production_profile_requires_explicit_safe_job_timing() -> None:
         index_max_attempts=3,
     )
     assert configured.index_max_attempts == 3
+
+
+def test_production_profile_requires_explicit_artifact_root() -> None:
+    with pytest.raises(ValidationError, match="explicit ARTIFACT_ROOT"):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            database_url="postgresql+psycopg://localhost/app",
+            redis_url="redis://localhost:6379/0",
+            index_lease_seconds=30,
+            index_heartbeat_seconds=10,
+            index_max_attempts=3,
+        )
 
 
 def test_production_engine_requires_alembic_head(production_database) -> None:
