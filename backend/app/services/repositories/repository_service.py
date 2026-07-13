@@ -23,12 +23,12 @@ from app.schemas.api import (
 )
 from app.services.index_models import RepositoryState
 from app.services.language_registry import LANGUAGE_DEFINITIONS
-from app.services.repositories.repository_store import RepositoryStore
+from app.services.repositories.repository_port import RepositoryStorePort
 from app.services.text_utils import read_text
 
 
 class RepositoryService:
-    def __init__(self, store: RepositoryStore) -> None:
+    def __init__(self, store: RepositoryStorePort) -> None:
         self.store = store
         self.repositories: dict[str, RepositoryState] = {
             repository.id: repository for repository in self.store.list_repositories()

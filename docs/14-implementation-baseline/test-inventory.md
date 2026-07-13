@@ -7,14 +7,14 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 67 pytest tests: 60 existing behavior tests and 7 PostgreSQL migration tests. The canonical verified commands are:
+The repository contains 74 pytest tests: 60 existing behavior tests, 7 PostgreSQL migration tests, and 7 PostgreSQL profile/repository tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
 backend\.venv-clean\Scripts\python.exe -m pytest -q
 ```
 
-With `TEST_POSTGRES_ADMIN_URL` pointing to the pinned PostgreSQL 18.4 integration service, the latest locked-environment run passed **67 tests with 1 existing duplicate-ZIP warning**. `tests/migrations` separately passed **7 tests** covering fresh upgrade, table/index/trigger inspection, zero drift, constraint protection, empty downgrade/forward recovery, supported legacy mapping, and atomic rejection.
+With `TEST_POSTGRES_ADMIN_URL` pointing to the pinned PostgreSQL 18.4 integration service, the latest locked-environment run passed **74 tests with 1 existing duplicate-ZIP warning**. The 14 PostgreSQL tests cover migrations plus profile validation, Alembic-head startup, adapter selection, job target lifecycle, repository/evidence round trips, managed source paths, and transactional rollback.
 
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
@@ -24,6 +24,7 @@ With `TEST_POSTGRES_ADMIN_URL` pointing to the pinned PostgreSQL 18.4 integratio
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
 | `migrations/test_migrations.py` | 7 | PostgreSQL 18.4 empty install, drift, constraints, rollback/recovery, and supported SQLite mapping |
+| `persistence/test_production_repository.py` | 7 | Production profile/head validation, adapter selection, job building-to-active lifecycle, PostgreSQL repository/evidence CRUD, path and ownership rollback |
 
 ## Strong invariants already covered
 

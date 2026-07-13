@@ -17,7 +17,7 @@ from app.services.index_models import IndexingJobRecord, RepositoryState
 from app.services.parsing.parser_service import ParserService
 from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.repositories.repository_service import RepositoryService
-from app.services.repositories.repository_store import RepositoryStore
+from app.services.repositories.repository_port import RepositoryStorePort
 from app.services.scanning.scanner_service import ScannerService
 from app.services.text_utils import utc_now
 
@@ -49,7 +49,7 @@ class IndexingJobControl:
 class IndexingService:
     def __init__(
         self,
-        store: RepositoryStore,
+        store: RepositoryStorePort,
         repositories: RepositoryService,
         evidence: EvidenceService,
         scanner: ScannerService,

@@ -62,6 +62,16 @@ $env:DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST/DATABASE'
 backend\.venv\Scripts\python.exe -m alembic -c backend/alembic.ini upgrade head
 ```
 
+After the upgrade, the application production database profile is selected explicitly:
+
+```powershell
+$env:APP_ENV='production'
+$env:DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST/DATABASE'
+backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend
+```
+
+Startup rejects non-PostgreSQL URLs, unavailable databases, and databases not at Alembic head. The local default remains `APP_ENV=local` with SQLite.
+
 Do not run baseline downgrade after data import. Restore the pre-migration backup or apply a reviewed forward-recovery revision.
 
 ## Frontend setup

@@ -5,12 +5,12 @@ from uuid import uuid4
 from app.core.errors import DomainError
 from app.schemas.api import CitationDTO, EvidenceDTO, EvidenceValidationItemDTO, EvidenceValidationResponse
 from app.services.index_models import ChunkRecord, RepositoryState
-from app.services.repositories.repository_store import RepositoryStore
+from app.services.repositories.repository_port import RepositoryStorePort
 from app.services.text_utils import preview, read_text
 
 
 class EvidenceService:
-    def __init__(self, store: RepositoryStore) -> None:
+    def __init__(self, store: RepositoryStorePort) -> None:
         self.store = store
         self.cache: dict[str, EvidenceDTO] = {}
 

@@ -47,6 +47,8 @@ jobs:
         run: uv pip check --python .venv/bin/python
       - name: Run PostgreSQL migration tests
         run: .venv/bin/python -m pytest tests/migrations -q
+      - name: Run PostgreSQL repository tests
+        run: .venv/bin/python -m pytest tests/persistence -q
       - name: Run backend tests
         run: .venv/bin/python -m pytest tests -q
       - name: Verify scoped root collection

@@ -13,11 +13,11 @@ from app.schemas.api import (
 )
 from app.services.index_models import IndexingJobRecord
 from app.services.repositories.repository_service import RepositoryService
-from app.services.repositories.repository_store import RepositoryStore
+from app.services.repositories.repository_port import RepositoryStorePort
 
 
 class IndexingJobService:
-    def __init__(self, store: RepositoryStore, repositories: RepositoryService) -> None:
+    def __init__(self, store: RepositoryStorePort, repositories: RepositoryService) -> None:
         self.store = store
         self.repositories = repositories
 

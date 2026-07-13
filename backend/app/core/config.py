@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -9,6 +11,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    app_env: Literal["test", "local", "production"] = "local"
     app_name: str = "ai-codebase-assistant"
     api_v1_prefix: str = "/api/v1"
     database_url: str = f"sqlite:///{PROJECT_ROOT / 'storage/app.db'}"
@@ -35,6 +38,14 @@ class Settings(BaseSettings):
     vite_api_base_url: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", env_file_encoding="utf-8")
+
+    @model_validator(mode="after")
+    def validate_database_profile(self) -> "Settings":
+        if self.app_env == "production" and not self.database_url.startswith(
+            ("postgresql://", "postgresql+psycopg://")
+        ):
+            raise ValueError("Production profile requires a PostgreSQL DATABASE_URL")
+        return self
 
 
 settings = Settings()

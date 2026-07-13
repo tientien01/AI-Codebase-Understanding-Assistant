@@ -25,6 +25,8 @@ Runtime secrets come from the deployment secret mechanism and are represented in
 | Providers | fake | fake or explicitly configured | optional, timeout/cost/redaction controlled |
 | Auth | test principal | development compatibility | accepted single-operator identity/access model; blank/shared development token forbidden |
 
+`APP_ENV` accepts `test`, `local`, or `production` and defaults to `local`. The production value requires a PostgreSQL `DATABASE_URL`; SQLite or a database that is unavailable or not at the repository Alembic head fails application composition before requests are served. Database URLs are never included in the stable startup error.
+
 ## Canonical configuration groups
 
 Names below are the public configuration contract. A task that changes a name must provide compatibility, migration, and rollback.
