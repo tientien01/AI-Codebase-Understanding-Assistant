@@ -100,8 +100,8 @@ def test_candidate_ids_and_hybrid_projection_are_repeatable(tmp_path: Path) -> N
     assert [candidate.candidate_id for candidate in first_candidates] == [candidate.candidate_id for candidate in second_candidates]
     assert first_matches == second_matches
     assert [(match.chunk.id, match.retrieval_source) for match in first_matches] == [
-        ("chunk_auth", "chunk"),
-        ("chunk_cache", "graph"),
+        ("chunk_auth", "symbol"),
+        ("chunk_cache", "chunk"),
     ]
 
 

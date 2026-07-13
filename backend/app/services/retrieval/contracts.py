@@ -42,6 +42,8 @@ class QueryClassification:
     reason_codes: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        if not isinstance(self.question_type, QuestionType):
+            raise ValueError("classification question_type must be controlled")
         if not isfinite(self.confidence) or not 0 <= self.confidence <= 1:
             raise ValueError("classification confidence must be finite and between zero and one")
         if not self.reason_codes or any(not reason.strip() for reason in self.reason_codes):
@@ -112,6 +114,8 @@ class RetrievalCandidate:
             raise ValueError("candidate ownership must be explicit")
         if not self.retriever_version.strip() or self.rank <= 0:
             raise ValueError("candidate retriever version and rank are required")
+        if not isinstance(self.retriever, RetrieverName) or not isinstance(self.support_type, SupportType):
+            raise ValueError("candidate retriever and support type must be controlled")
         if not isfinite(self.raw_score) or self.raw_score <= 0:
             raise ValueError("candidate raw_score must be finite and positive")
         if not self.entity_key.strip() or not self.source_key.strip():

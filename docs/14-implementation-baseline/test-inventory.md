@@ -7,7 +7,7 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 197 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, and 16 typed retrieval/classification regression tests. The canonical verified commands are:
+The repository contains 215 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, and 18 ranking regression tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
@@ -30,6 +30,8 @@ The INT-004 readiness gate passed **11 tests**, its combined intelligence/activa
 
 The RET-001 typed retrieval gate passed **16 tests**, its retrieval/service/code-analysis compatibility regression passed **43 tests**, and the local-profile full suite passed **168 tests with 29 integration-profile tests skipped**. The matrix covers all controlled retriever types, deterministic classification/identity/rank/projection, ownership rejection, empty queries and unrelated insufficient-evidence queries. Versioned fusion, benchmark thresholds and evidence selection remain outside this evidence.
 
+The RET-002 ranking gate passed **18 tests**, its retrieval/service/code-analysis regression passed **61 tests**, and the local-profile full suite passed **186 tests with 29 integration-profile tests skipped**. The matrix verifies canonical configuration identity, hand-computed weighted RRF, bounded score projection, ownership/support/retriever/limit filters, source-span deduplication, deterministic contribution merging/ties, input-order/raw-scale invariance and insufficient-evidence preservation. Learned ranking and accepted quality/latency thresholds remain outside this evidence.
+
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
@@ -39,6 +41,7 @@ The RET-001 typed retrieval gate passed **16 tests**, its retrieval/service/code
 | `intelligence/test_graph_candidates.py` | 4 | candidate provenance, zero-critical valid pipeline, inverse/duplicate audit, critical invalid matrix and deterministic normalization |
 | `intelligence/test_capability_readiness.py` | 11 | all readiness states, artifact/profile/validation/freshness/provider/dependency rules, activation summary, determinism and fail-closed input contracts |
 | `retrieval/test_typed_retrieval.py` | 16 | typed classification/request/candidates, all retriever adapters, stable identities/ranks/hybrid projection, ownership rejection and insufficient-evidence negatives |
+| `retrieval/test_ranking.py` | 18 | canonical ranking config identity/validation, hand-computed RRF, filters/limits, dedup/merge, support/tie order, raw-scale/input-order invariance and bounded projection |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
@@ -71,11 +74,11 @@ The RET-001 typed retrieval gate passed **16 tests**, its retrieval/service/code
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
-- RET-001 has a deterministic local retrieval compatibility/negative-case matrix, but no versioned evaluation dataset or accepted benchmark comparing keyword, naive vector, and production hybrid workflows.
+- RET-002 has deterministic typed RRF/configuration regression plus negative cases, but no versioned evaluation dataset or accepted quality/latency benchmark comparing keyword, naive vector, and production hybrid workflows.
 
 ## Collection boundary
 
-Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The RET-001 local-profile run collected 197 project tests, passed 168 and skipped 29 integration-profile tests; no imported repository test participated.
+Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The RET-002 local-profile run collected 215 project tests, passed 186 and skipped 29 integration-profile tests; no imported repository test participated.
 
 ## Frontend gates
 
