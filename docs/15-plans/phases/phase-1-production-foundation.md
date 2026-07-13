@@ -8,7 +8,7 @@ Production data changes are versioned and transactional, while broad API/schema/
 
 ## Tasks
 
-`FND-002` through `FND-004`, `DAT-001` through `DAT-003` in `../task-register.md`.
+`FND-002` through `FND-004`, `DAT-001` through `DAT-003` in `../task-register.md`. Phase 0 prerequisite `FND-005` must complete before `FND-002` is promoted to `ready`.
 
 ## Entry
 

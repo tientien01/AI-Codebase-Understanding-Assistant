@@ -2,7 +2,7 @@
 
 Status: Accepted project control document  
 Owner: Project maintainer  
-Last verified: 2026-07-12
+Last verified: 2026-07-13
 
 This page is the operational front door. It reports verified progress; it does not replace product contracts, architecture, tasks, or release evidence.
 
@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 0: verified baseline and executable governance |
-| Active task | None; `DOC-001..003` completed on 2026-07-12 |
-| Next task candidate | Review the draft `FND-002`; approve its Python lock mechanism, Node range, and frontend lint prerequisite before promotion to `ready` |
+| Active task | `FND-002` is `in_progress`; `FND-005` completed on 2026-07-13 |
+| Next task candidate | Commit/push the reviewed `FND-002` diff, obtain a successful immutable GitHub Actions run, and link it in the install report before completion |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -38,9 +38,9 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 ## Immediate sequence
 
 1. Review the Phase 0 verification reports and accepted cross-cutting contracts.
-2. Resolve the three promotion blockers recorded in draft `FND-002`.
-3. Promote only the reviewed task to `ready`, then execute it without expanding paths/dependencies.
-4. Update baseline, evidence, and this page after every completed task.
+2. Review and publish the scoped `FND-002` revision so its pinned GitHub Actions workflow can run.
+3. Link successful backend/frontend job evidence in `development-install-report.md`, then complete `FND-002`.
+4. Update baseline, evidence, and this page only after every required gate passes.
 
 ## Status update rule
 

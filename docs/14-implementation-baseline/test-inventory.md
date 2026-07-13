@@ -3,17 +3,18 @@
 Status: Verified baseline  
 Authority: `tests/` collection and executed commands  
 Owner: Test owner  
-Verified: 2026-07-12
+Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 52 pytest tests across four modules. The canonical verified command is:
+The repository contains 52 pytest tests across four modules. The canonical verified commands are:
 
 ```powershell
-backend\.venv\Scripts\python.exe -m pytest tests -q
+backend\.venv-clean\Scripts\python.exe -m pytest tests -q
+backend\.venv-clean\Scripts\python.exe -m pytest -q
 ```
 
-Result on the verification date: **52 passed, 1 warning, 38.25 seconds**.
+Result on the verification date from a clean lock install: **52 passed, 1 warning** for both commands. The explicit run took 38.95 seconds and the root run took 43.08 seconds.
 
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
@@ -40,19 +41,20 @@ Result on the verification date: **52 passed, 1 warning, 38.25 seconds**.
 - No PostgreSQL/Alembic migration or schema-drift suite.
 - No durable queue redelivery, worker crash, lease/heartbeat, broker outage, or recovery suite.
 - No formal full/incremental canonical artifact equivalence report across a fixture matrix.
-- No frontend component, hook, MSW contract, accessibility, or Playwright tests.
+- Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
 - No versioned retrieval/answer benchmark comparing keyword, naive vector, and production hybrid workflows.
 
-## Collection defect
+## Collection boundary
 
-Running `python -m pytest -q` from the repository root collects Python tests inside `storage/repositories/` and `storage/uploads/`. Imported repositories are untrusted and must never participate in the project's test collection. The immediate safe command explicitly names `tests/`; the production fix is a checked pytest configuration with `testpaths = tests` and exclusions for storage/dependency/build directories.
+Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. An unscoped clean-environment run from the repository root collected and passed the same 52 project tests; no imported repository test participated.
 
 ## Frontend gates
 
 | Command | Result |
 | --- | --- |
-| `npm.cmd run lint` | Failed with 4 errors |
+| `npm.cmd run test` | Passed: 4 tests across 2 files |
+| `npm.cmd run lint` | Passed with 0 errors |
 | `npm.cmd run build` | Passed |
 
-The lint errors are one missing preserved `cause` in `src/api/client.ts` and three declaration-order/React hook immutability errors in `src/hooks/useImportController.ts`. They are baseline defects; `DOC-002` does not authorize fixes.
+`FND-005` added a minimal Vitest/jsdom/Testing Library harness, preserved the abort error cause in `src/api/client.ts`, and moved the three automatic-preview effects after their called declarations in `src/hooks/useImportController.ts`. Targeted tests cover the timeout cause and folder/ZIP/GitHub automatic previews. Broader frontend behavior and E2E coverage remain future UI work.

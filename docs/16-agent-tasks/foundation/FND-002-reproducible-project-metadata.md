@@ -1,17 +1,18 @@
 ---
 id: FND-002
 title: Establish reproducible Python and Node project metadata
-status: draft
+status: in_progress
 priority: P0
 phase: 1
-owner: unassigned
-last_verified: 2026-07-12
-depends_on: [DOC-002]
+owner: project-maintainer
+last_verified: 2026-07-13
+depends_on: [DOC-003, FND-005]
 requirements: []
 contracts:
   - docs/12-engineering/README.md
 decisions:
   - docs/13-decisions/ADR-0001-production-foundations.md
+  - docs/13-decisions/ADR-0002-reproducible-development-toolchain.md
 technology_docs:
   - docs/03-technology/stack-overview.md
   - docs/03-technology/adoption-process.md
@@ -47,7 +48,7 @@ evidence_outputs:
 
 ## Context
 
-The backend has an unpinned `requirements.txt`, no Python project metadata/version declaration, and no pytest discovery configuration. The frontend has a lockfile but no declared Node engine/version. Root pytest currently enters untrusted imported repositories.
+The backend has an unpinned `requirements.txt`, no Python project metadata/version declaration, and no pytest discovery configuration. The frontend has a lockfile but no declared Node engine/version. Root pytest currently enters untrusted imported repositories. `ADR-0002` resolves the lock mechanism and runtime ranges; `FND-005` owns the existing frontend lint prerequisite.
 
 ## Objective
 
@@ -55,10 +56,10 @@ Define supported development runtimes, lock the existing dependency set without 
 
 ## In scope
 
-- Select and document one Python locking mechanism using the accepted technology adoption process.
+- Apply the accepted `uv==0.11.28` lock mechanism from `ADR-0002`.
 - Add `backend/pyproject.toml` for project/test/tool metadata without moving application code.
 - Preserve human-maintained direct requirements separately from a deterministic transitive lock.
-- Declare supported Python 3.11 and a reviewed Node/npm range.
+- Declare Python `>=3.11,<3.12`, Node.js `>=24,<25`, and npm `>=11,<12`.
 - Add `pytest.ini` or canonical pyproject pytest configuration with `testpaths = tests` and ignored runtime/dependency/build paths.
 - Add minimal CI jobs for clean backend install/tests and frontend `npm ci`, lint and build.
 
@@ -76,11 +77,11 @@ Define supported development runtimes, lock the existing dependency set without 
 
 ## Implementation sequence
 
-1. Review licenses, supported Python/Node versions and the existing resolved virtualenv/package lock.
-2. Record and approve the Python lock-tool decision; update this task with exact generation/check commands before promotion to `ready`.
-3. Add metadata/version/test-discovery files and generate the lock from existing constraints only.
-4. Recreate clean backend/frontend environments and run all gates.
-5. Add CI using the exact clean-install commands and store an install report.
+1. Verify `FND-005` is completed and confirm the existing direct dependency and package-lock inventories are unchanged.
+2. Add metadata/version/test-discovery files and generate the universal hashed Python 3.11 lock from existing constraints only.
+3. Recreate clean backend/frontend environments and run all gates.
+4. Add CI using pinned third-party actions and the exact clean-install commands.
+5. Re-run lock generation without upgrades, verify no diff, and store the install report.
 
 ## Data/API compatibility and migration
 
@@ -95,16 +96,35 @@ No runtime data/API change. Dependency resolution must reproduce current compati
 
 ## Required tests and commands
 
-Exact Python lock commands remain a blocker until the lock mechanism is approved. Mandatory outcomes:
+Run from the repository root with `uv==0.11.28`, Python 3.11, Node 24, and npm 11:
 
 ```powershell
-backend\.venv\Scripts\python.exe -m pytest tests -q
+uv --version
+uv pip compile backend/requirements.txt --python-version 3.11 --universal --generate-hashes --output-file backend/requirements-lock.txt
+uv venv backend/.venv-clean --python 3.11
+uv pip sync --python backend/.venv-clean/Scripts/python.exe backend/requirements-lock.txt
+uv pip check --python backend/.venv-clean/Scripts/python.exe
+backend/.venv-clean/Scripts/python.exe -m pytest tests -q
+backend/.venv-clean/Scripts/python.exe -m pytest -q
+Set-Location frontend
+node --version
+npm.cmd --version
 npm.cmd ci
 npm.cmd run lint
 npm.cmd run build
 ```
 
-CI must demonstrate that an unscoped pytest invocation still collects only configured project tests.
+Return to the repository root, record the lock hash, re-run the lock command, then verify that its content is unchanged:
+
+```powershell
+$lockHash = (Get-FileHash backend/requirements-lock.txt -Algorithm SHA256).Hash
+uv pip compile backend/requirements.txt --python-version 3.11 --universal --generate-hashes --output-file backend/requirements-lock.txt
+if ((Get-FileHash backend/requirements-lock.txt -Algorithm SHA256).Hash -ne $lockHash) { throw 'Python lock regeneration changed the committed resolution.' }
+git diff --exit-code -- frontend/package-lock.json
+git diff --check -- backend/pyproject.toml backend/requirements.txt backend/requirements-lock.txt frontend/package.json frontend/package-lock.json .python-version .nvmrc pytest.ini .github/workflows/ci.yml docs
+```
+
+CI must use the same lock/install/test/lint/build sequence, pin third-party actions to full commit SHAs, pin `uv` to `0.11.28`, and demonstrate that an unscoped Pytest invocation collects only configured project tests.
 
 ## Acceptance criteria
 
@@ -123,8 +143,14 @@ Remove the added metadata/CI files and restore manifests/locks. No data migratio
 
 Update development setup, baseline, stack profiles, task status, project status and the development install report.
 
-## Promotion blockers
+## Promotion resolution
 
-- Choose and accept the Python lock mechanism and exact file format.
-- Decide the supported Node LTS range rather than adopting the locally observed Node 24 automatically.
-- Resolve or separately task the four current frontend lint errors so a new mandatory CI gate is not knowingly red.
+- `FND-005` completed on 2026-07-13 with green targeted-test, lint, and build evidence. The lock mechanism, file format, runtime ranges, and exact local commands are accepted in `ADR-0002`; no discovery placeholder remains.
+
+## Local verification evidence
+
+Verified on 2026-07-13 with Python 3.11.9, `uv==0.11.28`, Node 24.14.0, and npm 11.9.0: clean Python sync installed 107 packages with zero baseline version drift; `uv pip check` passed; targeted and root Pytest each passed 52 tests with one expected warning; canonical lock regeneration was hash-stable; `npm ci` preserved its lock hash; 4 frontend tests, lint, and production build passed; and the pinned CI YAML parsed with backend/frontend jobs. See `docs/18-production-evidence/development-install-report.md`.
+
+## Completion blocker
+
+- The mandatory GitHub Actions workflow has not run on an immutable committed revision. Keep this task `in_progress` until both jobs pass and the run URL/revision are recorded in the development install report; do not substitute the local YAML parse for CI evidence.

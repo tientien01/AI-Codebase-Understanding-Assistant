@@ -1,0 +1,8 @@
+[project]
+name = "ai-codebase-assistant-backend"
+version = "0.1.0"
+description = "Backend for the AI Codebase Assistant"
+requires-python = ">=3.11,<3.12"
+
+[tool.uv]
+package = false
