@@ -16,7 +16,7 @@ States in this document describe the MVP only: `implemented`, `partial`, `placeh
 | Background indexing | Production-blocked | Daemon thread and process-local controls; job status persists but worker execution/control is not recoverable |
 | Incremental indexing | Partial | Changed-file behavior and failed-reindex preservation tested; full/incremental equivalence is not benchmarked |
 | File scanning/secret paths | Implemented MVP | Dependency/secret skips and example-env allowance tested; content secret scanning before all sinks is not established |
-| Python structure | Implemented deep baseline | AST/adapter, stable IDs, endpoints, imports, calls, CFG/DFG and graph tests exist |
+| Python structure | Implemented deep baseline | Canonical AST/IR boundary, typed deterministic import/call outcomes, stable IDs, endpoints, CFG/DFG and compatibility graph tests exist; cross-file symbol/inheritance/dynamic resolver coverage remains partial |
 | JS/TS and other languages | Partial structural | Registry declares 18 language/file profiles and Tree-sitter fallbacks; depth/accuracy matrix is not generated |
 | Endpoint detection | Partial | FastAPI and Flask decorators plus generic fallback tested; framework coverage and resolution accuracy are unmeasured |
 | Graph model/projections | Implemented MVP | Normalization and project/dependency/API/function/data projections exist; large bounded server projection contract is incomplete |

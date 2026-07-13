@@ -8,6 +8,7 @@ from app.services.code_analysis.cpg.emitter import CPGEmitter
 from app.services.code_analysis.dfg.builder import DFGBuilder
 from app.services.code_analysis.frameworks.endpoints import EndpointDetectorRegistry
 from app.services.code_analysis.models import CPGResult, IRClass, IRFunction, IRModule, ParseRequest
+from app.services.code_analysis.resolver import PythonReferenceResolver
 from app.services.index_models import FileRecord, RepositoryState
 
 
@@ -18,6 +19,7 @@ class CodeAnalysisPipeline:
         self.cfg_builder = CFGBuilder()
         self.dfg_builder = DFGBuilder()
         self.endpoint_detectors = EndpointDetectorRegistry()
+        self.resolver = PythonReferenceResolver()
         self.emitter = CPGEmitter(chunking)
 
     def parse_python(self, repository: RepositoryState, file_record: FileRecord, text: str) -> bool:
@@ -37,7 +39,7 @@ class CodeAnalysisPipeline:
             if any(item.get("severity") == "error" for item in module.diagnostics):
                 return False
         module.endpoints = self.endpoint_detectors.detect(module)
-        result = self._analyze_module(repository.id, module)
+        result = self._analyze_module(repository, module)
         self.emitter.apply(repository, result)
         return True
 
@@ -47,14 +49,16 @@ class CodeAnalysisPipeline:
             raise ValueError(f"No canonical adapter registered for '{request.language}'")
         return self.python_adapter.parse(request)
 
-    def _analyze_module(self, repository_id: str, module: IRModule) -> CPGResult:
+    def _analyze_module(self, repository: RepositoryState, module: IRModule) -> CPGResult:
         functions = self._functions(module)
+        references = self.resolver.resolve(module, (item.path for item in repository.files))
         if not settings.enable_cfg_dfg:
-            return CPGResult(module=module)
+            return CPGResult(module=module, references=references)
         return CPGResult(
             module=module,
-            cfg_graphs=[self.cfg_builder.build_function(repository_id, function) for function in functions],
-            dfg_graphs=[self.dfg_builder.build_function(repository_id, function) for function in functions],
+            cfg_graphs=[self.cfg_builder.build_function(repository.id, function) for function in functions],
+            dfg_graphs=[self.dfg_builder.build_function(repository.id, function) for function in functions],
+            references=references,
         )
 
     def _functions(self, module: IRModule) -> list[IRFunction]:

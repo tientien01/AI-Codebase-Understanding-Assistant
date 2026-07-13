@@ -30,7 +30,6 @@ Expected relationships include frontend component → API client, API client →
 
 | Fixture | Purpose | Needed before |
 | --- | --- | --- |
-| `python_resolution_cases` | relative/absolute imports, aliases, class methods, unresolved and ambiguous calls | `INT-002` |
 | `typescript_react_cases` | exports, components, hooks, path aliases, fetch clients and dynamic imports | structural TS capability claim |
 | `multi_framework_endpoints` | FastAPI, Flask and explicitly unsupported/dynamic routing | endpoint accuracy report |
 | `incremental_change_matrix` | edit/add/delete/move/rename/signature changes | `IDX-004` equivalence gate |
@@ -47,6 +46,14 @@ Path: `tests/intelligence/test_parser_golden.py` (inline synthetic source; no ru
 Purpose: verify the `parsed-file/v1` Python adapter envelope, ownership and producer identities, canonical file key, content hash, imports/aliases, nested qualified symbols, deterministic serialization, line-shift identity, malformed syntax, path rejection, single-adapter invocation, and safe compatibility fallback.
 
 The reviewed expected values are declared directly in the test so semantic changes require an intentional diff. Resolver outcomes, non-Python capability claims, and graph normalization remain outside this fixture and belong to later `INT-*` tasks.
+
+## `python_resolution_cases`
+
+Path: `tests/intelligence/test_resolver_accuracy.py` (inline synthetic source and declared file catalogs)
+
+Purpose: exercise absolute/relative imports, aliases, local functions, `self.method`, qualified class methods, duplicate-name ambiguity, builtin/stdlib/framework/external classification, missing targets, dynamic attributes, deterministic catalog ordering and ambiguous internal module candidates.
+
+Every discovered import/call has one reviewed `resolved`, `ambiguous`, or `unresolved` outcome. The fixture does not claim cross-file symbol resolution, inheritance/MRO, dynamic dispatch, non-Python rules, framework route-handler resolution or canonical graph validation.
 
 ## Fixture acceptance
 

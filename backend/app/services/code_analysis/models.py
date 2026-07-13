@@ -16,6 +16,12 @@ def canonical_file_key(file_path: str) -> str:
     return f"file:v1:{quote(file_path, safe='/-._~')}"
 
 
+def canonical_symbol_key(file_key: str, qualified_name: str, symbol_kind: str) -> str:
+    encoded_file_key = quote(file_key, safe="")
+    encoded_name = quote(qualified_name, safe="-._~")
+    return f"symbol:v1:python:{symbol_kind}:{encoded_file_key}:{encoded_name}"
+
+
 @dataclass(frozen=True)
 class ParseRequest:
     """Immutable, file-local input to a language adapter."""
@@ -179,6 +185,98 @@ class IRModule:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+@dataclass(frozen=True)
+class SourceSpan:
+    file_key: str
+    start_line: int
+    end_line: int
+    content_hash: str
+
+    def __post_init__(self) -> None:
+        if not self.file_key.startswith("file:v1:"):
+            raise ValueError("source span requires a canonical file key")
+        if self.start_line < 1 or self.end_line < self.start_line:
+            raise ValueError("source span must be a valid inclusive range")
+        match = _SHA256_RE.fullmatch(self.content_hash)
+        if match is None:
+            raise ValueError("source span requires a lowercase SHA-256 identity")
+        object.__setattr__(self, "content_hash", f"sha256:{match.group(1)}")
+
+
+@dataclass(frozen=True)
+class ResolvedReference:
+    schema_version: str
+    canonical_key: str
+    repository_id: str
+    index_version_id: str
+    source_file_key: str
+    source_entity_key: str | None
+    reference_type: str
+    raw_reference: str
+    outcome: str
+    target_keys: tuple[str, ...]
+    resolution_method: str
+    support_type: str
+    source_spans: tuple[SourceSpan, ...]
+    unresolved_reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.schema_version != "resolved-reference/v1":
+            raise ValueError("unsupported resolved-reference schema")
+        if not self.canonical_key.startswith("reference:v1:"):
+            raise ValueError("reference requires a canonical key")
+        if not self.source_file_key.startswith("file:v1:"):
+            raise ValueError("reference requires a canonical source file key")
+        if self.source_entity_key is not None and not self.source_entity_key.startswith("symbol:v1:"):
+            raise ValueError("reference source entity must be a canonical symbol key")
+        if self.reference_type not in {"import", "call"} or not self.raw_reference:
+            raise ValueError("reference type and raw value are required")
+        if self.support_type not in {"source_exact", "static_resolved", "static_ambiguous"}:
+            raise ValueError("invalid static reference support type")
+        if self.outcome not in {"resolved", "ambiguous", "unresolved"}:
+            raise ValueError("invalid reference outcome")
+        if tuple(sorted(set(self.target_keys))) != self.target_keys:
+            raise ValueError("reference target keys must be unique and sorted")
+        if self.outcome == "resolved" and (len(self.target_keys) != 1 or self.unresolved_reason is not None):
+            raise ValueError("resolved reference requires exactly one target")
+        if self.outcome == "ambiguous" and (len(self.target_keys) < 2 or self.unresolved_reason is not None):
+            raise ValueError("ambiguous reference requires at least two targets")
+        if self.outcome == "unresolved" and (self.target_keys or not self.unresolved_reason):
+            raise ValueError("unresolved reference requires a reason and no targets")
+        if not self.source_spans:
+            raise ValueError("reference requires source provenance")
+        if any(span.file_key != self.source_file_key for span in self.source_spans):
+            raise ValueError("reference spans must belong to the source file")
+
+
+@dataclass(frozen=True)
+class ReferenceArtifact:
+    schema_version: str
+    repository_id: str
+    index_version_id: str
+    producer_name: str
+    producer_version: str
+    references: tuple[ResolvedReference, ...]
+
+    def __post_init__(self) -> None:
+        if self.schema_version != "resolved-reference-set/v1":
+            raise ValueError("unsupported reference artifact schema")
+        keys = [item.canonical_key for item in self.references]
+        if len(keys) != len(set(keys)):
+            raise ValueError("reference artifact keys must be unique")
+        if any(
+            item.repository_id != self.repository_id or item.index_version_id != self.index_version_id
+            for item in self.references
+        ):
+            raise ValueError("reference artifact ownership must be uniform")
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
 @dataclass
 class CFGNode:
     id: str
@@ -235,3 +333,4 @@ class CPGResult:
     module: IRModule
     cfg_graphs: list[CFGGraph] = field(default_factory=list)
     dfg_graphs: list[DFGGraph] = field(default_factory=list)
+    references: ReferenceArtifact | None = None
