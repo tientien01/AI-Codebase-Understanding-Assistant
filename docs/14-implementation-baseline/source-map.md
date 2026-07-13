@@ -15,7 +15,7 @@
 | Reference-derived graph candidate normalization | `backend/app/services/code_analysis/graph_candidates.py`; in-memory audit/report state in `backend/app/services/index_models.py` |
 | Deterministic capability readiness calculator | `backend/app/services/code_analysis/capability_readiness.py`; output reuses `backend/app/services/indexing/validation_service.py::CapabilityReadiness` |
 | Graph/projections | `backend/app/services/graph/` |
-| Retrieval | `backend/app/services/retrieval/` |
+| Typed retrieval boundary | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`; compatibility facade in `retrieval_service.py` |
 | Evidence | `backend/app/services/evidence/` |
 | Assistant | `backend/app/services/chat/` |
 | Impact | `backend/app/services/impact/` |
@@ -49,3 +49,5 @@ The Python pipeline now retains a deterministic `resolved-reference-set/v1` arti
 Resolved Python reference edges now pass through `graph-candidate/v1` and `normalized-graph/v1` contracts with origin, producer, support and SHA-256-bound spans. Changed/dropped candidates and issues remain auditable in memory; resolved compatibility edges are emitted only from zero-critical active output. CFG/DFG, non-Python and legacy `GraphSchemaService` outputs remain compatibility boundaries.
 
 Capability readiness can now be calculated deterministically from declared validated evidence into the accepted five states and manifest-compatible summaries. The calculator is an internal composition boundary; the current local indexer does not yet publish its output into a production manifest/activation transaction.
+
+Retrieval now crosses one immutable request/candidate contract with repository/index ownership, controlled retriever names, stable identities/ranks/reasons/support and a deterministic typed query classifier. Exact, lexical, symbol, endpoint, metadata, graph/context and optional local-semantic adapters project through the existing `RetrievalService` API. The current max-score compatibility projection remains intentionally unchanged; versioned normalization/fusion and ranking configuration belong to `RET-002`.

@@ -1,6 +1,6 @@
 # Phase 4 — Retrieval and Evidence
 
-Status: Approved; RET-001 planning unblocked, production entry evidence remains scoped by Phase 3 limitations
+Status: Approved; RET-001 typed boundary verified, RET-002 is the next candidate, and production entry evidence remains scoped by Phase 3 limitations
 
 ## Outcome
 
@@ -26,3 +26,5 @@ Stable entities, graph provenance, capability readiness, and benchmark fixtures 
 ## Evidence
 
 Reproducible evaluation run, ranking regression, evidence validation suite, context-budget report, and load results.
+
+`RET-001` supplies the shared typed request/candidate boundary, deterministic classifier, compatibility regression and insufficient-evidence negatives. It does not satisfy the remaining ranking configuration, fusion, evidence selection, evaluation dataset, threshold or load gates.
