@@ -7,6 +7,8 @@ Verified: 2026-07-12
 
 States in this document describe the MVP only: `implemented`, `partial`, `placeholder`, `unverified`, and `production-blocked`. They are not the runtime readiness states defined by the target capability contract.
 
+The source now includes a tested internal calculator for the target runtime states `ready`, `limited`, `unavailable`, `failed`, and `stale`. This does not change the MVP baseline states below or claim that the local indexer publishes production readiness records.
+
 | Capability | Baseline state | Evidence and limitation |
 | --- | --- | --- |
 | Folder/ZIP import session | Implemented | Preview, cache, fingerprint duplicate candidate, confirm, cancel and upload tests exist |
