@@ -1,9 +1,9 @@
 # Current API Coverage
 
-Status: Source-verified baseline  
-Authority: `backend/app/main.py` and registered route decorators  
+Status: Source- and OpenAPI-verified baseline
+Authority: `backend/app/main.py`, registered route decorators, and `../06-api-and-integrations/artifacts/openapi-v1.json`
 Owner: API owner  
-Verified: 2026-07-12
+Verified: 2026-07-13
 
 ## Surface summary
 
@@ -73,8 +73,10 @@ GET    /health  # unversioned
 - No cursor pagination for large repository/symbol/search/job collections.
 - No idempotency-key contract for import/index/delete operations.
 - Optional shared token is not a complete identity, ownership, authorization, or audit design.
-- OpenAPI is generated at runtime by FastAPI but is not checked into a verified artifact or drift-tested against frontend types.
+- OpenAPI is checked into a deterministic artifact and drift-tested against the backend; generated frontend types remain pending a frontend API-contract task.
 
-## Concentration risk
+## Domain ownership
 
-The 42 versioned handlers are registered from one route module and most response/request types live in one schema module. `FND-003` should split these by domain without changing paths or schemas, capture the current OpenAPI as regression evidence, and keep routes as validation/mapping adapters.
+The 42 versioned handlers are now owned by eight route modules: import sessions, repository management, indexing, exploration, assistant/evidence, graph/impact, search/files, and settings. Their 63 existing Pydantic models are owned by eight matching schema modules; `app.schemas.api` remains a compatibility export surface for services that will migrate in later boundary tasks.
+
+`FND-003` preserved the complete pre-split OpenAPI artifact byte-for-byte. The remaining concentration is the broad `codebase_service` facade behind these thin routes, owned by `FND-004`.
