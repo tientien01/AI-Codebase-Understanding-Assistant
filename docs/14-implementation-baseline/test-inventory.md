@@ -7,7 +7,7 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 150 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, and 18 incremental-planning/equivalence tests. The canonical verified commands are:
+The repository contains 161 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, and 11 canonical parser golden tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
@@ -20,10 +20,13 @@ The IDX-003 targeted local-profile indexing run passed **15 tests with 5 Postgre
 
 The IDX-004 synthetic-metadata gates passed **18 targeted tests**, **33 indexing tests with 5 PostgreSQL tests skipped**, and the local-profile full suite passed **121 tests with 29 integration-profile tests skipped**. These tests verify deterministic planning and comparison mechanics; they do not claim equivalence of production parser/resolver/graph outputs.
 
+The INT-001 golden gate passed **11 tests**, its parser/code-analysis regression passed **27 tests**, and the local-profile full suite passed **132 tests with 29 integration-profile tests skipped**. The golden gate verifies one canonical Python adapter/IR boundary and its current-state compatibility projection; it does not claim resolver, non-Python IR, canonical graph, or production pipeline equivalence.
+
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
 | `test_code_analysis.py` | 18 | stable symbol IDs, CFG/DFG/CPG-related graph behavior, resolver, projections, hybrid retrieval, impact, enrichment, diagnostics |
+| `intelligence/test_parser_golden.py` | 11 | parsed-file envelope/provenance, aliases/nested symbols, deterministic serialization, line-shift identity, malformed syntax, path safety, single adapter authority and compatibility fallback |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
@@ -52,6 +55,7 @@ The IDX-004 synthetic-metadata gates passed **18 targeted tests**, **33 indexing
 - PostgreSQL/Alembic migration coverage exists for DAT-002; backup/restore and live production upgrade drills remain future operational work.
 - Lease/heartbeat, bounded retry, durable cancellation, stale-generation fencing, and Redis worker-loss recovery are covered by JOB-004. Immutable filesystem artifacts and terminal manifest publication are covered by IDX-001. Typed phase contracts and storage-backed validated-prefix checkpoint resume are covered by IDX-002. Deterministic readiness validation and fenced atomic activation are covered by IDX-003. IDX-004 adds the bounded planner and exact comparison harness; production worker composition remains later authorized work.
 - The synthetic full/incremental comparison fixture matrix is verified, but no production parser/resolver/graph pipeline fixture has yet populated and passed the canonical equivalence snapshot.
+- Python has one canonical file-local adapter/IR authority and a tested compatibility projection. Non-Python adapters, typed resolver output, canonical graph candidates, and production pipeline composition remain incomplete.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
 - No versioned retrieval/answer benchmark comparing keyword, naive vector, and production hybrid workflows.

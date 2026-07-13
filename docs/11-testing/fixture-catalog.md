@@ -40,6 +40,14 @@ Expected relationships include frontend component → API client, API client →
 | `large_projection_synthetic` | bounded graph/coverage/performance behavior | `UI-003` |
 | `unsafe_import_archives` | traversal, duplicate, symlink, nested, bomb-ratio, depth and quota cases | `SEC-001` |
 
+## `python_parser_golden`
+
+Path: `tests/intelligence/test_parser_golden.py` (inline synthetic source; no runtime repository input)
+
+Purpose: verify the `parsed-file/v1` Python adapter envelope, ownership and producer identities, canonical file key, content hash, imports/aliases, nested qualified symbols, deterministic serialization, line-shift identity, malformed syntax, path rejection, single-adapter invocation, and safe compatibility fallback.
+
+The reviewed expected values are declared directly in the test so semantic changes require an intentional diff. Resolver outcomes, non-Python capability claims, and graph normalization remain outside this fixture and belong to later `INT-*` tasks.
+
 ## Fixture acceptance
 
 Every fixture declares expected files/entities/relations/evidence, allowed alternatives, intentionally unresolved cases, and owning tests. Golden outputs change only through a reviewed semantic task; do not refresh them merely to pass a regression.
