@@ -4,7 +4,11 @@ import hashlib
 import json
 import re
 from dataclasses import asdict, dataclass, field
+from typing import TYPE_CHECKING
 from urllib.parse import quote
+
+if TYPE_CHECKING:
+    from app.services.code_analysis.graph_candidates import NormalizedGraphArtifact
 
 
 _SHA256_RE = re.compile(r"(?:sha256:)?([0-9a-f]{64})\Z")
@@ -334,3 +338,4 @@ class CPGResult:
     cfg_graphs: list[CFGGraph] = field(default_factory=list)
     dfg_graphs: list[DFGGraph] = field(default_factory=list)
     references: ReferenceArtifact | None = None
+    normalized_graph: NormalizedGraphArtifact | None = None

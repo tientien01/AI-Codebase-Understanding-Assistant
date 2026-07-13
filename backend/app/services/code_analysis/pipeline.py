@@ -7,7 +7,8 @@ from app.services.code_analysis.cfg.builder import CFGBuilder
 from app.services.code_analysis.cpg.emitter import CPGEmitter
 from app.services.code_analysis.dfg.builder import DFGBuilder
 from app.services.code_analysis.frameworks.endpoints import EndpointDetectorRegistry
-from app.services.code_analysis.models import CPGResult, IRClass, IRFunction, IRModule, ParseRequest
+from app.services.code_analysis.graph_candidates import GraphCandidateNormalizer, ReferenceGraphCandidateBuilder
+from app.services.code_analysis.models import CPGResult, IRClass, IRFunction, IRModule, ParseRequest, canonical_file_key
 from app.services.code_analysis.resolver import PythonReferenceResolver
 from app.services.index_models import FileRecord, RepositoryState
 
@@ -20,6 +21,8 @@ class CodeAnalysisPipeline:
         self.dfg_builder = DFGBuilder()
         self.endpoint_detectors = EndpointDetectorRegistry()
         self.resolver = PythonReferenceResolver()
+        self.graph_candidate_builder = ReferenceGraphCandidateBuilder()
+        self.graph_normalizer = GraphCandidateNormalizer()
         self.emitter = CPGEmitter(chunking)
 
     def parse_python(self, repository: RepositoryState, file_record: FileRecord, text: str) -> bool:
@@ -52,13 +55,27 @@ class CodeAnalysisPipeline:
     def _analyze_module(self, repository: RepositoryState, module: IRModule) -> CPGResult:
         functions = self._functions(module)
         references = self.resolver.resolve(module, (item.path for item in repository.files))
+        candidates = self.graph_candidate_builder.build(module, references)
+        known_node_keys = {
+            *(canonical_file_key(item.path) for item in repository.files),
+            *(item.canonical_key for item in candidates if item.candidate_kind == "node"),
+            *(key for reference in references.references for key in reference.target_keys),
+            *(reference.source_entity_key for reference in references.references if reference.source_entity_key),
+        }
+        normalized_graph = self.graph_normalizer.normalize(
+            candidates,
+            repository_id=module.repository_id,
+            index_version_id=module.index_version_id,
+            known_node_keys=frozenset(known_node_keys),
+        )
         if not settings.enable_cfg_dfg:
-            return CPGResult(module=module, references=references)
+            return CPGResult(module=module, references=references, normalized_graph=normalized_graph)
         return CPGResult(
             module=module,
             cfg_graphs=[self.cfg_builder.build_function(repository.id, function) for function in functions],
             dfg_graphs=[self.dfg_builder.build_function(repository.id, function) for function in functions],
             references=references,
+            normalized_graph=normalized_graph,
         )
 
     def _functions(self, module: IRModule) -> list[IRFunction]:

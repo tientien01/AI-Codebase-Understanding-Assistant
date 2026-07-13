@@ -12,6 +12,7 @@
 | Deep code analysis | `backend/app/services/code_analysis/` |
 | Canonical Python adapter/IR boundary | `backend/app/services/code_analysis/adapters/python_adapter.py`, `models.py`, `pipeline.py`; current-state projection in `backend/app/services/parsing/canonical_python_parser.py` |
 | Canonical Python reference resolver | `backend/app/services/code_analysis/resolver.py`; typed compatibility projection in `backend/app/services/code_analysis/cpg/emitter.py` |
+| Reference-derived graph candidate normalization | `backend/app/services/code_analysis/graph_candidates.py`; in-memory audit/report state in `backend/app/services/index_models.py` |
 | Graph/projections | `backend/app/services/graph/` |
 | Retrieval | `backend/app/services/retrieval/` |
 | Evidence | `backend/app/services/evidence/` |
@@ -42,4 +43,6 @@ Agents use this map for targeted inspection and must not scan ignored dependency
 
 `ParserService` now routes Python through one `PythonAdapter -> IRModule` authority. `CanonicalPythonParser` is the explicit projection into the current mutable `RepositoryState`; `PythonAstParser` remains only as a deprecated import-compatible class name and contains no second AST extractor. Other language parsers still use the compatibility `LanguageParser` boundary and do not yet claim production-v1 IR capability.
 
-The Python pipeline now retains a deterministic `resolved-reference-set/v1` artifact for imports and calls before graph compatibility output. `CPGEmitter` projects typed outcomes and no longer owns target selection. Cross-file symbol/inheritance/dynamic resolution and graph-candidate normalization remain future boundaries.
+The Python pipeline now retains a deterministic `resolved-reference-set/v1` artifact for imports and calls before graph compatibility output. `CPGEmitter` projects typed outcomes and no longer owns target selection. Cross-file symbol/inheritance/dynamic resolution and CFG/DFG/non-Python/global candidate normalization remain future boundaries.
+
+Resolved Python reference edges now pass through `graph-candidate/v1` and `normalized-graph/v1` contracts with origin, producer, support and SHA-256-bound spans. Changed/dropped candidates and issues remain auditable in memory; resolved compatibility edges are emitted only from zero-critical active output. CFG/DFG, non-Python and legacy `GraphSchemaService` outputs remain compatibility boundaries.

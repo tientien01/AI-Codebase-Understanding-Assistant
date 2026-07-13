@@ -50,7 +50,23 @@ class CPGEmitter:
             )
         if result.references is not None:
             repository.resolved_references.extend(result.references.references)
-            self._emit_references(repository, result.module, result.references.references)
+            accepted_reference_keys: set[str] | None = None
+            if result.normalized_graph is not None:
+                repository.graph_candidates.extend(result.normalized_graph.candidates)
+                repository.graph_validation_issues.extend(result.normalized_graph.issues)
+                accepted_reference_keys = {
+                    item.evidence_reference_key
+                    for item in result.normalized_graph.active_candidates
+                    if item.candidate_kind == "edge" and item.evidence_reference_key
+                }
+            projected_references = tuple(
+                item
+                for item in result.references.references
+                if item.outcome != "resolved"
+                or accepted_reference_keys is None
+                or item.canonical_key in accepted_reference_keys
+            )
+            self._emit_references(repository, result.module, projected_references)
         self._emit_cfg(repository, result.cfg_graphs)
         self._emit_dfg(repository, result.dfg_graphs)
 
