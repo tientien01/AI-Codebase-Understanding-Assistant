@@ -256,9 +256,14 @@ def test_provider_response_parser_requires_declared_allowed_unique_citations() -
 class FakeRepositories:
     def __init__(self, state) -> None:
         self.state = state
+        self.store = self
+        self.saved_turns = []
 
     def get_indexed_repository(self, repository_id):
         return self.state
+
+    def save_assistant_turn(self, turn):
+        self.saved_turns.append(turn)
 
 
 class SpyLLM:

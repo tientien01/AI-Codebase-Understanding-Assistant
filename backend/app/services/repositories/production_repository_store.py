@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 import hashlib
+import json
 from pathlib import Path
 from sqlalchemy import Engine, and_, case, delete, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -13,6 +14,13 @@ from app.db.production_base import ProductionBase
 import app.db.production_models  # noqa: F401 - register production tables
 from app.db.production_session import create_production_engine, create_production_session_factory
 from app.schemas.api import EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
+from app.services.chat.trace_persistence import (
+    AssistantTraceReplay,
+    PersistedAssistantTurn,
+    PersistedClaim,
+    TraceEventRecord,
+    TraceEventType,
+)
 from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, IndexingJobRecord, RepositoryState, SymbolRecord
 
 
@@ -123,6 +131,8 @@ class ProductionRepositoryStore:
 
     def delete_repository(self, repository_id: str) -> None:
         with self.Session.begin() as session:
+            session.execute(delete(self.t["agent_traces"]).where(self.t["agent_traces"].c.repository_id == repository_id))
+            session.execute(delete(self.t["conversations"]).where(self.t["conversations"].c.repository_id == repository_id))
             session.execute(delete(self.t["evidence"]).where(self.t["evidence"].c.repository_id == repository_id))
             session.execute(delete(self.t["index_jobs"]).where(self.t["index_jobs"].c.repository_id == repository_id))
             session.execute(delete(self.t["repositories"]).where(self.t["repositories"].c.id == repository_id))
@@ -174,6 +184,253 @@ class ProductionRepositoryStore:
         with self.Session.begin() as session:
             stale_versions = select(versions.c.id).where(versions.c.repository_id == repository_id, versions.c.version_number < current_index_version)
             session.execute(update(evidence).where(evidence.c.repository_id == repository_id, evidence.c.index_version_id.in_(stale_versions)).values(freshness="stale", staled_at=func.now()))
+
+    def save_assistant_turn(self, turn: PersistedAssistantTurn) -> None:
+        version_id = self._version_id(turn.repository_id, turn.index_version)
+        conversations = self.t["conversations"]
+        with self.Session.begin() as session:
+            version_exists = session.scalar(
+                select(self.t["index_versions"].c.id).where(
+                    self.t["index_versions"].c.repository_id == turn.repository_id,
+                    self.t["index_versions"].c.id == version_id,
+                )
+            )
+            if not version_exists:
+                raise ProductionRepositoryError("Assistant turn has no owned index version")
+            conversation = session.execute(
+                select(conversations.c.repository_id, conversations.c.principal_id).where(
+                    conversations.c.id == turn.conversation_id
+                )
+            ).first()
+            if conversation and (
+                conversation.repository_id != turn.repository_id
+                or conversation.principal_id != "principal_local_operator"
+            ):
+                raise ProductionRepositoryError("Conversation does not belong to the repository")
+            if not conversation:
+                session.execute(
+                    insert(conversations).values(
+                        id=turn.conversation_id,
+                        principal_id="principal_local_operator",
+                        repository_id=turn.repository_id,
+                        title=turn.question_type,
+                        status="active",
+                    )
+                )
+            messages = self.t["messages"]
+            session.execute(
+                insert(messages),
+                [
+                    {
+                        "id": turn.request_message_id,
+                        "conversation_id": turn.conversation_id,
+                        "repository_id": turn.repository_id,
+                        "index_version_id": version_id,
+                        "role": "operator",
+                        "content": turn.operator_message,
+                    },
+                    {
+                        "id": turn.response_message_id,
+                        "conversation_id": turn.conversation_id,
+                        "repository_id": turn.repository_id,
+                        "index_version_id": version_id,
+                        "role": "assistant",
+                        "content": turn.assistant_message,
+                        "assistant_outcome": turn.outcome,
+                    },
+                ],
+            )
+            citation_by_evidence = {item.evidence_id: item for item in turn.citations}
+            for ordinal, claim in enumerate(turn.claims):
+                session.execute(
+                    insert(self.t["claims"]).values(
+                        id=claim.claim_id,
+                        message_id=turn.response_message_id,
+                        repository_id=turn.repository_id,
+                        index_version_id=version_id,
+                        claim_text=claim.text,
+                        support_level=claim.support_level,
+                        ordinal=ordinal,
+                    )
+                )
+                for evidence_id in claim.citation_ids:
+                    owned = session.scalar(
+                        select(self.t["evidence"].c.id).where(
+                            self.t["evidence"].c.id == evidence_id,
+                            self.t["evidence"].c.repository_id == turn.repository_id,
+                            self.t["evidence"].c.index_version_id == version_id,
+                        )
+                    )
+                    citation = citation_by_evidence.get(evidence_id)
+                    if not owned or citation is None:
+                        raise ProductionRepositoryError("Citation does not belong to the assistant turn")
+                    session.execute(
+                        insert(self.t["citations"]).values(
+                            id=_stable_id("citation_", claim.claim_id, evidence_id),
+                            claim_id=claim.claim_id,
+                            evidence_id=evidence_id,
+                            repository_id=turn.repository_id,
+                            index_version_id=version_id,
+                            display_locator=f"{citation.file_path}:{citation.start_line}-{citation.end_line}",
+                        )
+                    )
+            session.execute(
+                insert(self.t["agent_traces"]).values(
+                    id=turn.trace_id,
+                    principal_id="principal_local_operator",
+                    repository_id=turn.repository_id,
+                    index_version_id=version_id,
+                    conversation_id=turn.conversation_id,
+                    request_message_id=turn.request_message_id,
+                    response_message_id=turn.response_message_id,
+                    workflow_version=turn.workflow_version,
+                    outcome=turn.outcome,
+                    budget_summary=json.loads(turn.budget_json),
+                    provider_summary={},
+                    started_at=turn.started_at,
+                    finished_at=turn.finished_at,
+                )
+            )
+            session.execute(
+                insert(self.t["agent_trace_events"]),
+                [
+                    {
+                        "id": event.event_id,
+                        "trace_id": turn.trace_id,
+                        "sequence": event.sequence,
+                        "event_type": event.event_type.value,
+                        "tool_name": event.tool_name,
+                        "status": event.status,
+                        "duration_ms": event.duration_ms,
+                        "payload": event.payload,
+                    }
+                    for event in turn.events
+                ],
+            )
+
+    def get_agent_trace(
+        self, repository_id: str, trace_id: str
+    ) -> AssistantTraceReplay | None:
+        traces, messages = self.t["agent_traces"], self.t["messages"]
+        with self.Session() as session:
+            trace = session.execute(
+                select(traces, self.t["index_versions"].c.version_number)
+                .join(
+                    self.t["index_versions"],
+                    and_(
+                        self.t["index_versions"].c.repository_id == traces.c.repository_id,
+                        self.t["index_versions"].c.id == traces.c.index_version_id,
+                    ),
+                )
+                .where(traces.c.id == trace_id, traces.c.repository_id == repository_id)
+            ).mappings().first()
+            if not trace:
+                return None
+            message_rows = session.execute(
+                select(messages).where(
+                    messages.c.id.in_([trace["request_message_id"], trace["response_message_id"]])
+                )
+            ).mappings().all()
+            message_by_id = {row["id"]: row for row in message_rows}
+            request = message_by_id.get(trace["request_message_id"])
+            response = message_by_id.get(trace["response_message_id"])
+            if request is None or response is None:
+                raise ProductionRepositoryError("Stored assistant trace is incomplete")
+            claim_rows = session.execute(
+                select(self.t["claims"])
+                .where(self.t["claims"].c.message_id == trace["response_message_id"])
+                .order_by(self.t["claims"].c.ordinal, self.t["claims"].c.id)
+            ).mappings().all()
+            claims: list[PersistedClaim] = []
+            evidence_ids: set[str] = set()
+            for claim in claim_rows:
+                ids = tuple(
+                    session.scalars(
+                        select(self.t["citations"].c.evidence_id)
+                        .where(self.t["citations"].c.claim_id == claim["id"])
+                        .order_by(self.t["citations"].c.id)
+                    ).all()
+                )
+                evidence_ids.update(ids)
+                claims.append(
+                    PersistedClaim(
+                        claim["id"], claim["claim_text"], claim["support_level"], ids
+                    )
+                )
+            citations = tuple(
+                item
+                for evidence_id in sorted(evidence_ids)
+                if (item := self._evidence_dto_in_session(session, evidence_id)) is not None
+            )
+            event_rows = session.execute(
+                select(self.t["agent_trace_events"])
+                .where(self.t["agent_trace_events"].c.trace_id == trace_id)
+                .order_by(
+                    self.t["agent_trace_events"].c.sequence,
+                    self.t["agent_trace_events"].c.id,
+                )
+            ).mappings().all()
+            events = tuple(
+                TraceEventRecord(
+                    event_id=row["id"],
+                    sequence=row["sequence"],
+                    event_type=TraceEventType(row["event_type"]),
+                    status=row["status"],
+                    payload_json=json.dumps(
+                        row["payload"] or {}, ensure_ascii=True, separators=(",", ":"), sort_keys=True
+                    ),
+                    tool_name=row["tool_name"],
+                    duration_ms=row["duration_ms"],
+                )
+                for row in event_rows
+            )
+            question_event = next(
+                (event for event in events if event.event_type is TraceEventType.QUESTION_CLASSIFIED),
+                None,
+            )
+            plan_event = next(
+                (event for event in events if event.event_type is TraceEventType.PLAN_CREATED),
+                None,
+            )
+            turn = PersistedAssistantTurn(
+                trace_id=trace["id"],
+                conversation_id=trace["conversation_id"],
+                request_message_id=trace["request_message_id"],
+                response_message_id=trace["response_message_id"],
+                repository_id=trace["repository_id"],
+                index_version=int(trace["version_number"]),
+                operator_message=request["content"],
+                assistant_message=response["content"],
+                outcome=trace["outcome"],
+                question_type=str(question_event.payload.get("question_type", "code_question")) if question_event else "code_question",
+                workflow_version=trace["workflow_version"],
+                configuration_id=str(plan_event.payload.get("configuration_id")) if plan_event and plan_event.payload.get("configuration_id") else None,
+                budget_json=json.dumps(trace["budget_summary"] or {}, ensure_ascii=True, separators=(",", ":"), sort_keys=True),
+                claims=tuple(claims),
+                citations=citations,
+                events=events,
+                started_at=trace["started_at"],
+                finished_at=trace["finished_at"] or trace["started_at"],
+            )
+            return AssistantTraceReplay(turn)
+
+    def _evidence_dto_in_session(self, session, evidence_id: str) -> EvidenceDTO | None:
+        evidence, files, versions = self.t["evidence"], self.t["files"], self.t["index_versions"]
+        row = session.execute(
+            select(evidence, files.c.relative_path, versions.c.version_number)
+            .join(files, and_(files.c.repository_id == evidence.c.repository_id, files.c.index_version_id == evidence.c.index_version_id, files.c.id == evidence.c.file_id))
+            .join(versions, and_(versions.c.repository_id == evidence.c.repository_id, versions.c.id == evidence.c.index_version_id))
+            .where(evidence.c.id == evidence_id)
+        ).mappings().first()
+        if not row:
+            return None
+        return EvidenceDTO(
+            evidence_id=row["id"], repository_id=row["repository_id"], index_version=int(row["version_number"]),
+            source_type=row["source_entity_type"], file_path=row["relative_path"], symbol_name=None,
+            start_line=row["start_line"], end_line=row["end_line"], content_preview=row["safe_preview"],
+            relevance_reason=row["selection_reason"], confidence_score=1.0, retrieval_source=row["retrieval_source"],
+            is_stale=row["freshness"] != "fresh", metadata=row["validation_details"] or {},
+        )
 
     def save_indexing_job(self, job: IndexingJobRecord) -> None:
         with self.Session.begin() as session:

@@ -2,7 +2,7 @@
 
 Status: Accepted project control document  
 Owner: Project maintainer  
-Last verified: 2026-07-13
+Last verified: 2026-07-14
 
 This page is the operational front door. It reports verified progress; it does not replace product contracts, architecture, tasks, or release evidence.
 
@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 5: bounded assistant foundation (incremental delivery; Phase 3 composition and Phase 4 evaluation evidence remain open) |
-| Active task | None; `AGT-002` sufficiency/repair/citation implementation is verified pending review/merge |
-| Next task candidate | `AGT-003` structured trace/conversation persistence |
+| Active task | None; `AGT-003` structured trace/conversation persistence is verified pending review/merge |
+| Next task candidate | `EVA-001` versioned evaluation datasets, baselines and runner |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -41,6 +41,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Ranked support is now revalidated against current owner/index/source/hash/range/blocked/support policy, selected deterministically as diverse whole spans under a recorded token budget, and persisted with content-bound idempotent evidence identities. The RET-003 positive, rejection, budget and insufficient-evidence matrix passes.
 - Assistant routing now uses immutable versioned workflow/tool contracts and an explicit exact/hybrid allowlist. Exact hits avoid hybrid/semantic work, exact misses fall back once, multi-step types route directly to hybrid, and call/time/context/cancellation/deduplication boundaries emit safe observations. The AGT-001 routing/tool matrix passes.
 - Assistant sufficiency now requires question-specific strong support/source/endpoint/graph coverage, permits only one controlled budgeted repair, validates claims against selected current citation IDs/scope and rejects optional provider output without valid declarations. The AGT-002 positive/refusal/repair/citation matrix passes.
+- Completed assistant turns now persist atomically as redacted conversation messages, claims, citations, budget summaries and controlled ordered trace events. Local SQLite replay enforces repository ownership, production mapping targets the accepted PostgreSQL schema, and persistence failure prevents a successful response. The AGT-003 privacy/rollback/replay matrix passes.
 
 ## Blocking gaps
 
@@ -55,8 +56,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review and merge the `AGT-002` sufficiency/citation evidence.
-2. Authorize `AGT-003` structured trace/conversation persistence work.
+1. Review and merge the `AGT-003` structured trace/conversation persistence evidence.
+2. Authorize `EVA-001` evaluation dataset, baseline and runner work before `EVA-002` agent gates.
 
 ## Status update rule
 
