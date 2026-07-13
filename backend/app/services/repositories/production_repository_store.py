@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 import hashlib
 from pathlib import Path
-from sqlalchemy import Engine, and_, delete, func, insert, select, update
+from sqlalchemy import Engine, and_, case, delete, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.core.config import settings
@@ -208,7 +208,34 @@ class ProductionRepositoryStore:
                 "finished_at": _time(job.finished_at) if state in {"failed", "cancelled", "succeeded", "succeeded_with_warnings"} else None,
             }
             statement = pg_insert(self.t["index_jobs"]).values(**values)
-            session.execute(statement.on_conflict_do_update(index_elements=["id"], set_={key: value for key, value in values.items() if key not in {"id", "idempotency_record_id"}}))
+            # Compatibility progress writes must not overwrite the lease authority
+            # owned by JobStateStore for a dedicated-worker attempt.
+            jobs = self.t["index_jobs"]
+            updates = {
+                key: value
+                for key, value in values.items()
+                if key not in {
+                    "id",
+                    "idempotency_record_id",
+                    "lease_generation",
+                    "repository_generation",
+                }
+            }
+            leased = jobs.c.current_attempt_id.is_not(None)
+            updates["state"] = case((leased, jobs.c.state), else_=state)
+            updates["finished_at"] = case(
+                (leased, jobs.c.finished_at), else_=values["finished_at"]
+            )
+            updates["error_code"] = case(
+                (leased, jobs.c.error_code), else_=values["error_code"]
+            )
+            updates["error_message_safe"] = case(
+                (leased, jobs.c.error_message_safe),
+                else_=values["error_message_safe"],
+            )
+            session.execute(
+                statement.on_conflict_do_update(index_elements=["id"], set_=updates)
+            )
 
     def list_indexing_jobs(self, repository_id: str) -> list[IndexingJobRecord]:
         with self.Session() as session:

@@ -7,14 +7,14 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 86 pytest tests: 60 existing behavior tests and 26 PostgreSQL migration, repository, job-state, and Redis queue tests. The canonical verified commands are:
+The repository contains 93 pytest tests: 60 existing behavior tests and 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
 backend\.venv-clean\Scripts\python.exe -m pytest -q
 ```
 
-With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integration services, the latest locked-environment run passed **86 tests with 1 existing duplicate-ZIP warning and 1 dependency deprecation warning**. PostgreSQL/Redis coverage includes migration, repository, job/version transition, active-job conflict, artifact immutability, ownership, rollback, queue payload, broker outage, concurrent duplicate delivery, and worker restart gates.
+With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integration services, the latest locked-environment run passed **93 tests with 1 existing duplicate-ZIP warning and 1 dependency deprecation warning**. PostgreSQL/Redis coverage includes migration, repository, job/version transition, active-job conflict, artifact immutability, ownership, rollback, queue payload, broker outage, concurrent claim, lease heartbeat/fencing, bounded retry, durable cancellation, stale-attempt replacement, and worker-loss recovery gates.
 
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
@@ -24,9 +24,10 @@ With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integ
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
 | `migrations/test_migrations.py` | 7 | PostgreSQL 18.4 empty install, drift, constraints, rollback/recovery, and supported SQLite mapping |
-| `persistence/test_production_repository.py` | 10 | Production PostgreSQL/Redis profile validation, adapter selection, job building-to-active lifecycle, PostgreSQL repository/evidence CRUD, path and ownership rollback |
+| `persistence/test_production_repository.py` | 12 | Production PostgreSQL/Redis/lease profile validation, adapter selection, lease-preserving compatibility progress, job building-to-active lifecycle, PostgreSQL repository/evidence CRUD, path and ownership rollback |
 | `jobs/test_job_state_store.py` | 4 | Transactional submission, declared/stale transitions, one-active-job conflict, immutable artifact ownership |
 | `jobs/test_job_queue.py` | 5 | One-ID payload, concurrent duplicate gate, broker-outage preservation, stable publication error, Redis worker restart delivery |
+| `jobs/test_job_resilience.py` | 5 | Atomic claim, heartbeat extension, stale-generation fencing, durable cancellation, bounded retry, and Redis redelivery after worker loss |
 
 ## Strong invariants already covered
 
@@ -43,7 +44,7 @@ With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integ
 
 - No end-to-end FastAPI `TestClient` behavior suite for all 43 handlers; structural route/auth coverage is present.
 - PostgreSQL/Alembic migration coverage exists for DAT-002; backup/restore and live production upgrade drills remain future operational work.
-- No worker-crash-after-claim, lease/heartbeat, retry/backoff, cancellation, or stale-running recovery suite; these remain JOB-004.
+- Lease/heartbeat, bounded retry, durable cancellation, stale-generation fencing, and Redis worker-loss recovery are covered by JOB-004. Typed stage checkpoints, immutable artifact validation, and atomic activation remain later indexing tasks.
 - No formal full/incremental canonical artifact equivalence report across a fixture matrix.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
