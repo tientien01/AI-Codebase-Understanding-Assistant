@@ -25,6 +25,7 @@
 | Immutable artifact storage and manifest publication | `backend/app/services/artifacts/` |
 | Typed indexing phases and checkpoint resume | `backend/app/services/indexing/phase_contracts.py`, `phase_pipeline.py` |
 | Candidate validation and atomic activation | `backend/app/services/indexing/validation_service.py`, `activation_service.py`, `job_state_store.py` |
+| Incremental affected-set planning and canonical equivalence | `backend/app/services/indexing/incremental_planner.py`, `equivalence_service.py` |
 | Job queue, fenced delivery, heartbeat, retry, cancellation, and recovery | `backend/app/services/indexing/job_queue.py`, `job_delivery_service.py` |
 | Dedicated indexing worker | `backend/app/workers/indexing_worker.py` |
 | Frontend API/state | `frontend/src/api/`, `frontend/src/hooks/` |

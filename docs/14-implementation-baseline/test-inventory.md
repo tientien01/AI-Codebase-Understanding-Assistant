@@ -7,7 +7,7 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 132 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, and 11 validation/atomic-activation tests. The canonical verified commands are:
+The repository contains 150 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, and 18 incremental-planning/equivalence tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
@@ -18,6 +18,8 @@ With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integ
 
 The IDX-003 targeted local-profile indexing run passed **15 tests with 5 PostgreSQL activation tests skipped**. With the pinned integration profile enabled, its combined job-state/indexing gate passed all 24 tests and the full backend suite passed all 132 tests.
 
+The IDX-004 synthetic-metadata gates passed **18 targeted tests**, **33 indexing tests with 5 PostgreSQL tests skipped**, and the local-profile full suite passed **121 tests with 29 integration-profile tests skipped**. These tests verify deterministic planning and comparison mechanics; they do not claim equivalence of production parser/resolver/graph outputs.
+
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
@@ -26,7 +28,7 @@ The IDX-003 targeted local-profile indexing run passed **15 tests with 5 Postgre
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
 | `artifacts/test_artifact_store.py` and `test_manifest.py` | 18 | Safe keys, filesystem staging/finalization, immutable retries/conflicts, verified reads, canonical manifest validation and publication |
-| `indexing/test_phase_contracts.py`, `test_phase_pipeline.py`, and `test_validation_activation.py` | 20 | Typed phases/checkpoints plus deterministic validation, optional degradation, fencing, corruption/conflict rejection, rollback, idempotent atomic activation, and failed-build preservation |
+| `indexing/test_phase_contracts.py`, `test_phase_pipeline.py`, `test_validation_activation.py`, `test_incremental_planner.py`, and `test_equivalence_service.py` | 38 | Typed phases/checkpoints, deterministic validation/activation, bounded typed affected-set planning, safe full fallback, and exact canonical-family equivalence diagnostics |
 | `migrations/test_migrations.py` | 7 | PostgreSQL 18.4 empty install, drift, constraints, rollback/recovery, and supported SQLite mapping |
 | `persistence/test_production_repository.py` | 13 | Production PostgreSQL/Redis/lease/artifact-root profile validation, adapter selection, lease-preserving compatibility progress, job building-to-active lifecycle, PostgreSQL repository/evidence CRUD, path and ownership rollback |
 | `jobs/test_job_state_store.py` | 4 | Transactional submission, declared/stale transitions, one-active-job conflict, immutable artifact ownership |
@@ -48,8 +50,8 @@ The IDX-003 targeted local-profile indexing run passed **15 tests with 5 Postgre
 
 - No end-to-end FastAPI `TestClient` behavior suite for all 43 handlers; structural route/auth coverage is present.
 - PostgreSQL/Alembic migration coverage exists for DAT-002; backup/restore and live production upgrade drills remain future operational work.
-- Lease/heartbeat, bounded retry, durable cancellation, stale-generation fencing, and Redis worker-loss recovery are covered by JOB-004. Immutable filesystem artifacts and terminal manifest publication are covered by IDX-001. Typed phase contracts and storage-backed validated-prefix checkpoint resume are covered by IDX-002. Deterministic readiness validation and fenced atomic activation are covered by IDX-003; production worker composition and incremental equivalence remain later authorized work.
-- No formal full/incremental canonical artifact equivalence report across a fixture matrix.
+- Lease/heartbeat, bounded retry, durable cancellation, stale-generation fencing, and Redis worker-loss recovery are covered by JOB-004. Immutable filesystem artifacts and terminal manifest publication are covered by IDX-001. Typed phase contracts and storage-backed validated-prefix checkpoint resume are covered by IDX-002. Deterministic readiness validation and fenced atomic activation are covered by IDX-003. IDX-004 adds the bounded planner and exact comparison harness; production worker composition remains later authorized work.
+- The synthetic full/incremental comparison fixture matrix is verified, but no production parser/resolver/graph pipeline fixture has yet populated and passed the canonical equivalence snapshot.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
 - No versioned retrieval/answer benchmark comparing keyword, naive vector, and production hybrid workflows.
