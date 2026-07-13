@@ -1,6 +1,6 @@
 # Phase 4 — Retrieval and Evidence
 
-Status: Approved; RET-002 ranking boundary verified, RET-003 is the next candidate, and production entry evidence remains scoped by Phase 3 limitations
+Status: Approved; RET-003 evidence/context boundary verified, AGT-001 is the next candidate, and evaluation/release evidence remains incomplete
 
 ## Outcome
 
@@ -30,3 +30,5 @@ Reproducible evaluation run, ranking regression, evidence validation suite, cont
 `RET-001` supplies the shared typed request/candidate boundary, deterministic classifier, compatibility regression and insufficient-evidence negatives. It does not satisfy the remaining ranking configuration, fusion, evidence selection, evaluation dataset, threshold or load gates.
 
 `RET-002` adds content-addressed rank-only weighted RRF, explicit retriever/filter/limit/dedup/tie policy and deterministic ranking regression. It does not satisfy evidence selection/context budgeting, evaluation dataset, learned-ranker adoption, accepted threshold or load gates.
+
+`RET-003` validates current owned source/hash/range/security/support before promotion, creates content-bound deterministic evidence IDs, selects diverse whole spans within an inspectable token budget, and preserves explicit limited/insufficient outcomes. It does not satisfy claim-level support validation, versioned evaluation datasets, accepted quality/latency thresholds or load gates.

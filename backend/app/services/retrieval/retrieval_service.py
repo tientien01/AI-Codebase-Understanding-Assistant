@@ -7,6 +7,7 @@ from app.services.index_models import ChunkRecord, RepositoryState
 from app.services.retrieval.contracts import RetrievalCandidate, RetrievalRequest
 from app.services.retrieval.query_classifier import QueryClassifier
 from app.services.retrieval.ranking import (
+    RankedCandidate,
     RankingConfiguration,
     ReciprocalRankRanker,
     default_ranking_configuration,
@@ -101,7 +102,7 @@ class RetrievalService:
         return request, candidates
 
     def hybrid_search(self, repository: RepositoryState, query: str, limit: int) -> list[HybridSearchMatch]:
-        request, candidates = self.retrieve_candidates(repository, query, limit)
+        _, ranked_candidates = self.ranked_search(repository, query, limit)
         return [
             HybridSearchMatch(
                 chunk=ChunkRecord(
@@ -116,8 +117,18 @@ class RetrievalService:
                 title=ranked.candidate.title,
                 matched_terms=list(ranked.matched_terms),
             )
-            for ranked in self.ranker.rank(request, candidates)
+            for ranked in ranked_candidates
         ]
+
+    def ranked_search(
+        self,
+        repository: RepositoryState,
+        query: str,
+        limit: int,
+    ) -> tuple[RetrievalRequest, list[RankedCandidate]]:
+        """Return the owned request and inspectable ranked candidates."""
+        request, candidates = self.retrieve_candidates(repository, query, limit)
+        return request, self.ranker.rank(request, candidates)
 
     def generate_grounded_answer(self, question_type: str, message: str, citations: list[CitationDTO]) -> str:
         first = citations[0]
