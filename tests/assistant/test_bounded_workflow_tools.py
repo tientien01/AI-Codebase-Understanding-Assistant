@@ -152,7 +152,7 @@ def test_workflow_configuration_is_canonical_and_rejects_invalid_budgets() -> No
     assert first.config_id == second.config_id
     assert first.config_id.startswith("agentcfg_")
     assert json.loads(first.canonical_json())["schema_version"] == "assistant-config/v1"
-    assert replace(first, max_tool_calls=3).config_id != first.config_id
+    assert replace(first, max_tool_calls=4).config_id != first.config_id
 
     with pytest.raises(ValueError, match="budgets"):
         WorkflowConfiguration(max_rounds=0)
@@ -249,10 +249,11 @@ def test_multi_step_question_routes_directly_to_hybrid(tmp_path: Path) -> None:
 
     result = workflow.answer(state, "flow calculate")
 
-    assert retrieval.hybrid_calls == 1
+    assert retrieval.hybrid_calls == 2
     assert result.plan.tools == ["hybrid_retrieval"]
     assert [item.tool_name for item in result.diagnostics.observations] == [
-        ToolName.HYBRID_RETRIEVAL
+        ToolName.HYBRID_RETRIEVAL,
+        ToolName.HYBRID_RETRIEVAL,
     ]
 
 
