@@ -2,7 +2,7 @@
 
 Status: Accepted project control document  
 Owner: Project maintainer  
-Last verified: 2026-07-12
+Last verified: 2026-07-13
 
 This page is the operational front door. It reports verified progress; it does not replace product contracts, architecture, tasks, or release evidence.
 
@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 0: verified baseline and executable governance |
-| Active task | None; `DOC-001..003` completed on 2026-07-12 |
-| Next task candidate | Review the draft `FND-002`; approve its Python lock mechanism, Node range, and frontend lint prerequisite before promotion to `ready` |
+| Active delivery phase | Phase 1: production foundation |
+| Active task | None; `FND-002` and `FND-005` completed on 2026-07-13 |
+| Next task candidate | Prepare and authorize a scoped `FND-003` task for API contract-preserving route/schema separation |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -37,10 +37,9 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review the Phase 0 verification reports and accepted cross-cutting contracts.
-2. Resolve the three promotion blockers recorded in draft `FND-002`.
-3. Promote only the reviewed task to `ready`, then execute it without expanding paths/dependencies.
-4. Update baseline, evidence, and this page after every completed task.
+1. Review the completed `FND-002` install and immutable CI evidence.
+2. Prepare a scoped `FND-003` task with exact API-regression gates and allowed paths.
+3. Do not change source for `FND-003` until that task is explicitly promoted to `ready` or `in_progress`.
 
 ## Status update rule
 

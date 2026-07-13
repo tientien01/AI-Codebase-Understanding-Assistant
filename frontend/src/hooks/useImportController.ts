@@ -33,36 +33,6 @@ export function useImportController({
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const lastPreviewKey = useRef('')
 
-  useEffect(() => {
-    if (importMode !== 'folder' || folderFiles.length === 0) return
-    const key = folderPreviewKey(folderFiles, projectName)
-    if (lastPreviewKey.current === key) return
-    lastPreviewKey.current = key
-    void uploadFolderRepository()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importMode, folderFiles])
-
-  useEffect(() => {
-    if (importMode !== 'zip' || !zipFile) return
-    const key = `zip:${zipFile.name}:${zipFile.size}:${projectName}`
-    if (lastPreviewKey.current === key) return
-    lastPreviewKey.current = key
-    void uploadZipRepository()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importMode, zipFile])
-
-  useEffect(() => {
-    if (importMode !== 'github' || !isValidGithubUrl(githubUrl)) return
-    const key = `github:${githubUrl.trim()}:${projectName}`
-    const timer = window.setTimeout(() => {
-      if (lastPreviewKey.current === key) return
-      lastPreviewKey.current = key
-      void uploadGithubRepository()
-    }, 800)
-    return () => window.clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importMode, githubUrl])
-
   function clearImportPreview() {
     setImportSessionId('')
     setImportPreview(null)
@@ -183,6 +153,36 @@ export function useImportController({
       throw error
     }
   }
+
+  useEffect(() => {
+    if (importMode !== 'folder' || folderFiles.length === 0) return
+    const key = folderPreviewKey(folderFiles, projectName)
+    if (lastPreviewKey.current === key) return
+    lastPreviewKey.current = key
+    void uploadFolderRepository()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importMode, folderFiles])
+
+  useEffect(() => {
+    if (importMode !== 'zip' || !zipFile) return
+    const key = `zip:${zipFile.name}:${zipFile.size}:${projectName}`
+    if (lastPreviewKey.current === key) return
+    lastPreviewKey.current = key
+    void uploadZipRepository()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importMode, zipFile])
+
+  useEffect(() => {
+    if (importMode !== 'github' || !isValidGithubUrl(githubUrl)) return
+    const key = `github:${githubUrl.trim()}:${projectName}`
+    const timer = window.setTimeout(() => {
+      if (lastPreviewKey.current === key) return
+      lastPreviewKey.current = key
+      void uploadGithubRepository()
+    }, 800)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importMode, githubUrl])
 
   return {
     projectName,

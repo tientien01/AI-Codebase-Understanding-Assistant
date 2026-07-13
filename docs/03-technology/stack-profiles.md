@@ -2,11 +2,11 @@
 
 ## Test
 
-Temporary SQLite, fake LLM/embedding, fake queue, temporary artifacts, deterministic fixtures.
+Python `>=3.11,<3.12`, Node `>=24,<25`, npm `>=11,<12`, hashed Python requirements lock, npm lock, temporary SQLite, fake LLM/embedding, fake queue, temporary artifacts, deterministic fixtures.
 
 ## Local
 
-FastAPI, Vite, SQLite, filesystem artifacts, deterministic providers; optional Redis worker for production-like debugging.
+The same locked Python/Node toolchain as Test, FastAPI, Vite, SQLite, filesystem artifacts, deterministic providers; optional Redis worker for production-like debugging.
 
 ## Production-like
 

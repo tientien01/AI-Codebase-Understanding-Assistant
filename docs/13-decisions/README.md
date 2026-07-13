@@ -10,5 +10,6 @@ Initial accepted directions:
 - PostgreSQL for production and SQLite for local/test.
 - Durable external job execution instead of process-local threads.
 - Canonical graph separated from bounded UI/query projections.
+- Python 3.11 with a pinned `uv` requirements lock, plus Node 24/npm 11 for the first reproducible development and CI profile (`ADR-0002`).
 
 Queue implementation, reverse proxy, vector storage, graph database, agent framework, and advanced graph UI libraries remain undecided until their PoCs and triggers are satisfied.

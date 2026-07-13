@@ -10,7 +10,8 @@ Phase outcomes and gates are canonical in `master-roadmap.md` and `phases/`. Thi
 | DOC-002 | Produce verified Phase 0 implementation baseline | DOC-001 | Source/API/test/setup/capability report validation |
 | DOC-003 | Complete concrete cross-cutting production contracts | DOC-002 | Identity/runtime/threat/telemetry/UX contract validation |
 | FND-001 | Approve production scope, NFRs, governance, ADRs | — | Blueprint review |
-| FND-002 | Adopt locked Python dependency/project metadata | FND-001 | Reproducible install/CI |
+| FND-005 | Clear the existing frontend lint baseline | DOC-003 | Frontend targeted test/lint/build baseline |
+| FND-002 | Adopt locked Python dependency/project metadata | DOC-003,FND-005 | Reproducible install/CI |
 | FND-003 | Split route/schema domains without behavior change | FND-001 | API contract regression |
 | FND-004 | Replace broad application facade incrementally | FND-003 | Boundary/service tests |
 | DAT-001 | Design PostgreSQL schema and ERD | FND-001 | Schema review |

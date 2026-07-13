@@ -14,6 +14,7 @@
 | Graph canvas/layout | XYFlow + Dagre | Common interactive directed graph baseline | Proposed; benchmark before install |
 | Backend tests | Pytest | Existing suite | Accepted |
 | Frontend/E2E | Vitest + Testing Library + MSW + Playwright | Layered behavior/contract/E2E coverage | Accepted direction |
+| Development lock tooling | `uv==0.11.28` | Universal hashed Python 3.11 requirements lock and exact environment sync | Accepted by `ADR-0002` |
 
 ## Infrastructure stack
 
@@ -27,6 +28,8 @@
 | Vector retrieval | Existing deterministic baseline | pgvector only after quality/scale benchmark |
 | Telemetry | Structured logging + OpenTelemetry + Prometheus-compatible metrics | Export backend is deployment-configurable |
 | Packaging/deploy | Locked Python/Node dependencies, Docker, Compose, TLS proxy | Kubernetes deferred |
+
+The first reproducible development and CI profile supports Python `>=3.11,<3.12`, Node.js `>=24,<25`, and npm `>=11,<12`. Runtime-major changes require compatibility review and refreshed install evidence.
 
 ## Dependency introduction checklist
 

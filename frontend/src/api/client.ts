@@ -23,7 +23,7 @@ export async function requestJson<T>(url: string, options?: RequestInit): Promis
     return response.json() as Promise<T>
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Request timed out. Please try again.')
+      throw new Error('Request timed out. Please try again.', { cause: error })
     }
     throw error
   } finally {

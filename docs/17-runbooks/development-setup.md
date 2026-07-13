@@ -1,16 +1,17 @@
 # Development Setup
 
-Status: Verified local guidance; fresh install pending `FND-002`  
+Status: Clean local install verified; CI verification pending `FND-002`
 Owner: Project maintainer  
-Verified: 2026-07-12  
+Verified: 2026-07-13
 Platform verified: Windows PowerShell
 
-This runbook avoids secret files and imported runtime repositories. Dependency versions are not yet locked, so a fresh install is development-only until `FND-002` completes.
+This runbook avoids secret files and imported runtime repositories. Python and npm dependency graphs are locked; local clean installation is verified. `FND-002` remains incomplete until the committed GitHub Actions workflow supplies immutable CI evidence.
 
 ## Prerequisites
 
-- Python 3.11. The verified existing backend environment uses Python 3.11.9.
-- Node.js and npm. Node 24.14.0/npm 11.9.0 were used for the baseline; supported ranges are not yet declared.
+- Python `>=3.11,<3.12`. The verified clean backend environment uses Python 3.11.9; `.python-version` declares the supported minor.
+- `uv==0.11.28`, installed from the official release/Python package source and verified with `uv --version`.
+- Node.js `>=24,<25` and npm `>=11,<12`. `.nvmrc` declares Node 24; Node 24.14.0/npm 11.9.0 were verified.
 - Git for public GitHub import development.
 - Free local ports 8000 and 5173.
 
@@ -19,17 +20,18 @@ This runbook avoids secret files and imported runtime repositories. Dependency v
 From the repository root:
 
 ```powershell
-py -3.11 -m venv backend\.venv
-backend\.venv\Scripts\python.exe -m pip install --upgrade pip
-backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+uv venv backend\.venv --python 3.11
+uv pip sync --python backend\.venv\Scripts\python.exe backend\requirements-lock.txt
+uv pip check --python backend\.venv\Scripts\python.exe
 ```
 
-Dependency installation requires package-index network access. Do not create or copy `.env` credentials merely to run the default fake-provider profile.
+Dependency installation requires package-index network access. The lock includes hashes and must not be regenerated during routine setup. Do not create or copy `.env` credentials merely to run the default fake-provider profile.
 
-Run tests with an explicit safe collection root:
+Run both the targeted suite and the root collection check:
 
 ```powershell
 backend\.venv\Scripts\python.exe -m pytest tests -q
+backend\.venv\Scripts\python.exe -m pytest -q
 ```
 
 Start the API:
@@ -46,6 +48,7 @@ From `frontend/`:
 
 ```powershell
 npm.cmd ci
+npm.cmd run test
 npm.cmd run lint
 npm.cmd run build
 npm.cmd run dev
@@ -53,7 +56,17 @@ npm.cmd run dev
 
 Use `npm.cmd` on Windows when the PowerShell execution policy blocks `npm.ps1`. The development server is normally `http://localhost:5173` and calls the API at `http://localhost:8000` by default.
 
-As of the verification date, production build passes but lint has four known errors documented in `../14-implementation-baseline/test-inventory.md`.
+As of the verification date, the four targeted tests, lint, TypeScript, and production build pass from a clean npm install.
+
+## Lock maintenance
+
+Routine installs consume locks. A reviewed dependency update regenerates the Python lock from the repository root with pinned `uv`:
+
+```powershell
+uv pip compile backend/requirements.txt --python-version 3.11 --universal --generate-hashes --output-file backend/requirements-lock.txt
+```
+
+Re-run the command without an upgrade flag and verify the lock hash is unchanged. Any resolved version change requires dependency authorization, compatibility review, full gates, and updated install evidence. npm dependency changes must use an exact reviewed package version and commit the resulting `package-lock.json`.
 
 ## MVP smoke flow
 
@@ -67,4 +80,4 @@ As of the verification date, production build passes but lint has four known err
 
 ## Verification boundary
 
-This setup is not yet a clean-machine guarantee. `FND-002` must declare supported Python/Node ranges, locked dependencies, reproducible install commands and CI evidence before L2.
+This setup is verified in a clean local Python environment and through `npm ci`. It becomes the CI-backed development baseline only after the committed workflow passes and its immutable run is linked from `development-install-report.md`.
