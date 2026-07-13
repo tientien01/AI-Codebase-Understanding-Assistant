@@ -164,3 +164,78 @@ class EvidenceORM(Base):
     retrieval_source: Mapped[str] = mapped_column(String, nullable=False)
     is_stale: Mapped[int] = mapped_column(Integer, default=0)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class ConversationORM(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String, default="active")
+    title: Mapped[str | None] = mapped_column(Text)
+
+
+class MessageORM(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    assistant_outcome: Mapped[str | None] = mapped_column(String)
+
+
+class ClaimORM(Base):
+    __tablename__ = "claims"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    message_id: Mapped[str] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"), index=True)
+    repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    claim_text: Mapped[str] = mapped_column(Text, nullable=False)
+    support_level: Mapped[str] = mapped_column(String, nullable=False)
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class CitationORM(Base):
+    __tablename__ = "citations"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    claim_id: Mapped[str] = mapped_column(ForeignKey("claims.id", ondelete="CASCADE"), index=True)
+    evidence_id: Mapped[str] = mapped_column(ForeignKey("evidence.evidence_id", ondelete="RESTRICT"), index=True)
+    repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    display_locator: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class AgentTraceORM(Base):
+    __tablename__ = "agent_traces"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    repository_id: Mapped[str] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    index_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
+    request_message_id: Mapped[str] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"))
+    response_message_id: Mapped[str] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"))
+    workflow_version: Mapped[str] = mapped_column(String, nullable=False)
+    question_type: Mapped[str] = mapped_column(String, nullable=False)
+    outcome: Mapped[str] = mapped_column(String, nullable=False)
+    configuration_id: Mapped[str | None] = mapped_column(String)
+    budget_json: Mapped[str] = mapped_column(Text, default="{}")
+    started_at: Mapped[str] = mapped_column(String, nullable=False)
+    finished_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class AgentTraceEventORM(Base):
+    __tablename__ = "agent_trace_events"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    trace_id: Mapped[str] = mapped_column(ForeignKey("agent_traces.id", ondelete="CASCADE"), index=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    event_type: Mapped[str] = mapped_column(String, nullable=False)
+    tool_name: Mapped[str | None] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    duration_ms: Mapped[int | None] = mapped_column(Integer)
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")

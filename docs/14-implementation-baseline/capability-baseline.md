@@ -3,7 +3,7 @@
 Status: Source/test verified baseline  
 Authority: Current source plus the 251-test suite
 Owner: Product and intelligence owners  
-Verified: 2026-07-13
+Verified: 2026-07-14
 
 States in this document describe the MVP only: `implemented`, `partial`, `placeholder`, `unverified`, and `production-blocked`. They are not the runtime readiness states defined by the target capability contract.
 
@@ -24,7 +24,7 @@ The source now includes a tested internal calculator for the target runtime stat
 | Graph model/projections | Implemented MVP | Reference-derived Python edges have typed provenance/normalization and zero-critical gating; legacy CFG/DFG/non-Python/global normalization and large bounded server projection contracts remain incomplete |
 | Search/retrieval | Implemented typed deterministic baseline | Owned typed retrievers feed content-addressed rank-only weighted RRF with explicit filters/limits/dedup/ties and bounded score projection; no persistent BM25/vector index, learned reranker, versioned evaluation dataset or accepted quality/latency threshold |
 | Evidence/citations | Implemented deterministic baseline | Ranked support is revalidated for owner/current index/source/hash/range/blocked/support eligibility, selected as whole spans under an inspectable token budget, persisted idempotently with content-bound IDs and projected as citations; claim extraction/support validation and benchmark thresholds are absent |
-| Assistant | Partial validated baseline | Typed bounded routing now adds question-specific strong-support/coverage sufficiency, one controlled repair, structural selected/current claim-citation validation and provider fail-closed behavior; no semantic entailment benchmark, persistent structured trace or accepted agent threshold |
+| Assistant | Partial validated baseline | Typed bounded routing, question-specific sufficiency, one controlled repair and selected/current claim-citation validation now feed atomic redacted conversation/claim/citation/structured-trace persistence with owned replay; no semantic entailment benchmark, public history API, automated retention executor or accepted agent threshold |
 | Real LLM provider | Unverified/optional | Provider boundary exists; default fake provider is deliberately not configured |
 | Impact analysis | Implemented MVP | Files/endpoints/tests and unresolved-target behavior tested; completeness/confidence benchmark absent |
 | Code/file/API/search UI | Implemented MVP | Pages call current APIs through the main controller; deep-link/router/query architecture absent |

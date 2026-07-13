@@ -1,23 +1,37 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 from sqlalchemy import delete, select, update
 
 from app.db.models import (
+    AgentTraceEventORM,
+    AgentTraceORM,
+    CitationORM,
     ChunkRecordORM,
+    ClaimORM,
+    ConversationORM,
     EndpointRecordORM,
     EvidenceORM,
     FileRecordORM,
     GraphEdgeORM,
     GraphNodeORM,
     IndexingJobORM,
+    MessageORM,
     RepositoryORM,
     SymbolRecordORM,
 )
 from app.db.session import SessionLocal, init_db
 from app.schemas.api import EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
+from app.services.chat.trace_persistence import (
+    AssistantTraceReplay,
+    PersistedAssistantTurn,
+    PersistedClaim,
+    TraceEventRecord,
+    TraceEventType,
+)
 from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, IndexingJobRecord, RepositoryState, SymbolRecord
 
 
@@ -235,6 +249,15 @@ class RepositoryStore:
 
     def delete_repository(self, repository_id: str) -> None:
         with SessionLocal.begin() as session:
+            trace_ids = select(AgentTraceORM.id).where(AgentTraceORM.repository_id == repository_id)
+            message_ids = select(MessageORM.id).where(MessageORM.repository_id == repository_id)
+            claim_ids = select(ClaimORM.id).where(ClaimORM.repository_id == repository_id)
+            session.execute(delete(AgentTraceEventORM).where(AgentTraceEventORM.trace_id.in_(trace_ids)))
+            session.execute(delete(AgentTraceORM).where(AgentTraceORM.repository_id == repository_id))
+            session.execute(delete(CitationORM).where(CitationORM.claim_id.in_(claim_ids)))
+            session.execute(delete(ClaimORM).where(ClaimORM.message_id.in_(message_ids)))
+            session.execute(delete(MessageORM).where(MessageORM.repository_id == repository_id))
+            session.execute(delete(ConversationORM).where(ConversationORM.repository_id == repository_id))
             self._delete_index_records(session, repository_id)
             for model in (IndexingJobORM, EvidenceORM):
                 session.execute(delete(model).where(model.repository_id == repository_id))
@@ -292,9 +315,210 @@ class RepositoryStore:
                 metadata=json.loads(row.metadata_json or "{}"),
             )
 
+    def save_assistant_turn(self, turn: PersistedAssistantTurn) -> None:
+        """Persist one completed turn in a single local transaction."""
+
+        with SessionLocal.begin() as session:
+            repository = session.get(RepositoryORM, turn.repository_id)
+            if repository is None or repository.current_index_version != turn.index_version:
+                raise ValueError("Assistant turn does not belong to the active repository index")
+            conversation = session.get(ConversationORM, turn.conversation_id)
+            if conversation is not None and conversation.repository_id != turn.repository_id:
+                raise ValueError("Conversation does not belong to the repository")
+            if conversation is None:
+                session.add(
+                    ConversationORM(
+                        id=turn.conversation_id,
+                        repository_id=turn.repository_id,
+                        status="active",
+                        title=turn.question_type,
+                    )
+                )
+            session.add_all(
+                [
+                    MessageORM(
+                        id=turn.request_message_id,
+                        conversation_id=turn.conversation_id,
+                        repository_id=turn.repository_id,
+                        index_version=turn.index_version,
+                        role="operator",
+                        content=turn.operator_message,
+                    ),
+                    MessageORM(
+                        id=turn.response_message_id,
+                        conversation_id=turn.conversation_id,
+                        repository_id=turn.repository_id,
+                        index_version=turn.index_version,
+                        role="assistant",
+                        content=turn.assistant_message,
+                        assistant_outcome=turn.outcome,
+                    ),
+                ]
+            )
+            for ordinal, claim in enumerate(turn.claims):
+                session.add(
+                    ClaimORM(
+                        id=claim.claim_id,
+                        message_id=turn.response_message_id,
+                        repository_id=turn.repository_id,
+                        index_version=turn.index_version,
+                        claim_text=claim.text,
+                        support_level=claim.support_level,
+                        ordinal=ordinal,
+                    )
+                )
+                for evidence_id in claim.citation_ids:
+                    evidence = session.get(EvidenceORM, evidence_id)
+                    if (
+                        evidence is None
+                        or evidence.repository_id != turn.repository_id
+                        or evidence.index_version != turn.index_version
+                    ):
+                        raise ValueError("Citation does not belong to the assistant turn")
+                    session.add(
+                        CitationORM(
+                            id=self._citation_id(claim.claim_id, evidence_id),
+                            claim_id=claim.claim_id,
+                            evidence_id=evidence_id,
+                            repository_id=turn.repository_id,
+                            index_version=turn.index_version,
+                            display_locator=f"{evidence.file_path}:{evidence.start_line}-{evidence.end_line}",
+                        )
+                    )
+            session.add(
+                AgentTraceORM(
+                    id=turn.trace_id,
+                    repository_id=turn.repository_id,
+                    index_version=turn.index_version,
+                    conversation_id=turn.conversation_id,
+                    request_message_id=turn.request_message_id,
+                    response_message_id=turn.response_message_id,
+                    workflow_version=turn.workflow_version,
+                    question_type=turn.question_type,
+                    outcome=turn.outcome,
+                    configuration_id=turn.configuration_id,
+                    budget_json=turn.budget_json,
+                    started_at=turn.started_at.isoformat(),
+                    finished_at=turn.finished_at.isoformat(),
+                )
+            )
+            session.add_all(
+                [
+                    AgentTraceEventORM(
+                        id=event.event_id,
+                        trace_id=turn.trace_id,
+                        sequence=event.sequence,
+                        event_type=event.event_type.value,
+                        tool_name=event.tool_name,
+                        status=event.status,
+                        duration_ms=event.duration_ms,
+                        payload_json=event.payload_json,
+                    )
+                    for event in turn.events
+                ]
+            )
+
+    def get_agent_trace(
+        self, repository_id: str, trace_id: str
+    ) -> AssistantTraceReplay | None:
+        with SessionLocal() as session:
+            trace = session.get(AgentTraceORM, trace_id)
+            if trace is None or trace.repository_id != repository_id:
+                return None
+            request = session.get(MessageORM, trace.request_message_id)
+            response = session.get(MessageORM, trace.response_message_id)
+            if request is None or response is None:
+                raise ValueError("Stored assistant trace is incomplete")
+            claim_rows = session.scalars(
+                select(ClaimORM)
+                .where(ClaimORM.message_id == trace.response_message_id)
+                .order_by(ClaimORM.ordinal, ClaimORM.id)
+            ).all()
+            citations: dict[str, EvidenceDTO] = {}
+            claims: list[PersistedClaim] = []
+            for claim in claim_rows:
+                citation_rows = session.scalars(
+                    select(CitationORM)
+                    .where(CitationORM.claim_id == claim.id)
+                    .order_by(CitationORM.id)
+                ).all()
+                evidence_ids = tuple(row.evidence_id for row in citation_rows)
+                claims.append(PersistedClaim(claim.id, claim.claim_text, claim.support_level, evidence_ids))
+                for evidence_id in evidence_ids:
+                    evidence = session.get(EvidenceORM, evidence_id)
+                    if evidence is not None:
+                        citations[evidence_id] = self._evidence_dto(evidence)
+            event_rows = session.scalars(
+                select(AgentTraceEventORM)
+                .where(AgentTraceEventORM.trace_id == trace_id)
+                .order_by(AgentTraceEventORM.sequence, AgentTraceEventORM.id)
+            ).all()
+            turn = PersistedAssistantTurn(
+                trace_id=trace.id,
+                conversation_id=trace.conversation_id,
+                request_message_id=trace.request_message_id,
+                response_message_id=trace.response_message_id,
+                repository_id=trace.repository_id,
+                index_version=trace.index_version,
+                operator_message=request.content,
+                assistant_message=response.content,
+                outcome=trace.outcome,
+                question_type=trace.question_type,
+                workflow_version=trace.workflow_version,
+                configuration_id=trace.configuration_id,
+                budget_json=trace.budget_json,
+                claims=tuple(claims),
+                citations=tuple(citations[key] for key in sorted(citations)),
+                events=tuple(
+                    TraceEventRecord(
+                        event_id=row.id,
+                        sequence=row.sequence,
+                        event_type=TraceEventType(row.event_type),
+                        status=row.status,
+                        payload_json=row.payload_json,
+                        tool_name=row.tool_name,
+                        duration_ms=row.duration_ms,
+                    )
+                    for row in event_rows
+                ),
+                started_at=self._datetime(trace.started_at),
+                finished_at=self._datetime(trace.finished_at),
+            )
+            return AssistantTraceReplay(turn)
+
     def _delete_index_records(self, session, repository_id: str) -> None:
         for model in (FileRecordORM, SymbolRecordORM, EndpointRecordORM, ChunkRecordORM, GraphNodeORM, GraphEdgeORM):
             session.execute(delete(model).where(model.repository_id == repository_id))
+
+    @staticmethod
+    def _citation_id(claim_id: str, evidence_id: str) -> str:
+        digest = hashlib.sha256(f"{claim_id}|{evidence_id}".encode()).hexdigest()[:32]
+        return f"citation_{digest}"
+
+    @staticmethod
+    def _datetime(value: str):
+        from datetime import datetime
+
+        return datetime.fromisoformat(value)
+
+    @staticmethod
+    def _evidence_dto(row: EvidenceORM) -> EvidenceDTO:
+        return EvidenceDTO(
+            evidence_id=row.evidence_id,
+            repository_id=row.repository_id,
+            index_version=row.index_version,
+            source_type=row.source_type,
+            file_path=row.file_path,
+            symbol_name=row.symbol_name,
+            start_line=row.start_line,
+            end_line=row.end_line,
+            content_preview=row.content_preview,
+            relevance_reason=row.relevance_reason,
+            confidence_score=row.confidence_score,
+            retrieval_source=row.retrieval_source,
+            is_stale=bool(row.is_stale),
+            metadata=json.loads(row.metadata_json or "{}"),
+        )
 
     def _load_repository_state(self, session, repository: RepositoryORM) -> RepositoryState:
         files = session.scalars(select(FileRecordORM).where(FileRecordORM.repository_id == repository.id)).all()
