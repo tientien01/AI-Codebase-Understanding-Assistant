@@ -1,6 +1,6 @@
 # Phase 5 — Bounded Assistant Workflow
 
-Status: Approved; blocked by Phase 4 thresholds
+Status: Approved; AGT-001 typed bounded workflow/tool foundation is verified, AGT-002 is the next candidate, and Phase 5 exit/release qualification remain blocked by later validation and evaluation thresholds
 
 ## Outcome
 
@@ -25,3 +25,5 @@ Retrievers, evidence selector, context budget, deterministic fakes, and negative
 ## Evidence
 
 Tool-selection report, repair ablation, hallucination/refusal benchmark, provider-fault suite, trace privacy/integration tests.
+
+`AGT-001` adds immutable versioned workflow/tool contracts, an explicit exact/hybrid allowlist, deterministic exact avoidance/fallback routing, tool-call/time/context limits, cancellation, deduplication and safe observations. It does not implement multi-round sufficiency repair, claim/citation validation, persistent traces or evaluation thresholds.
