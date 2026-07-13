@@ -7,14 +7,14 @@ Verified: 2026-07-13
 
 ## Backend suite
 
-The repository contains 74 pytest tests: 60 existing behavior tests, 7 PostgreSQL migration tests, and 7 PostgreSQL profile/repository tests. The canonical verified commands are:
+The repository contains 78 pytest tests: 60 existing behavior tests and 18 PostgreSQL migration, repository, and job-state tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
 backend\.venv-clean\Scripts\python.exe -m pytest -q
 ```
 
-With `TEST_POSTGRES_ADMIN_URL` pointing to the pinned PostgreSQL 18.4 integration service, the latest locked-environment run passed **74 tests with 1 existing duplicate-ZIP warning**. The 14 PostgreSQL tests cover migrations plus profile validation, Alembic-head startup, adapter selection, job target lifecycle, repository/evidence round trips, managed source paths, and transactional rollback.
+With `TEST_POSTGRES_ADMIN_URL` pointing to the pinned PostgreSQL 18.4 integration service, the latest locked-environment run passed **78 tests with 1 existing duplicate-ZIP warning**. PostgreSQL coverage includes migration, repository, job/version transition, active-job conflict, artifact immutability, ownership, and rollback gates.
 
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
@@ -25,6 +25,7 @@ With `TEST_POSTGRES_ADMIN_URL` pointing to the pinned PostgreSQL 18.4 integratio
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
 | `migrations/test_migrations.py` | 7 | PostgreSQL 18.4 empty install, drift, constraints, rollback/recovery, and supported SQLite mapping |
 | `persistence/test_production_repository.py` | 7 | Production profile/head validation, adapter selection, job building-to-active lifecycle, PostgreSQL repository/evidence CRUD, path and ownership rollback |
+| `jobs/test_job_state_store.py` | 4 | Transactional submission, declared/stale transitions, one-active-job conflict, immutable artifact ownership |
 
 ## Strong invariants already covered
 

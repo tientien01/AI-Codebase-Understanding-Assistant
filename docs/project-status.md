@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 1: production foundation |
-| Active task | None; `DAT-003` implementation and local evidence complete |
-| Next task candidate | `JOB-001` durable job state or `IDX-001` immutable artifact manifest/store |
+| Active task | None; `JOB-001` implementation and local evidence complete |
+| Next task candidate | `JOB-002` queue implementation selection by PoC/ADR |
 | Production readiness | Not ready |
 
 ## Verified strengths
