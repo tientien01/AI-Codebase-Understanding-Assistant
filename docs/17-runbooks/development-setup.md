@@ -13,7 +13,7 @@ This runbook avoids secret files and imported runtime repositories. Python and n
 - `uv==0.11.28`, installed from the official release/Python package source and verified with `uv --version`.
 - Node.js `>=24,<25` and npm `>=11,<12`. `.nvmrc` declares Node 24; Node 24.14.0/npm 11.9.0 were verified.
 - Git for public GitHub import development.
-- Free local ports 8000 and 5173. Port 55432 is additionally required only for the Docker PostgreSQL integration profile.
+- Free local ports 8000 and 5173. Ports 55432 and 56379 are additionally required only for the Docker PostgreSQL/Redis integration profile.
 
 ## Backend setup
 
@@ -42,14 +42,15 @@ backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --rel
 
 Check `http://localhost:8000/health` and the development OpenAPI UI at `http://localhost:8000/docs`. The default profile creates local SQLite/storage state under `storage/`; this is ignored development state and not production persistence.
 
-## PostgreSQL migration profile
+## PostgreSQL and Redis integration profile
 
-The normal local application still uses SQLite and does not require Docker. Start the disposable PostgreSQL profile only for migration/integration work:
+The normal local application still uses SQLite/in-process indexing and does not require Docker. Start disposable PostgreSQL and Redis only for migration, queue, and integration work:
 
 ```powershell
-docker compose -f compose.integration.yml up -d postgres
+docker compose -f compose.integration.yml up -d postgres redis
 $env:TEST_POSTGRES_ADMIN_URL='postgresql+psycopg://postgres:postgres@127.0.0.1:55432/postgres'
-backend\.venv\Scripts\python.exe -m pytest tests/migrations -q
+$env:TEST_REDIS_URL='redis://127.0.0.1:56379/15'
+backend\.venv\Scripts\python.exe -m pytest tests/migrations tests/persistence tests/jobs -q
 docker compose -f compose.integration.yml down
 ```
 
@@ -67,10 +68,18 @@ After the upgrade, the application production database profile is selected expli
 ```powershell
 $env:APP_ENV='production'
 $env:DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST/DATABASE'
+$env:REDIS_URL='redis://HOST:6379/0'
 backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend
 ```
 
-Startup rejects non-PostgreSQL URLs, unavailable databases, and databases not at Alembic head. The local default remains `APP_ENV=local` with SQLite.
+Start the dedicated indexing worker in a second process with the same production environment:
+
+```powershell
+$env:PYTHONPATH='backend'
+backend\.venv\Scripts\python.exe -m dramatiq --processes 1 --threads 1 app.workers.indexing_worker:broker
+```
+
+Startup rejects non-PostgreSQL database URLs, missing/non-Redis broker URLs, unavailable databases, and databases not at Alembic head. The API only persists/submits production background work; the worker reloads the job by ID. The local default remains `APP_ENV=local` with SQLite and does not connect to Redis.
 
 Do not run baseline downgrade after data import. Restore the pre-migration backup or apply a reviewed forward-recovery revision.
 

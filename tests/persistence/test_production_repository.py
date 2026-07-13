@@ -44,6 +44,20 @@ def test_production_profile_requires_postgresql() -> None:
         Settings(_env_file=None, app_env="production", database_url="sqlite:///local.db")
 
 
+def test_production_profile_requires_redis() -> None:
+    with pytest.raises(ValidationError, match="requires a Redis"):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            database_url="postgresql+psycopg://localhost/app",
+        )
+
+
+def test_local_profile_does_not_require_redis() -> None:
+    configured = Settings(_env_file=None, app_env="local", redis_url="")
+    assert configured.redis_url == ""
+
+
 def test_production_engine_requires_alembic_head(production_database) -> None:
     config, engine, url = production_database
     command.downgrade(config, "base")
@@ -63,6 +77,20 @@ def test_composition_root_selects_store_by_profile(monkeypatch) -> None:
     assert container.create_repository_store() is local_store
     monkeypatch.setattr(settings, "app_env", "production")
     assert container.create_repository_store() is production_store
+
+
+def test_composition_root_selects_queue_only_for_production(monkeypatch) -> None:
+    from app.services.application import container
+
+    broker = object()
+    queue = object()
+    monkeypatch.setattr(container, "create_dramatiq_broker", lambda _url: broker)
+    monkeypatch.setattr(container, "DramatiqIndexJobQueue", lambda value: queue if value is broker else None)
+    monkeypatch.setattr(settings, "app_env", "local")
+    assert container.create_index_job_queue() is None
+    monkeypatch.setattr(settings, "app_env", "production")
+    monkeypatch.setattr(settings, "redis_url", "redis://localhost:6379/0")
+    assert container.create_index_job_queue() is queue
 
 
 def test_repository_and_evidence_round_trip(production_database, tmp_path: Path, monkeypatch) -> None:

@@ -14,6 +14,7 @@ from app.services.evidence.evidence_service import EvidenceService
 from app.services.enrichment.semantic_enrichment_service import SemanticEnrichmentService
 from app.services.graph.graph_service import GraphService
 from app.services.index_models import IndexingJobRecord, RepositoryState
+from app.services.indexing.job_queue import IndexJobQueuePort, QueueUnavailableError
 from app.services.parsing.parser_service import ParserService
 from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.repositories.repository_service import RepositoryService
@@ -56,6 +57,7 @@ class IndexingService:
         parser: ParserService,
         chunking: ChunkingService,
         graph: GraphService,
+        job_queue: IndexJobQueuePort | None = None,
     ) -> None:
         self.store = store
         self.repositories = repositories
@@ -64,6 +66,7 @@ class IndexingService:
         self.parser = parser
         self.chunking = chunking
         self.graph = graph
+        self.job_queue = job_queue
         self.enrichment = SemanticEnrichmentService(chunking)
         self.parse_debug_output = ParseDebugOutputService()
         self._controls: dict[str, IndexingJobControl] = {}
@@ -75,6 +78,26 @@ class IndexingService:
         return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
 
     def start_indexing_background(self, repository_id: str, force_reindex: bool = False) -> IndexResponse:
+        if self.job_queue is not None:
+            repository, job, _, _ = self._prepare_indexing_job(
+                repository_id, initial_status="queued"
+            )
+            try:
+                self.job_queue.enqueue(job.id)
+            except QueueUnavailableError as exc:
+                raise DomainError(
+                    "INDEX_QUEUE_UNAVAILABLE",
+                    "Index job was saved but could not be published.",
+                    503,
+                    {"job_id": job.id, "retryable": True},
+                ) from exc
+            return IndexResponse(
+                indexing_job_id=job.id,
+                repository_id=repository.id,
+                status=job.status,
+                index_version=job.index_version,
+            )
+
         repository, job, control, previous_status = self._prepare_indexing_job(repository_id)
         Thread(
             target=self._execute_indexing,
@@ -82,6 +105,32 @@ class IndexingService:
             daemon=True,
         ).start()
         return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
+
+    def execute_persisted_job(self, job_id: str, repository_id: str) -> None:
+        """Reload and execute an already claimed production job in a worker."""
+        repository = self.repositories.get_repository(repository_id)
+        job = self.store.get_indexing_job(repository_id, job_id)
+        if job is None:
+            raise DomainError(
+                "INDEXING_JOB_NOT_FOUND",
+                "Indexing job not found.",
+                404,
+                {"job_id": job_id},
+            )
+        previous_status = "created"
+        if repository.current_index_version > 0:
+            previous_status = "indexed_with_warnings" if repository.warnings else "indexed"
+        control = IndexingJobControl()
+        with self._controls_lock:
+            self._controls[job.id] = control
+        self._execute_indexing(
+            repository,
+            job,
+            control,
+            previous_status,
+            raise_errors=True,
+            force_reindex=True,
+        )
 
     def pause_indexing_job(self, repository_id: str, job_id: str) -> IndexResponse:
         repository = self.repositories.get_repository(repository_id)
@@ -119,7 +168,9 @@ class IndexingService:
         self.store.save_indexing_job(job)
         return IndexResponse(indexing_job_id=job.id, repository_id=repository.id, status=job.status, index_version=job.index_version)
 
-    def _prepare_indexing_job(self, repository_id: str) -> tuple[RepositoryState, IndexingJobRecord, IndexingJobControl, str]:
+    def _prepare_indexing_job(
+        self, repository_id: str, *, initial_status: str = "running"
+    ) -> tuple[RepositoryState, IndexingJobRecord, IndexingJobControl, str]:
         repository = self.repositories.get_repository(repository_id)
         if repository.status == "indexing":
             raise DomainError("INDEXING_ALREADY_RUNNING", "Repository indexing is already running.", 409)
@@ -127,7 +178,7 @@ class IndexingService:
         job = IndexingJobRecord(
             id=f"job_{uuid4().hex[:10]}",
             repository_id=repository.id,
-            status="running",
+            status=initial_status,
             index_version=repository.current_index_version + 1,
             started_at=utc_now(),
         )
@@ -139,8 +190,9 @@ class IndexingService:
         self.store.save_indexing_job(job)
         self.repositories.persist_repository_metadata(repository)
         control = IndexingJobControl()
-        with self._controls_lock:
-            self._controls[job.id] = control
+        if initial_status == "running":
+            with self._controls_lock:
+                self._controls[job.id] = control
         return repository, job, control, previous_status
 
     def _execute_indexing(

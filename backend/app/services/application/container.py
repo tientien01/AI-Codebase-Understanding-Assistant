@@ -17,6 +17,7 @@ from app.services.graph.graph_service import GraphService
 from app.services.impact.impact_analysis_service import ImpactAnalysisService
 from app.services.indexing.indexing_job_service import IndexingJobService
 from app.services.indexing.indexing_service import IndexingService
+from app.services.indexing.job_queue import DramatiqIndexJobQueue, create_dramatiq_broker
 from app.services.ingestion.archive_service import ArchiveService
 from app.services.ingestion.import_session_service import ImportSessionService
 from app.services.ingestion.upload_service import UploadService
@@ -37,11 +38,20 @@ def create_repository_store():
     return ProductionRepositoryStore() if settings.app_env == "production" else RepositoryStore()
 
 
+def create_index_job_queue():
+    """Keep Redis optional locally and select it only for production dispatch."""
+
+    if settings.app_env != "production":
+        return None
+    return DramatiqIndexJobQueue(create_dramatiq_broker(settings.redis_url))
+
+
 class ApplicationContainer:
     """Composition root for the current single-process application profile."""
 
     def __init__(self) -> None:
         self.store = create_repository_store()
+        self.index_job_queue = create_index_job_queue()
         self.chunking = ChunkingService()
         self.scanner = ScannerService()
         self.parser = ParserService(self.chunking)
@@ -61,6 +71,7 @@ class ApplicationContainer:
             self.parser,
             self.chunking,
             self.graph,
+            self.index_job_queue,
         )
         self.indexing_jobs = IndexingJobService(self.store, self.repositories_service)
         self.ingestion = ImportSessionService(

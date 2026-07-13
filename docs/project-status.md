@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 1: production foundation |
-| Active task | None; `JOB-002` implementation and measured evidence complete |
-| Next task candidate | `JOB-003` queue adapter and dedicated worker |
+| Active delivery phase | Phase 2: durable and atomic indexing |
+| Active task | None; `JOB-003` implementation and local integration evidence complete |
+| Next task candidate | `JOB-004` lease, heartbeat, retry, cancellation, and recovery |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -25,12 +25,13 @@ This page is the operational front door. It reports verified progress; it does n
 - Accepted implementation-ready PostgreSQL schema/ERD covering 35 production tables, composite ownership, lifecycle constraints, access indexes, and migration order.
 - Alembic production baseline, PostgreSQL 18.4 integration profile, zero-drift gate, and supported nine-table SQLite upgrade mapper verified by `DAT-002`.
 - Explicit production PostgreSQL profile, Alembic-head startup guard, typed repository port, and PostgreSQL repository/evidence adapter verified by `DAT-003`; SQLite remains the local default.
-- Dramatiq 2.2.0 selected by `ADR-0003` after passing 15/15 Redis recovery/cancellation PoC runs; production adapter and worker remain deferred to `JOB-003`.
+- Dramatiq 2.2.0 selected by `ADR-0003` after passing 15/15 Redis recovery/cancellation PoC runs.
+- Production background dispatch now persists queued PostgreSQL jobs, publishes one-ID Dramatiq messages, and runs through a dedicated worker boundary; duplicate, broker-outage, and worker-restart tests pass under `JOB-003`.
 
 ## Blocking gaps
 
-1. Production job execution is still in-process and lacks durable claim/lease/retry behavior.
-2. Index jobs are process-local rather than durable and recoverable.
+1. Production worker execution lacks persistent attempt leases, heartbeat, bounded retry, and fenced writes.
+2. A worker crash after the queued-to-running transition is not recoverable until `JOB-004`.
 3. Index artifacts are not yet published through a validated immutable version boundary.
 4. Parser/code-analysis responsibilities overlap and equivalence is not proven.
 5. Retrieval, citation, graph, incremental, security, performance, and resilience gates lack complete release evidence.
@@ -41,8 +42,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Publish and review the `JOB-002` queue selection ADR and measured evidence.
-2. Authorize `JOB-003` before adding the Dramatiq adapter and dedicated worker.
+1. Publish and review the `JOB-003` queue adapter/worker evidence.
+2. Authorize `JOB-004` before adding leases, heartbeat, retry, cancellation, and stale-job recovery.
 3. Authorize `IDX-001` before implementing immutable artifact publication.
 
 ## Status update rule

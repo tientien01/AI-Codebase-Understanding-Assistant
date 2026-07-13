@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     app_name: str = "ai-codebase-assistant"
     api_v1_prefix: str = "/api/v1"
     database_url: str = f"sqlite:///{PROJECT_ROOT / 'storage/app.db'}"
+    redis_url: str = ""
     repository_storage_dir: Path = PROJECT_ROOT / "storage/repositories"
     upload_storage_dir: Path = PROJECT_ROOT / "storage/uploads"
     max_upload_size_mb: int = 2048
@@ -45,6 +46,10 @@ class Settings(BaseSettings):
             ("postgresql://", "postgresql+psycopg://")
         ):
             raise ValueError("Production profile requires a PostgreSQL DATABASE_URL")
+        if self.app_env == "production" and not self.redis_url.startswith(
+            ("redis://", "rediss://")
+        ):
+            raise ValueError("Production profile requires a Redis REDIS_URL")
         return self
 
 
