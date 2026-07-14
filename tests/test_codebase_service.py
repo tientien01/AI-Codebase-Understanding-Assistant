@@ -63,6 +63,12 @@ def test_service_indexes_fixture_and_answers_with_evidence() -> None:
     assert overview.stats["files"] >= 8
     assert overview.stats["endpoints"] >= 1
     assert any(endpoint.path == "/login" for endpoint in overview.endpoints)
+    assert overview.architecture.system_type == "Full-stack web application"
+    assert overview.architecture.coverage_state == "ready"
+    component_labels = {component.label for component in overview.architecture.components}
+    assert {"React Web App", "FastAPI Backend", "Authentication API", "Authentication Service"} <= component_labels
+    assert any(relation.support == "confirmed" for relation in overview.architecture.relations)
+    assert any(flow.label == "Login flow" for flow in overview.architecture.primary_flows)
 
     chat = service.chat(created.repository_id, "login flow hoat dong nhu the nao?")
 
@@ -74,6 +80,20 @@ def test_service_indexes_fixture_and_answers_with_evidence() -> None:
     assert chat.citations[0].index_version == 1
     assert evidence.index_version == 1
     assert not evidence.is_stale
+
+
+def test_overview_keeps_architecture_limited_when_boundaries_are_missing() -> None:
+    service = CodebaseService()
+    created = upload_zip_bytes(service, "utility.zip", make_zip({"utility/helpers.py": "def add(left, right):\n    return left + right\n"}), "utility")
+
+    service.start_indexing(created.repository_id, force_reindex=True)
+    architecture = service.get_overview(created.repository_id).architecture
+
+    assert architecture.system_type == "Indexed codebase"
+    assert architecture.coverage_state == "limited"
+    assert architecture.relations == []
+    assert architecture.primary_flows == []
+    assert "No API or application-service boundary was detected." in architecture.unknowns
 
 
 def test_indexing_writes_parse_debug_output() -> None:

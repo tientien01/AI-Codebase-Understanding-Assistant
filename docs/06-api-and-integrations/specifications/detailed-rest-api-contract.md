@@ -203,6 +203,8 @@ GET /repositories/{repository_id}/endpoints/{endpoint_key}
 
 Tree/list endpoints are cursor-paginated. Content requires a bounded line/byte range and returns total lines/bytes, actual range, content hash, encoding policy and truncation. Blocked/secret/binary content is never returned.
 
+The compatibility Overview response includes a bounded deterministic `architecture` read model. It reports repository-specific system identity, detected technologies, typed components, directional relations, primary flows, coverage, and unknowns. Additive `style`, `style_reason`, and `detector_version` fields disclose which rule-based layout was selected and why. Supported styles are layered web, backend API, MVC, modular, event-driven, library/SDK, CLI, and an honest package-map fallback. Every relation is labelled `confirmed`, `inferred`, or `unknown` and carries source-derived evidence when available. Folder names alone do not authorize claimed runtime layers, deployment topology, infrastructure, or flow edges; insufficient indexes return `coverage_state: limited` instead of an invented standard architecture.
+
 ### Search and graph
 
 ```text

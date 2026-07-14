@@ -86,6 +86,58 @@ export type Overview = {
   endpoints: { method: string; path: string; handler: string; file_path: string; start_line: number; end_line: number }[]
   documentation_gaps: string[]
   stats: Record<string, number>
+  architecture?: ArchitectureOverview
+}
+
+export type ArchitectureEvidence = {
+  type: string
+  detail: string
+  file_path?: string
+}
+
+export type ArchitectureComponent = {
+  id: string
+  label: string
+  kind: 'actor' | 'presentation' | 'container' | 'api' | 'application' | 'domain' | 'data_access' | 'messaging' | 'external_adapter' | 'entrypoint' | 'infrastructure' | 'module'
+  layer: string
+  role?: string
+  support?: 'confirmed' | 'inferred' | 'unknown'
+  summary: string
+  technology?: string
+  parent_id?: string
+  file_paths: string[]
+  endpoint_count: number
+  evidence: ArchitectureEvidence[]
+}
+
+export type ArchitectureRelation = {
+  source: string
+  target: string
+  label: string
+  support: 'confirmed' | 'inferred' | 'unknown'
+  evidence: ArchitectureEvidence[]
+}
+
+export type ArchitectureFlow = {
+  id: string
+  label: string
+  summary: string
+  steps: { component_id: string; label: string; support: 'confirmed' | 'inferred' | 'unknown' }[]
+  evidence: ArchitectureEvidence[]
+}
+
+export type ArchitectureOverview = {
+  style?: 'layered_web' | 'backend_api' | 'mvc' | 'modular' | 'event_driven' | 'library' | 'cli' | 'package_map'
+  style_reason?: string
+  detector_version?: string
+  system_type: string
+  summary: string
+  technologies: string[]
+  components: ArchitectureComponent[]
+  relations: ArchitectureRelation[]
+  primary_flows: ArchitectureFlow[]
+  coverage_state: 'ready' | 'limited'
+  unknowns: string[]
 }
 
 export type Citation = {
@@ -346,3 +398,17 @@ export type IconName =
   | 'warning'
   | 'check'
   | 'git'
+  | 'monitor'
+  | 'shield'
+  | 'server'
+  | 'database'
+  | 'book'
+  | 'box'
+  | 'paperclip'
+  | 'send'
+  | 'history'
+  | 'collapse'
+  | 'expand'
+  | 'user'
+  | 'message'
+  | 'chevronRight'

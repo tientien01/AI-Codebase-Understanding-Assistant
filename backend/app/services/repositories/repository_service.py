@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import shutil
+import re
+from collections import defaultdict
 from pathlib import Path
 
 from app.core.config import settings
@@ -21,7 +23,16 @@ from app.schemas.api import (
     SymbolDTO,
     SymbolListResponse,
 )
+from app.schemas.exploration import (
+    ArchitectureComponentDTO,
+    ArchitectureEvidenceDTO,
+    ArchitectureFlowDTO,
+    ArchitectureFlowStepDTO,
+    ArchitectureOverviewDTO,
+    ArchitectureRelationDTO,
+)
 from app.services.index_models import RepositoryState
+from app.services.architecture import RuleBasedArchitectureEngine
 from app.services.language_registry import LANGUAGE_DEFINITIONS
 from app.services.repositories.repository_port import RepositoryStorePort
 from app.services.text_utils import read_text
@@ -30,6 +41,7 @@ from app.services.text_utils import read_text
 class RepositoryService:
     def __init__(self, store: RepositoryStorePort) -> None:
         self.store = store
+        self.architecture_engine = RuleBasedArchitectureEngine()
         self.repositories: dict[str, RepositoryState] = {
             repository.id: repository for repository in self.store.list_repositories()
         }
@@ -124,16 +136,21 @@ class RepositoryService:
         )
 
     def important_files(self, repository: RepositoryState) -> list[ImportantFileDTO]:
-        important: list[ImportantFileDTO] = []
+        ranked: list[tuple[int, ImportantFileDTO]] = []
         for file_record in repository.files:
             name = Path(file_record.path).name.lower()
-            if name in {"main.py", "app.py"}:
-                important.append(ImportantFileDTO(file_path=file_record.path, reason="Backend entrypoint candidate"))
-            elif name.startswith("readme"):
-                important.append(ImportantFileDTO(file_path=file_record.path, reason="Project documentation"))
-            elif "router" in file_record.path.lower() or "routes" in file_record.path.lower():
-                important.append(ImportantFileDTO(file_path=file_record.path, reason="API routing file"))
-        return important[:8]
+            path = file_record.path.lower()
+            if name.startswith("readme"):
+                ranked.append((0, ImportantFileDTO(file_path=file_record.path, reason="Project overview and setup")))
+            elif name in {"main.py", "app.py", "main.ts", "main.tsx", "index.ts", "index.tsx"}:
+                ranked.append((1, ImportantFileDTO(file_path=file_record.path, reason="Application entrypoint candidate")))
+            elif "router" in path or "routes" in path:
+                ranked.append((2, ImportantFileDTO(file_path=file_record.path, reason="API boundary")))
+            elif "/services/" in f"/{path}" or name.endswith(("_service.py", "service.ts", "service.tsx")):
+                ranked.append((3, ImportantFileDTO(file_path=file_record.path, reason="Application service")))
+            elif any(token in f"/{path}" for token in ("/repositories/", "/models/", "/schemas/")):
+                ranked.append((4, ImportantFileDTO(file_path=file_record.path, reason="Data or schema boundary")))
+        return [item for _, item in sorted(ranked, key=lambda entry: (entry[0], entry[1].file_path))[:8]]
 
     def build_modules(self, repository: RepositoryState) -> list[ModuleDTO]:
         counts: dict[str, int] = {}
@@ -161,8 +178,7 @@ class RepositoryService:
             stack.add("FastAPI")
         if any(Path(file.path).suffix.lower() in {".tsx", ".jsx"} for file in repository.files):
             stack.add("React")
-        if repository.endpoints:
-            stack.add("FastAPI")
+        stack.update(self.architecture_engine.detect_frameworks(repository))
         return sorted(stack)
 
     def documentation_gaps(self, repository: RepositoryState) -> list[str]:
@@ -175,6 +191,361 @@ class RepositoryService:
         if not repository.endpoints:
             gaps.append("No FastAPI endpoint was detected.")
         return gaps or ["No major documentation gap detected by MVP rules."]
+
+    def build_architecture(self, repository: RepositoryState) -> ArchitectureOverviewDTO:
+        """Build a bounded C4-lite read model from indexed facts only."""
+        return self.architecture_engine.build(repository, self.detect_stack(repository))
+
+        # Legacy v1 implementation remains below temporarily as an explicit rollback
+        # reference while ARCH-001 is verified. It is unreachable in the v2 path.
+        stack = self.detect_stack(repository)
+        file_paths = sorted(file.path for file in repository.files)
+        lower_paths = {path: path.lower() for path in file_paths}
+        components: list[ArchitectureComponentDTO] = []
+
+        def add_component(
+            component_id: str,
+            label: str,
+            kind: str,
+            layer: str,
+            summary: str,
+            paths: list[str] | None = None,
+            technology: str | None = None,
+            parent_id: str | None = None,
+            endpoint_count: int = 0,
+            evidence: list[ArchitectureEvidenceDTO] | None = None,
+        ) -> None:
+            components.append(ArchitectureComponentDTO(
+                id=component_id,
+                label=label,
+                kind=kind,
+                layer=layer,
+                summary=summary,
+                technology=technology,
+                parent_id=parent_id,
+                file_paths=sorted(set(paths or []))[:20],
+                endpoint_count=endpoint_count,
+                evidence=(evidence or [])[:8],
+            ))
+
+        presentation_paths = [
+            path for path in file_paths
+            if any(part in lower_paths[path].split("/") for part in ("frontend", "client", "web"))
+            or Path(path).suffix.lower() in {".tsx", ".jsx"}
+        ]
+        if presentation_paths:
+            add_component(
+                "actor:user", "User", "actor", "actor", "Uses the indexed presentation surface.",
+                evidence=[ArchitectureEvidenceDTO(type="source", detail="Presentation source files detected.", file_path=presentation_paths[0])],
+            )
+            presentation_label = "React Web App" if "React" in stack else "Web Interface"
+            add_component(
+                "presentation:web", presentation_label, "presentation", "presentation",
+                "Client-facing presentation surface.", presentation_paths, "React" if "React" in stack else None,
+                evidence=[ArchitectureEvidenceDTO(type="source", detail=f"{len(presentation_paths)} presentation files detected.", file_path=presentation_paths[0])],
+            )
+
+        endpoint_groups: dict[str, list] = defaultdict(list)
+        for endpoint in repository.endpoints:
+            endpoint_groups[self._endpoint_domain(endpoint.path, endpoint.file_path)].append(endpoint)
+
+        backend_paths = [path for path in file_paths if path not in presentation_paths and Path(path).suffix.lower() in {".py", ".go", ".java", ".ts", ".js", ".cs", ".rs"}]
+        has_backend = bool(repository.endpoints or "FastAPI" in stack or backend_paths)
+        if has_backend:
+            backend_technology = "FastAPI" if "FastAPI" in stack else next((item for item in stack if item not in {"React", "HTML", "CSS"}), None)
+            add_component(
+                "container:backend", f"{backend_technology} Backend" if backend_technology else "Application Backend",
+                "container", "container", "Server-side application boundary.", backend_paths,
+                backend_technology,
+                evidence=[ArchitectureEvidenceDTO(type="index", detail=f"{len(repository.endpoints)} indexed endpoints and {len(backend_paths)} backend source files.")],
+            )
+
+        for domain in sorted(endpoint_groups)[:5]:
+            endpoints = endpoint_groups[domain]
+            paths = sorted({endpoint.file_path for endpoint in endpoints})
+            label = f"{self._display_domain(domain)} API"
+            add_component(
+                f"api:{domain}", label, "api", "api", f"Owns {len(endpoints)} indexed endpoint{'s' if len(endpoints) != 1 else ''}.",
+                paths, "FastAPI" if "FastAPI" in stack else None, "container:backend", len(endpoints),
+                [ArchitectureEvidenceDTO(type="endpoint", detail=f"{endpoint.method} {endpoint.path}", file_path=endpoint.file_path) for endpoint in endpoints[:4]],
+            )
+
+        service_groups: dict[str, list[str]] = defaultdict(list)
+        data_groups: dict[str, list[str]] = defaultdict(list)
+        for path in backend_paths:
+            normalized = f"/{lower_paths[path]}"
+            stem = Path(path).stem.lower()
+            if "/services/" in normalized or stem.endswith("_service") or stem.endswith("service"):
+                service_groups[self._path_domain(path, ("service", "services"))].append(path)
+            elif any(token in normalized for token in ("/repositories/", "/repository/")) or stem.endswith(("_repository", "repository")):
+                data_groups[self._path_domain(path, ("repository", "repositories"))].append(path)
+            elif any(token in normalized for token in ("/models/", "/schemas/")):
+                data_groups["models"].append(path)
+
+        for domain in sorted(service_groups)[:5]:
+            paths = service_groups[domain]
+            add_component(
+                f"application:{domain}", f"{self._display_domain(domain)} Service", "application", "application",
+                f"Application behavior implemented by {len(paths)} source file{'s' if len(paths) != 1 else ''}.", paths,
+                parent_id="container:backend",
+                evidence=[ArchitectureEvidenceDTO(type="source", detail="Service path and symbols detected.", file_path=paths[0])],
+            )
+
+        for domain in sorted(data_groups)[:4]:
+            paths = data_groups[domain]
+            label = "Data Models" if domain == "models" else f"{self._display_domain(domain)} Repository"
+            add_component(
+                f"data:{domain}", label, "data_access", "data_access",
+                f"Data boundary represented by {len(paths)} source file{'s' if len(paths) != 1 else ''}.", paths,
+                parent_id="container:backend",
+                evidence=[ArchitectureEvidenceDTO(type="source", detail="Repository, model, or schema path detected.", file_path=paths[0])],
+            )
+
+        marker_sources = self._architecture_marker_sources(repository)
+        infrastructure_specs = (
+            ("postgresql", "PostgreSQL", "database", "SQL"),
+            ("redis", "Redis", "cache", "cache"),
+            ("qdrant", "Qdrant", "vector_store", "vector search"),
+            ("object_storage", "Object Storage", "object_store", "artifacts"),
+            ("openai", "OpenAI API", "external_api", "HTTPS"),
+        )
+        infrastructure_labels: list[str] = []
+        for marker, label, technology, _ in infrastructure_specs:
+            paths = marker_sources.get(marker, [])
+            if not paths:
+                continue
+            infrastructure_labels.append(label)
+            add_component(
+                f"infrastructure:{marker}", label, "infrastructure", "infrastructure",
+                f"Detected from {len(paths)} indexed source or dependency file{'s' if len(paths) != 1 else ''}.",
+                paths, technology,
+                evidence=[ArchitectureEvidenceDTO(type="technology_marker", detail=f"{label} marker detected.", file_path=path) for path in paths[:4]],
+            )
+
+        relations = self._architecture_relations(repository, components, infrastructure_specs)
+        flows = self._architecture_flows(repository, components, relations, endpoint_groups)
+        technologies = sorted(set(stack + infrastructure_labels))
+        system_type, summary = self._architecture_identity(stack, bool(repository.endpoints), bool(presentation_paths), infrastructure_labels)
+        confirmed_count = len([relation for relation in relations if relation.support == "confirmed"])
+        unknowns: list[str] = []
+        if not repository.graph_edges:
+            unknowns.append("Cross-component graph evidence is unavailable; structural connections remain inferred.")
+        if not infrastructure_labels:
+            unknowns.append("No infrastructure technology was confirmed from indexed source markers.")
+        if not repository.endpoints and not service_groups:
+            unknowns.append("No API or application-service boundary was detected.")
+        coverage_state = "ready" if len(components) >= 3 and (confirmed_count > 0 or len(repository.endpoints) > 0) else "limited"
+        return ArchitectureOverviewDTO(
+            system_type=system_type,
+            summary=summary,
+            technologies=technologies[:10],
+            components=components[:24],
+            relations=relations[:32],
+            primary_flows=flows[:3],
+            coverage_state=coverage_state,
+            unknowns=unknowns[:5],
+        )
+
+    def _architecture_relations(
+        self,
+        repository: RepositoryState,
+        components: list[ArchitectureComponentDTO],
+        infrastructure_specs: tuple,
+    ) -> list[ArchitectureRelationDTO]:
+        by_id = {component.id: component for component in components}
+        relation_map: dict[tuple[str, str, str], ArchitectureRelationDTO] = {}
+
+        def add(source: str, target: str, label: str, support: str, evidence: list[ArchitectureEvidenceDTO]) -> None:
+            if source == target or source not in by_id or target not in by_id:
+                return
+            key = (source, target, label)
+            existing = relation_map.get(key)
+            if existing is None or (existing.support != "confirmed" and support == "confirmed"):
+                relation_map[key] = ArchitectureRelationDTO(source=source, target=target, label=label, support=support, evidence=evidence[:6])
+
+        if "actor:user" in by_id and "presentation:web" in by_id:
+            add("actor:user", "presentation:web", "uses", "inferred", by_id["presentation:web"].evidence)
+
+        leaf_components = [component for component in components if component.kind not in {"actor", "container", "infrastructure"}]
+        file_owner: dict[str, str] = {}
+        for component in leaf_components:
+            for path in component.file_paths:
+                file_owner.setdefault(path, component.id)
+        node_owner = {
+            node.id: file_owner[node.file_path]
+            for node in repository.graph_nodes
+            if node.file_path in file_owner
+        }
+        edge_labels = {
+            "calls_api": "HTTPS / API",
+            "exposes_endpoint": "routes to",
+            "calls": "calls",
+            "imports": "imports",
+            "depends_on": "depends on",
+            "reads": "reads",
+            "writes": "writes",
+        }
+        for edge in sorted(repository.graph_edges, key=lambda item: (item.source, item.target, item.type)):
+            source = node_owner.get(edge.source)
+            target = node_owner.get(edge.target)
+            if source is None or target is None or source == target or edge.type.lower() in {"defined_in", "contains"}:
+                continue
+            support = "confirmed" if edge.evidence_level != "inferred" and edge.confidence >= 0.75 else "inferred"
+            label = edge_labels.get(edge.type.lower(), edge.type.replace("_", " ").lower())
+            source_path = next((node.file_path for node in repository.graph_nodes if node.id == edge.source), None)
+            add(source, target, label, support, [ArchitectureEvidenceDTO(type="graph_edge", detail=f"{edge.type} ({edge.confidence:.2f})", file_path=source_path)])
+
+        presentation = by_id.get("presentation:web")
+        backend = by_id.get("container:backend")
+        if presentation and backend:
+            add(presentation.id, backend.id, "HTTPS / JSON", "inferred", presentation.evidence)
+
+        api_components = [component for component in components if component.kind == "api"]
+        service_components = [component for component in components if component.kind == "application"]
+        data_components = [component for component in components if component.kind == "data_access"]
+        for api in api_components:
+            domain = api.id.split(":", 1)[1]
+            matching = next((service for service in service_components if service.id.endswith(f":{domain}") or domain in service.label.lower()), None)
+            if matching:
+                add(api.id, matching.id, "calls", "inferred", api.evidence + matching.evidence)
+        for service in service_components:
+            domain = service.id.split(":", 1)[1]
+            matching = next((data for data in data_components if data.id.endswith(f":{domain}") or domain in data.label.lower()), None)
+            if matching is None and len(data_components) == 1:
+                matching = data_components[0]
+            if matching:
+                add(service.id, matching.id, "reads / writes", "inferred", service.evidence + matching.evidence)
+
+        for marker, _, _, label in infrastructure_specs:
+            target = f"infrastructure:{marker}"
+            if target not in by_id:
+                continue
+            evidence = by_id[target].evidence
+            evidence_paths = set(by_id[target].file_paths)
+            source = next((component.id for component in service_components + data_components if evidence_paths.intersection(component.file_paths)), "container:backend")
+            add(source, target, label, "confirmed", evidence)
+
+        order = {"confirmed": 0, "inferred": 1, "unknown": 2}
+        return sorted(relation_map.values(), key=lambda item: (order[item.support], item.source, item.target, item.label))
+
+    def _architecture_flows(
+        self,
+        repository: RepositoryState,
+        components: list[ArchitectureComponentDTO],
+        relations: list[ArchitectureRelationDTO],
+        endpoint_groups: dict[str, list],
+    ) -> list[ArchitectureFlowDTO]:
+        by_id = {component.id: component for component in components}
+        outgoing: dict[str, list[ArchitectureRelationDTO]] = defaultdict(list)
+        kind_order = {"application": 0, "data_access": 1, "infrastructure": 2, "container": 3, "api": 4, "presentation": 5, "actor": 6, "module": 7}
+        for relation in relations:
+            outgoing[relation.source].append(relation)
+        for relation_list in outgoing.values():
+            relation_list.sort(key=lambda relation: (0 if relation.support == "confirmed" else 1, kind_order.get(by_id[relation.target].kind, 9), relation.target))
+
+        flows: list[ArchitectureFlowDTO] = []
+        for domain in sorted(endpoint_groups)[:3]:
+            endpoint = sorted(endpoint_groups[domain], key=lambda item: (item.path, item.method))[0]
+            api_id = f"api:{domain}"
+            if api_id not in by_id:
+                continue
+            steps: list[ArchitectureFlowStepDTO] = []
+            if "presentation:web" in by_id:
+                steps.append(ArchitectureFlowStepDTO(component_id="presentation:web", label=by_id["presentation:web"].label, support="inferred"))
+            steps.append(ArchitectureFlowStepDTO(component_id=api_id, label=by_id[api_id].label, support="confirmed"))
+            current = api_id
+            visited = {api_id, "presentation:web"}
+            while len(steps) < 6:
+                relation = next((candidate for candidate in outgoing.get(current, []) if candidate.target not in visited and by_id[candidate.target].kind != "container"), None)
+                if relation is None:
+                    break
+                visited.add(relation.target)
+                steps.append(ArchitectureFlowStepDTO(component_id=relation.target, label=by_id[relation.target].label, support=relation.support))
+                current = relation.target
+            flow_parts = [part for part in endpoint.path.strip("/").split("/") if part and part.lower() not in {"api", "v1", "v2", "v3"} and not part.startswith("{")]
+            flow_name = self._display_domain(flow_parts[-1] if flow_parts else domain)
+            flows.append(ArchitectureFlowDTO(
+                id=f"flow:{self._slug(endpoint.method)}:{self._slug(endpoint.path)}",
+                label=f"{flow_name} flow",
+                summary=f"{endpoint.method} {endpoint.path}",
+                steps=steps,
+                evidence=[ArchitectureEvidenceDTO(type="endpoint", detail=f"{endpoint.method} {endpoint.path}", file_path=endpoint.file_path)],
+            ))
+        return flows
+
+    def _architecture_marker_sources(self, repository: RepositoryState) -> dict[str, list[str]]:
+        markers = {
+            "postgresql": ("postgresql", "postgres://", "psycopg", "asyncpg"),
+            "redis": ("redis",),
+            "qdrant": ("qdrant",),
+            "object_storage": ("boto3", "minio", "object_storage"),
+            "openai": ("openai",),
+        }
+        matches: dict[str, list[str]] = defaultdict(list)
+        for file in repository.files:
+            if not self._safe_architecture_source(file.path):
+                continue
+            try:
+                content = read_text(file.absolute_path).lower()
+            except OSError:
+                continue
+            for marker, values in markers.items():
+                if any(value in content for value in values):
+                    matches[marker].append(file.path)
+        return {marker: sorted(set(paths))[:8] for marker, paths in matches.items()}
+
+    @staticmethod
+    def _safe_architecture_source(path: str) -> bool:
+        normalized = path.replace("\\", "/").lower()
+        name = normalized.rsplit("/", 1)[-1]
+        blocked = (".env", "secret", "credential", ".pem", ".key")
+        return not any(token in name for token in blocked)
+
+    @staticmethod
+    def _architecture_identity(stack: list[str], has_endpoints: bool, has_presentation: bool, infrastructure: list[str]) -> tuple[str, str]:
+        if has_presentation and has_endpoints:
+            system_type = "Full-stack web application"
+            summary = "Full-stack application with a client presentation, API boundary, application behavior, and indexed supporting systems."
+        elif has_endpoints:
+            system_type = "Backend API application"
+            summary = "Server-side API application with indexed endpoints and application components."
+        elif has_presentation:
+            system_type = "Frontend web application"
+            summary = "Client-side web application with indexed presentation components."
+        else:
+            system_type = "Indexed codebase"
+            summary = "The current index does not expose enough application boundaries for a complete system map."
+        if infrastructure:
+            summary = f"{summary} Confirmed supporting technologies: {', '.join(infrastructure)}."
+        return system_type, summary
+
+    @staticmethod
+    def _endpoint_domain(endpoint_path: str, file_path: str) -> str:
+        ignored = {"api", "v1", "v2", "v3"}
+        segments = [segment.lower() for segment in endpoint_path.strip("/").split("/") if segment and not segment.startswith("{")]
+        meaningful = [segment for segment in segments if segment not in ignored]
+        domain = meaningful[0] if len(meaningful) > 1 else ""
+        return RepositoryService._slug(domain or RepositoryService._path_domain(file_path, ("routes", "router")) or "application")
+
+    @staticmethod
+    def _path_domain(path: str, removable: tuple[str, ...]) -> str:
+        stem = Path(path).stem.lower()
+        for token in removable:
+            stem = stem.replace(token, "")
+        stem = stem.strip("_-")
+        if stem and stem not in {"index", "main", "base"}:
+            return RepositoryService._slug(stem)
+        parts = [part.lower() for part in path.replace("\\", "/").split("/")[:-1]]
+        return RepositoryService._slug(next((part for part in reversed(parts) if part not in removable and part not in {"app", "src", "backend"}), "application"))
+
+    @staticmethod
+    def _display_domain(domain: str) -> str:
+        aliases = {"auth": "Authentication", "users": "User", "user": "User", "restaurants": "Restaurant", "restaurant": "Restaurant", "hotels": "Hotel", "hotel": "Hotel", "models": "Data"}
+        return aliases.get(domain, domain.replace("_", " ").replace("-", " ").title())
+
+    @staticmethod
+    def _slug(value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-") or "application"
 
     def get_overview(self, repository_id: str) -> OverviewResponse:
         repository = self.get_indexed_repository(repository_id)
@@ -197,6 +568,7 @@ class RepositoryService:
                 for endpoint in repository.endpoints
             ],
             documentation_gaps=self.documentation_gaps(repository),
+            architecture=self.build_architecture(repository),
             stats={
                 "files": len(repository.files),
                 "functions": len([symbol for symbol in repository.symbols if symbol.symbol_type in {"function", "method"}]),
