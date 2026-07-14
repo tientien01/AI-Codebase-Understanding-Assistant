@@ -1,62 +1,50 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import type { UseQueryResult } from '@tanstack/react-query'
 import type { NavigateFunction } from 'react-router-dom'
-import { requestJson, API_V1 } from '../api/client'
+import { safeErrorMessage } from '../api/client'
+import {
+  toAsyncViewState,
+  toMutationAsyncViewState,
+  useChatTranscriptQuery,
+  useDebouncedValue,
+  useEvidenceQuery,
+  useFileContentQuery,
+  useFileTreeQuery,
+  useGraphQuery,
+  useIndexStatusQuery,
+  useOverviewQuery,
+  useRepositoriesQuery,
+  useSearchResultsQuery,
+  useServerMutations,
+} from '../features/server-state'
 import { pathForPage } from '../routing/routes'
 import type { AppRoute } from '../routing/routes'
 import type {
-  ChatMessage,
   Citation,
-  Evidence,
-  FileContent,
-  FileTreeNode,
-  GraphData,
   GraphView,
-  ImpactResult,
-  IndexStatus,
-  Overview,
   Page,
   Repository,
-  SearchResult,
 } from '../types/api'
 import { findFirstFile, isRepositoryUsable } from '../utils/repository'
 import { useImportController } from './useImportController'
 
 const workspacePages: Page[] = ['overview', 'code', 'graph', 'api', 'assistant', 'impact', 'search', 'evidence', 'evaluation']
+const overviewPages: Page[] = ['overview', 'code', 'graph', 'api', 'impact']
 const graphViews: GraphView[] = ['project-map', 'dependencies', 'api-flow', 'function-flow', 'data-flow']
+const emptyRepositories: Repository[] = []
 
 export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   const page = route.status === 'valid' ? route.page : 'projects'
-  const [repositories, setRepositories] = useState<Repository[]>([])
-  const [repositoriesLoaded, setRepositoriesLoaded] = useState(false)
-  const [repositoriesLoadFailed, setRepositoriesLoadFailed] = useState(false)
   const [selectedRepositoryId, setSelectedRepositoryId] = useState('')
-  const [overview, setOverview] = useState<Overview | null>(null)
-  const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null)
-  const [graph, setGraph] = useState<GraphData | null>(null)
-  const [graphViewFallback, setGraphView] = useState<GraphView>('project-map')
-  const [fileTree, setFileTree] = useState<FileTreeNode[]>([])
-  const [selectedFilePath, setSelectedFilePath] = useState('')
-  const [fileContent, setFileContent] = useState<FileContent | null>(null)
-  const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null)
+  const [graphViewFallback, setGraphViewFallback] = useState<GraphView>('project-map')
   const [chatInput, setChatInput] = useState('How does the login flow work?')
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content: 'Import and index a repository, then ask architecture, API flow, debugging, onboarding, or impact questions.',
-      evidenceSufficient: false,
-    },
-  ])
   const [searchQueryDraft, setSearchQueryDraft] = useState('login auth token')
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [impactTargetType, setImpactTargetType] = useState('symbol')
   const [impactTargetRefDraft, setImpactTargetRefDraft] = useState('login')
-  const [impactResult, setImpactResult] = useState<ImpactResult | null>(null)
   const [apiError, setApiError] = useState('')
 
   const routeRepositoryId = route.status === 'valid' ? route.repositoryId : undefined
-  const routeFilePath = route.status === 'valid' ? route.filePath : undefined
-  const routeEvidenceId = route.status === 'valid' ? route.evidenceId : undefined
   const routeGraphView = route.status === 'valid' && route.graphView && graphViews.includes(route.graphView as GraphView)
     ? route.graphView as GraphView
     : undefined
@@ -67,224 +55,74 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   const impactTargetRef = route.status === 'valid' && route.page === 'impact' && route.impactTarget !== undefined
     ? route.impactTarget
     : impactTargetRefDraft
+  const debouncedSearchQuery = useDebouncedValue(
+    route.status === 'valid' && route.page === 'search' ? route.searchQuery?.trim() : undefined,
+    300,
+  )
+
+  const repositoriesQuery = useRepositoriesQuery()
+  const repositories = repositoriesQuery.data ?? emptyRepositories
   const selectedRepository = useMemo(() => {
     if (routeRepositoryId) return repositories.find((repository) => repository.id === routeRepositoryId)
     return repositories.find((repository) => repository.id === selectedRepositoryId) ?? repositories[0]
   }, [repositories, routeRepositoryId, selectedRepositoryId])
+  const usableRepository = isRepositoryUsable(selectedRepository) ? selectedRepository : undefined
   const isWorkspacePage = Boolean(routeRepositoryId && workspacePages.includes(page))
 
-  useEffect(() => {
-    void loadRepositories()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const indexStatusQuery = useIndexStatusQuery(selectedRepository?.id, page === 'indexing')
+  const overviewQuery = useOverviewQuery(usableRepository, overviewPages.includes(page))
+  const graphQuery = useGraphQuery(usableRepository, graphView, page === 'graph')
+  const fileTreeQuery = useFileTreeQuery(usableRepository, page === 'code')
+  const defaultFilePath = page === 'code' ? findFirstFile(fileTreeQuery.data ?? [])?.path : undefined
+  const selectedFilePath = route.status === 'valid' && route.page === 'code'
+    ? route.filePath ?? defaultFilePath ?? ''
+    : ''
+  const fileContentQuery = useFileContentQuery(usableRepository, selectedFilePath || undefined, page === 'code')
+  const evidenceQuery = useEvidenceQuery(
+    usableRepository,
+    route.status === 'valid' && route.page === 'evidence' ? route.evidenceId : undefined,
+    page === 'evidence',
+  )
+  const searchResultsQuery = useSearchResultsQuery(
+    usableRepository,
+    debouncedSearchQuery,
+    page === 'search' && Boolean(debouncedSearchQuery),
+  )
+  const chatTranscriptQuery = useChatTranscriptQuery(selectedRepository)
+  const mutations = useServerMutations(selectedRepository?.id, selectedRepository?.current_index_version)
 
-  useEffect(() => {
-    if (!selectedRepository) return
-    void loadIndexStatus(selectedRepository.id)
-    if (isRepositoryUsable(selectedRepository)) {
-      void loadWorkspaceData(selectedRepository.id)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRepository?.id, selectedRepository?.status])
+  const importController = useImportController({
+    setSelectedRepositoryId,
+    setPage,
+    setApiError,
+  })
 
-  useEffect(() => {
-    if (route.status !== 'valid' || !selectedRepository || route.repositoryId !== selectedRepository.id) return
-    if (!isRepositoryUsable(selectedRepository)) return
-    if (route.page === 'code' && route.filePath) void fetchFileContent(selectedRepository.id, route.filePath)
-    if (route.page === 'evidence' && route.evidenceId) void fetchEvidence(selectedRepository.id, route.evidenceId)
-    // Route identity is the authority for direct-link restoration.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.pathname, routeFilePath, routeEvidenceId, selectedRepository?.id, selectedRepository?.status])
+  const pageQuery = activePageQuery({
+    page,
+    repositoriesQuery,
+    indexStatusQuery,
+    overviewQuery,
+    graphQuery,
+    fileTreeQuery,
+    fileContentQuery,
+    evidenceQuery,
+    searchResultsQuery,
+    hasFilePath: Boolean(selectedFilePath),
+    hasSearchQuery: Boolean(debouncedSearchQuery),
+  })
+  const pageState = page === 'impact'
+    ? toMutationAsyncViewState(mutations.impact)
+    : page === 'import'
+      ? importController.asyncState
+      : toAsyncViewState(pageQuery.query, { enabled: pageQuery.enabled, empty: pageQuery.empty })
 
-  useEffect(() => {
-    if (page !== 'indexing' || !selectedRepository) return
-    const timer = window.setInterval(() => {
-      void loadIndexStatus(selectedRepository.id)
-      void loadRepositories()
-    }, 2500)
-    return () => window.clearInterval(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, selectedRepository?.id])
-
-  async function request<T>(url: string, options?: RequestInit): Promise<T> {
-    setApiError('')
-    try {
-      return await requestJson<T>(url, options)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Request failed'
-      setApiError(message)
-      throw error
-    }
-  }
-
-  async function loadRepositories() {
-    setRepositoriesLoadFailed(false)
-    try {
-      const data = await request<Repository[]>(`${API_V1}/repositories`)
-      setRepositories(data)
-      if (!selectedRepositoryId && data[0]) setSelectedRepositoryId(data[0].id)
-    } catch {
-      setRepositories([])
-      setRepositoriesLoadFailed(true)
-    } finally {
-      setRepositoriesLoaded(true)
-    }
-  }
-
-  async function loadWorkspaceData(repositoryId: string) {
-    await Promise.all([loadOverview(repositoryId), loadGraph(repositoryId), loadFileTree(repositoryId)])
-  }
-
-  async function loadOverview(repositoryId: string) {
-    try {
-      setOverview(await request<Overview>(`${API_V1}/repositories/${repositoryId}/overview`))
-    } catch {
-      setOverview(null)
-    }
-  }
-
-  async function loadIndexStatus(repositoryId: string) {
-    try {
-      setIndexStatus(await request<IndexStatus>(`${API_V1}/repositories/${repositoryId}/index/status`))
-    } catch {
-      setIndexStatus(null)
-    }
-  }
-
-  async function loadGraph(repositoryId: string, view: GraphView = graphView) {
-    try {
-      setGraph(await request<GraphData>(`${API_V1}/repositories/${repositoryId}/graph/${view}`))
-    } catch {
-      setGraph(null)
-    }
-  }
-
-  async function changeGraphView(view: GraphView) {
-    setGraphView(view)
-    if (selectedRepository) {
-      navigate(pathForPage('graph', selectedRepository.id, {
-        graphView: view,
-        graphRoot: route.status === 'valid' ? route.graphRoot : undefined,
-        graphDepth: route.status === 'valid' ? route.graphDepth : undefined,
-      }))
-      await loadGraph(selectedRepository.id, view)
-    }
-  }
-
-  async function loadFileTree(repositoryId: string) {
-    try {
-      const tree = await request<FileTreeNode[]>(`${API_V1}/repositories/${repositoryId}/files/tree`)
-      setFileTree(tree)
-      const firstFile = findFirstFile(tree)
-      const routeOwnsFile = route.status === 'valid' && route.repositoryId === repositoryId && Boolean(route.filePath)
-      if (firstFile && !selectedFilePath && !routeOwnsFile) await fetchFileContent(repositoryId, firstFile.path)
-    } catch {
-      setFileTree([])
-    }
-  }
-
-  async function fetchFileContent(repositoryId: string, filePath: string) {
-    const content = await request<FileContent>(`${API_V1}/repositories/${repositoryId}/files/content?path=${encodeURIComponent(filePath)}`)
-    setSelectedFilePath(filePath)
-    setFileContent(content)
-  }
-
-  function openFile(repositoryId: string, filePath: string) {
-    navigate(pathForPage('code', repositoryId, { filePath }))
-  }
-
-  async function reindexRepository(repositoryId: string) {
-    setSelectedRepositoryId(repositoryId)
-    await request(`${API_V1}/repositories/${repositoryId}/index`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ force_reindex: false }),
-    })
-    await loadRepositories()
-    await loadIndexStatus(repositoryId)
-    navigate(pathForPage('indexing'))
-  }
-
-  async function pauseIndexingJob(repositoryId: string, jobId: string) {
-    await request(`${API_V1}/repositories/${repositoryId}/index/jobs/${jobId}/pause`, { method: 'POST' })
-    await loadIndexStatus(repositoryId)
-  }
-
-  async function resumeIndexingJob(repositoryId: string, jobId: string) {
-    await request(`${API_V1}/repositories/${repositoryId}/index/jobs/${jobId}/resume`, { method: 'POST' })
-    await loadIndexStatus(repositoryId)
-  }
-
-  async function cancelIndexingJob(repositoryId: string, jobId: string) {
-    await request(`${API_V1}/repositories/${repositoryId}/index/jobs/${jobId}/cancel`, { method: 'POST' })
-    await loadRepositories()
-    await loadIndexStatus(repositoryId)
-  }
-
-  async function deleteRepository(repositoryId: string) {
-    const repository = repositories.find((item) => item.id === repositoryId)
-    const label = repository?.name ?? repositoryId
-    if (!window.confirm(`Delete project "${label}" from AI Codebase Assistant? Uploaded source and index data will be removed.`)) return
-    await request(`${API_V1}/repositories/${repositoryId}`, { method: 'DELETE' })
-    if (selectedRepositoryId === repositoryId) {
-      setSelectedRepositoryId('')
-      setOverview(null)
-      setIndexStatus(null)
-      setGraph(null)
-      setFileTree([])
-      setSelectedFilePath('')
-      setFileContent(null)
-      setSelectedEvidence(null)
-      navigate(pathForPage('projects'))
-    }
-    await loadRepositories()
-  }
-
-  async function deleteAllRepositories() {
-    if (!repositories.length) return
-    if (!window.confirm(`Delete all ${repositories.length} projects from AI Codebase Assistant? Uploaded source and index data will be removed.`)) return
-    await request(`${API_V1}/repositories/bulk-delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ delete_all: true }),
-    })
-    setSelectedRepositoryId('')
-    setOverview(null)
-    setIndexStatus(null)
-    setGraph(null)
-    setFileTree([])
-    setSelectedFilePath('')
-    setFileContent(null)
-    setSelectedEvidence(null)
-    navigate(pathForPage('projects'))
-    await loadRepositories()
-  }
-
-  async function openWorkspace(repositoryId: string) {
+  function openWorkspace(repositoryId: string) {
     setSelectedRepositoryId(repositoryId)
     navigate(pathForPage('overview', repositoryId))
   }
 
-  async function sendChatMessage(event?: FormEvent) {
-    event?.preventDefault()
-    if (!selectedRepository || !chatInput.trim()) return
-    const userText = chatInput.trim()
-    setChatInput('')
-    setChatMessages((items) => [...items, { role: 'user', content: userText }])
-    const response = await request<{ answer: string; citations: Citation[]; evidence_sufficient: boolean }>(
-      `${API_V1}/repositories/${selectedRepository.id}/chat`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, options: { max_retrieval_rounds: 2 } }),
-      },
-    )
-    setChatMessages((items) => [...items, { role: 'assistant', content: response.answer, citations: response.citations, evidenceSufficient: response.evidence_sufficient }])
-  }
-
-  async function fetchEvidence(repositoryId: string, evidenceId: string) {
-    const evidence = await request<Evidence>(`${API_V1}/repositories/${repositoryId}/evidence/${encodeURIComponent(evidenceId)}`)
-    setSelectedEvidence(evidence)
+  function openFile(repositoryId: string, filePath: string) {
+    navigate(pathForPage('code', repositoryId, { filePath }))
   }
 
   function openEvidence(citation: Citation) {
@@ -292,24 +130,48 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     navigate(pathForPage('evidence', selectedRepository.id, { evidenceId: citation.evidence_id }))
   }
 
-  async function runSearch(event?: FormEvent) {
-    event?.preventDefault()
-    if (!selectedRepository) return
-    navigate(pathForPage('search', selectedRepository.id, { searchQuery }))
-    const response = await request<{ results: SearchResult[] }>(`${API_V1}/repositories/${selectedRepository.id}/search?q=${encodeURIComponent(searchQuery)}`)
-    setSearchResults(response.results)
+  async function reindexRepository(repositoryId: string) {
+    setSelectedRepositoryId(repositoryId)
+    const result = await runAction(() => mutations.reindex.mutateAsync(repositoryId))
+    if (result.ok) navigate(pathForPage('indexing'))
+  }
+
+  async function pauseIndexingJob(repositoryId: string, jobId: string) {
+    await runAction(() => mutations.jobAction.mutateAsync({ action: 'pause', targetRepositoryId: repositoryId, jobId }))
+  }
+
+  async function resumeIndexingJob(repositoryId: string, jobId: string) {
+    await runAction(() => mutations.jobAction.mutateAsync({ action: 'resume', targetRepositoryId: repositoryId, jobId }))
+  }
+
+  async function cancelIndexingJob(repositoryId: string, jobId: string) {
+    await runAction(() => mutations.jobAction.mutateAsync({ action: 'cancel', targetRepositoryId: repositoryId, jobId }))
+  }
+
+  async function deleteRepository(repositoryId: string) {
+    const repository = repositories.find((item) => item.id === repositoryId)
+    const label = repository?.name ?? repositoryId
+    if (!window.confirm(`Delete project "${label}" from AI Codebase Assistant? Uploaded source and index data will be removed.`)) return
+    const result = await runAction(() => mutations.deleteRepository.mutateAsync(repositoryId))
+    if (!result.ok) return
+    if (selectedRepositoryId === repositoryId || routeRepositoryId === repositoryId) {
+      setSelectedRepositoryId('')
+      navigate(pathForPage('projects'))
+    }
+  }
+
+  async function deleteAllRepositories() {
+    if (!repositories.length) return
+    if (!window.confirm(`Delete all ${repositories.length} projects from AI Codebase Assistant? Uploaded source and index data will be removed.`)) return
+    const result = await runAction(() => mutations.deleteAllRepositories.mutateAsync())
+    if (!result.ok) return
+    setSelectedRepositoryId('')
+    navigate(pathForPage('projects'))
   }
 
   async function analyzeGraphArea(scopePath: string) {
     if (!selectedRepository || !scopePath) return
-    await request(`${API_V1}/repositories/${selectedRepository.id}/graph/expand`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scope_path: scopePath }),
-    })
-    await loadRepositories()
-    await loadIndexStatus(selectedRepository.id)
-    await loadGraph(selectedRepository.id)
+    await runAction(() => mutations.expandGraph.mutateAsync({ targetRepositoryId: selectedRepository.id, scopePath }))
   }
 
   async function runImpactAnalysis(event?: FormEvent) {
@@ -319,16 +181,44 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
       impactTarget: impactTargetRef.trim(),
       compareIndexVersionId: route.status === 'valid' ? route.compareIndexVersionId : undefined,
     }))
-    const result = await request<ImpactResult>(`${API_V1}/repositories/${selectedRepository.id}/impact`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        target_type: impactTargetType,
-        target_ref: impactTargetRef.trim(),
-        max_depth: 3,
-      }),
-    })
-    setImpactResult(result)
+    await runAction(() => mutations.impact.mutateAsync({
+      targetRepositoryId: selectedRepository.id,
+      targetType: impactTargetType,
+      targetRef: impactTargetRef.trim(),
+    }))
+  }
+
+  async function sendChatMessage(event?: FormEvent) {
+    event?.preventDefault()
+    if (!selectedRepository || !chatInput.trim()) return
+    const userText = chatInput.trim()
+    setChatInput('')
+    await runAction(() => mutations.chat.mutateAsync({
+      targetRepositoryId: selectedRepository.id,
+      indexVersion: selectedRepository.current_index_version,
+      message: userText,
+    }))
+  }
+
+  async function runSearch(event?: FormEvent) {
+    event?.preventDefault()
+    if (!selectedRepository || !searchQuery.trim()) return
+    const nextPath = pathForPage('search', selectedRepository.id, { searchQuery: searchQuery.trim() })
+    if (route.status === 'valid' && route.page === 'search' && route.searchQuery?.trim() === searchQuery.trim()) {
+      await searchResultsQuery.refetch()
+    } else {
+      navigate(nextPath)
+    }
+  }
+
+  async function changeGraphView(view: GraphView) {
+    setGraphViewFallback(view)
+    if (!selectedRepository) return
+    navigate(pathForPage('graph', selectedRepository.id, {
+      graphView: view,
+      graphRoot: route.status === 'valid' ? route.graphRoot : undefined,
+      graphDepth: route.status === 'valid' ? route.graphDepth : undefined,
+    }))
   }
 
   function setSearchQuery(value: string) {
@@ -353,40 +243,41 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     navigate(pathForPage(nextPage, needsRepository ? selectedRepository?.id : undefined))
   }
 
-  const importController = useImportController({
-    request,
-    apiV1: API_V1,
-    loadRepositories,
-    loadIndexStatus,
-    setSelectedRepositoryId,
-    setPage,
-    setApiError,
-  })
+  async function runAction<T>(action: () => Promise<T>): Promise<{ ok: true; data: T } | { ok: false }> {
+    setApiError('')
+    try {
+      return { ok: true, data: await action() }
+    } catch (error) {
+      setApiError(safeErrorMessage(error))
+      return { ok: false }
+    }
+  }
 
   return {
     page,
     repositories,
-    repositoriesLoaded,
-    repositoriesLoadFailed,
+    repositoriesLoaded: !repositoriesQuery.isPending,
+    repositoriesLoadFailed: repositoriesQuery.isError,
     selectedRepository,
-    overview,
-    indexStatus,
-    graph,
+    overview: overviewQuery.data ?? null,
+    indexStatus: indexStatusQuery.data ?? null,
+    graph: graphQuery.data ?? null,
     graphView,
-    fileTree,
+    fileTree: fileTreeQuery.data ?? [],
     selectedFilePath,
-    fileContent,
-    selectedEvidence,
+    fileContent: fileContentQuery.data ?? null,
+    selectedEvidence: evidenceQuery.data ?? null,
     chatInput,
-    chatMessages,
+    chatMessages: chatTranscriptQuery.data,
     searchQuery,
-    searchResults,
+    searchResults: searchResultsQuery.data?.results ?? [],
     impactTargetType,
     impactTargetRef,
-    impactResult,
+    impactResult: mutations.impact.data ?? null,
     ...importController,
     apiError,
     isWorkspacePage,
+    pageState,
     setPage,
     setChatInput,
     setSearchQuery,
@@ -400,7 +291,8 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     deleteRepository,
     deleteAllRepositories,
     loadFileContent: openFile,
-    reloadRepositories: loadRepositories,
+    reloadRepositories: repositoriesQuery.refetch,
+    retryActivePage: pageQuery.query ? () => { void pageQuery.refetch() } : undefined,
     sendChatMessage,
     openEvidence,
     runSearch,
@@ -408,4 +300,49 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     runImpactAnalysis,
     changeGraphView,
   }
+}
+
+type PageQuery = {
+  query?: UseQueryResult<unknown, Error>
+  enabled: boolean
+  empty?: (data: unknown) => boolean
+  refetch: () => Promise<unknown>
+}
+
+function activePageQuery(input: {
+  page: Page
+  repositoriesQuery: UseQueryResult<Repository[], Error>
+  indexStatusQuery: UseQueryResult<unknown, Error>
+  overviewQuery: UseQueryResult<unknown, Error>
+  graphQuery: UseQueryResult<unknown, Error>
+  fileTreeQuery: UseQueryResult<unknown, Error>
+  fileContentQuery: UseQueryResult<unknown, Error>
+  evidenceQuery: UseQueryResult<unknown, Error>
+  searchResultsQuery: UseQueryResult<unknown, Error>
+  hasFilePath: boolean
+  hasSearchQuery: boolean
+}): PageQuery {
+  const asPageQuery = (query: UseQueryResult<unknown, Error>, enabled = true, empty?: (data: unknown) => boolean): PageQuery => ({
+    query,
+    enabled,
+    empty,
+    refetch: query.refetch,
+  })
+  if (input.page === 'projects') return asPageQuery(input.repositoriesQuery, true, (data) => Array.isArray(data) && data.length === 0)
+  if (input.page === 'indexing') return asPageQuery(input.indexStatusQuery)
+  if (['overview', 'api'].includes(input.page)) return asPageQuery(input.overviewQuery)
+  if (input.page === 'graph') return asPageQuery(input.graphQuery)
+  if (input.page === 'code') {
+    return input.hasFilePath
+      ? asPageQuery(input.fileContentQuery)
+      : asPageQuery(input.fileTreeQuery, true, (data) => Array.isArray(data) && data.length === 0)
+  }
+  if (input.page === 'evidence') return asPageQuery(input.evidenceQuery)
+  if (input.page === 'search') {
+    return asPageQuery(input.searchResultsQuery, input.hasSearchQuery, (data) => {
+      const response = data as { results?: unknown[] }
+      return Array.isArray(response.results) && response.results.length === 0
+    })
+  }
+  return { enabled: false, refetch: async () => undefined }
 }

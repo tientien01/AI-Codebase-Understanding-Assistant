@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom'
 import App from './App'
+import { createAppQueryClient } from './features/server-state'
 
 const repository = {
   id: 'repo-1',
@@ -79,6 +81,22 @@ describe('App routing', () => {
     expect(screen.getByRole('link', { name: 'Back to Projects' }).getAttribute('href')).toBe('/projects')
   })
 
+  it('shows a retryable query error and recovers without reloading the app', async () => {
+    let repositoryAttempts = 0
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/v1/repositories') && repositoryAttempts++ === 0) {
+        return errorResponse(503, 'service_unavailable', 'Repository service is temporarily unavailable.')
+      }
+      return responseFor(url)
+    }))
+    renderApp(['/projects'])
+
+    expect(await screen.findByText('Temporary request failure')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Try Again' }))
+    expect(await screen.findByRole('heading', { name: 'Projects' })).toBeTruthy()
+  })
+
   it('uses browser history for workspace navigation', async () => {
     renderApp(['/projects'])
     const openButtons = await screen.findAllByRole('button', { name: /Open Workspace/ })
@@ -93,12 +111,16 @@ describe('App routing', () => {
 })
 
 function renderApp(initialEntries: string[]) {
+  const queryClient = createAppQueryClient()
+  queryClient.setDefaultOptions({ queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } })
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <App />
-      <LocationProbe />
-      <HistoryControls />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <App />
+        <LocationProbe />
+        <HistoryControls />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
@@ -122,6 +144,14 @@ function jsonResponse(data: unknown) {
     ok: true,
     status: 200,
     json: async () => data,
+  } as Response
+}
+
+function errorResponse(status: number, code: string, message: string) {
+  return {
+    ok: false,
+    status,
+    json: async () => ({ error: { code, message } }),
   } as Response
 }
 

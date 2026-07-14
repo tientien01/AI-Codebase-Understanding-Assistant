@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { uploadFormData } from '../api/upload'
 import type { ImportPreview } from '../types/api'
@@ -7,8 +9,6 @@ import { useImportController } from './useImportController'
 vi.mock('../api/upload', () => ({
   uploadFormData: vi.fn(),
 }))
-
-type Request = <T>(url: string, options?: RequestInit) => Promise<T>
 
 const preview: ImportPreview = {
   import_session_id: 'session-1',
@@ -38,55 +38,54 @@ const preview: ImportPreview = {
   activity_logs: [],
 }
 
-function createDependencies() {
-  const requestMock = vi.fn(async (url: string) => {
-    if (url.endsWith('/github')) return { import_session_id: 'session-1' }
-    return preview
-  })
-
+function createTestContext() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const dependencies = {
+    setSelectedRepositoryId: vi.fn(),
+    setPage: vi.fn(),
+    setApiError: vi.fn(),
+  }
   return {
-    requestMock,
-    dependencies: {
-      request: requestMock as unknown as Request,
-      apiV1: '/api/v1',
-      loadRepositories: vi.fn(async () => undefined),
-      loadIndexStatus: vi.fn(async () => undefined),
-      setSelectedRepositoryId: vi.fn(),
-      setPage: vi.fn(),
-      setApiError: vi.fn(),
-    },
+    dependencies,
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    ),
   }
 }
 
 describe('useImportController automatic previews', () => {
   beforeEach(() => {
     vi.mocked(uploadFormData).mockResolvedValue({ import_session_id: 'session-1' })
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/import-sessions/github')) return jsonResponse({ import_session_id: 'session-1' })
+      if (url.endsWith('/import-sessions/session-1/preview')) return jsonResponse(preview)
+      return jsonResponse({})
+    }))
   })
 
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+    vi.unstubAllGlobals()
   })
 
-  it('uploads a selected folder automatically', async () => {
-    const { dependencies } = createDependencies()
-    const { result } = renderHook(() => useImportController(dependencies))
-    const file = new File(['print("hello")'], 'main.py') as File & {
-      webkitRelativePath?: string
-    }
+  it('uploads a selected folder automatically and queries its preview', async () => {
+    const { dependencies, wrapper } = createTestContext()
+    const { result } = renderHook(() => useImportController(dependencies), { wrapper })
+    const file = new File(['print("hello")'], 'main.py') as File & { webkitRelativePath?: string }
     Object.defineProperty(file, 'webkitRelativePath', { value: 'sample/main.py' })
 
     act(() => result.current.setFolderFiles([file]))
 
     await waitFor(() => expect(uploadFormData).toHaveBeenCalledOnce())
-    expect(vi.mocked(uploadFormData).mock.calls[0][0].url).toBe(
-      '/api/v1/import-sessions/upload-folder',
-    )
+    expect(vi.mocked(uploadFormData).mock.calls[0][0].url).toContain('/api/v1/import-sessions/upload-folder')
+    await waitFor(() => expect(result.current.importPreview).toEqual(preview))
   })
 
   it('uploads a selected ZIP automatically', async () => {
-    const { dependencies } = createDependencies()
-    const { result } = renderHook(() => useImportController(dependencies))
+    const { dependencies, wrapper } = createTestContext()
+    const { result } = renderHook(() => useImportController(dependencies), { wrapper })
     const file = new File(['zip'], 'sample.zip', { type: 'application/zip' })
 
     act(() => {
@@ -95,14 +94,12 @@ describe('useImportController automatic previews', () => {
     })
 
     await waitFor(() => expect(uploadFormData).toHaveBeenCalledOnce())
-    expect(vi.mocked(uploadFormData).mock.calls[0][0].url).toBe(
-      '/api/v1/import-sessions/upload-zip',
-    )
+    expect(vi.mocked(uploadFormData).mock.calls[0][0].url).toContain('/api/v1/import-sessions/upload-zip')
   })
 
   it('creates a GitHub preview after the existing debounce', async () => {
-    const { dependencies, requestMock } = createDependencies()
-    const { result } = renderHook(() => useImportController(dependencies))
+    const { dependencies, wrapper } = createTestContext()
+    const { result } = renderHook(() => useImportController(dependencies), { wrapper })
 
     act(() => {
       result.current.setImportMode('github')
@@ -110,13 +107,15 @@ describe('useImportController automatic previews', () => {
     })
 
     await waitFor(
-      () => {
-        expect(requestMock).toHaveBeenCalledWith(
-          '/api/v1/import-sessions/github',
-          expect.objectContaining({ method: 'POST' }),
-        )
-      },
+      () => expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/import-sessions/github'),
+        expect.objectContaining({ method: 'POST' }),
+      ),
       { timeout: 2_000 },
     )
   })
 })
+
+function jsonResponse(data: unknown) {
+  return { ok: true, status: 200, json: async () => data } as Response
+}
