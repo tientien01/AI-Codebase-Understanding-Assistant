@@ -89,7 +89,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - The synthetic full/incremental comparison fixture matrix is verified, but no production parser/resolver/graph pipeline fixture has yet populated and passed the canonical equivalence snapshot.
 - Python has one canonical file-local adapter/IR authority, typed import/call references, reference-derived graph candidates and tested compatibility projections. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates, global canonical graph composition and production pipeline composition remain incomplete.
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
-- Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
+- Frontend coverage now includes 23 canonical route/application tests plus four timeout/import-preview tests; no MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
 - EVA-001 adds a versioned deterministic retrieval dataset and keyword/semantic-fixture/hybrid comparison, but no claim-level support benchmark, real embedding/provider run, accepted quality/latency threshold, answer judge or load qualification.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
@@ -103,8 +103,11 @@ Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, vir
 
 | Command | Result |
 | --- | --- |
-| `npm.cmd run test` | Passed: 4 tests across 2 files |
+| `npm.cmd run test` | Passed: 27 tests across 4 files |
 | `npm.cmd run lint` | Passed with 0 errors |
-| `npm.cmd run build` | Passed |
+| `npx.cmd tsc -b` | Passed |
+| `npm.cmd run build` | Passed from a clean environment-free worktree: 92 modules |
 
 `FND-005` added a minimal Vitest/jsdom/Testing Library harness, preserved the abort error cause in `src/api/client.ts`, and moved the three automatic-preview effects after their called declarations in `src/hooks/useImportController.ts`. Targeted tests cover the timeout cause and folder/ZIP/GitHub automatic previews. Broader frontend behavior and E2E coverage remain future UI work.
+
+`UI-001` adds deterministic canonical route parsing/building plus application tests for root redirect, direct source/line and owned-evidence restoration, URL-owned search state, missing/unsafe recovery, and browser history. A clean Vite preview returned the canonical source deep link with HTTP 200. MSW API contracts, accessibility automation and Playwright flows remain future Phase 6 gates.

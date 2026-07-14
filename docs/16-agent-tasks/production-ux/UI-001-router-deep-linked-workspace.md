@@ -1,7 +1,7 @@
 ---
 id: UI-001
 title: Add React Router and a reloadable deep-linked workspace
-status: in_progress
+status: completed
 priority: P0
 phase: 6
 owner: project-maintainer
@@ -164,3 +164,7 @@ Remove the router provider, route helpers/tests/recovery UI, restore the previou
 ## Documentation and evidence updates
 
 Update the source map, frontend test inventory, Phase 6 plan, project status, this task, and `docs/18-production-evidence/frontend-navigation-report.md` with observed results and explicit remaining UI-002 through UI-005 gaps.
+
+## Completion evidence
+
+Verified on 2026-07-14 with Node 24.14.0 and npm 11.9.0. The clean lock-stability gate preserved SHA-256 `6502B2385441EC553A52F41D2C37E91F7E782BDC77A7EB91290F457E7DBA5D09`; 23 targeted routing/application tests and all 27 frontend tests passed; lint and TypeScript passed; a clean environment-free Vite build transformed 92 modules; and a canonical source deep link returned the SPA shell with HTTP 200. Bundle and compatibility details are recorded in `docs/18-production-evidence/frontend-navigation-report.md`.

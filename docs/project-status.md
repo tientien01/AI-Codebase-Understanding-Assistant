@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 5 bounded assistant and Phase 4 deterministic evaluation foundations are verified; composition and release qualification remain open |
-| Active task | None; `EVA-002` deterministic AI/graph/incremental CI smoke gate is verified pending review/merge of stacked PR #27 |
-| Next task candidate | None until EVA-001/EVA-002 review and merge establish the next authorized phase task |
+| Active delivery phase | Phase 6 production workspace UX has a verified UI-001 navigation foundation; UI-002 through UI-005, composition and release qualification remain open |
+| Active task | None; `UI-001` canonical routing/deep-link work is verified pending review/merge |
+| Next task candidate | `UI-002` after UI-001 review/merge and separate owner authorization |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -44,6 +44,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Completed assistant turns now persist atomically as redacted conversation messages, claims, citations, budget summaries and controlled ordered trace events. Local SQLite replay enforces repository ownership, production mapping targets the accepted PostgreSQL schema, and persistence failure prevents a successful response. The AGT-003 privacy/rollback/replay matrix passes.
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
+- React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
 
 ## Blocking gaps
 
@@ -51,15 +52,15 @@ This page is the operational front door. It reports verified progress; it does n
 2. The incremental planner, intelligence artifacts and readiness calculator are verified independently, but production pipeline/manifest composition and real parser/resolver/graph/readiness equivalence are not proven.
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
 4. The deterministic retrieval evaluation dataset/runner exists, but real provider, answer/citation, graph, security, performance, resilience and load thresholds lack accepted release evidence.
-5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
+5. Frontend server-state ownership, complete async/error states, bounded graph UX, accessibility and Playwright E2E coverage remain incomplete; UI-001 now covers canonical navigation and deep-link recovery.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Review and merge the `EVA-001` versioned dataset, baseline runner and evidence in PR #26.
-2. Review and merge stacked EVA-002 PR #27 after EVA-001; select and authorize the next phase task separately.
+1. Review and merge `UI-001` canonical routing, deep-link recovery and frontend navigation evidence.
+2. Select and authorize `UI-002` separately after UI-001 is merged.
 
 ## Status update rule
 
