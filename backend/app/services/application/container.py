@@ -32,6 +32,7 @@ from app.services.retrieval.retrieval_service import RetrievalService
 from app.services.retrieval.search_service import SearchService
 from app.services.scanning.scanner_service import ScannerService
 from app.services.settings.settings_service import SettingsService
+from app.services.security import AccessConfiguration, AccessService, InMemoryAccessStore, ProductionAccessStore
 
 
 def create_repository_store():
@@ -59,6 +60,21 @@ class ApplicationContainer:
 
     def __init__(self) -> None:
         self.store = create_repository_store()
+        access_store = (
+            ProductionAccessStore(self.store.engine)
+            if isinstance(self.store, ProductionRepositoryStore)
+            else InMemoryAccessStore()
+        )
+        self.access_service = AccessService(
+            access_store,
+            AccessConfiguration(
+                bootstrap_credential=settings.operator_bootstrap_credential.get_secret_value(),
+                allowed_origins=frozenset(settings.cors_origins),
+                session_absolute_seconds=settings.session_absolute_seconds,
+                session_idle_seconds=settings.session_idle_seconds,
+                api_token_max_seconds=settings.api_token_max_seconds,
+            ),
+        )
         self.artifact_store = create_artifact_store()
         self.index_job_queue = create_index_job_queue()
         self.job_state_store = (

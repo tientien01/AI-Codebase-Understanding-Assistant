@@ -66,6 +66,11 @@ def test_production_profile_requires_explicit_safe_job_timing() -> None:
         "database_url": "postgresql+psycopg://localhost/app",
         "redis_url": "redis://localhost:6379/0",
         "artifact_root": "storage/artifacts",
+        "operator_bootstrap_credential": "test-bootstrap-credential",
+        "session_absolute_seconds": 43_200,
+        "session_idle_seconds": 1_800,
+        "api_token_max_seconds": 7_776_000,
+        "audit_retention_seconds": 31_536_000,
     }
     with pytest.raises(ValidationError, match="explicit index lease"):
         Settings(**base)

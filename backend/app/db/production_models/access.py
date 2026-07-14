@@ -11,6 +11,7 @@ m = ProductionBase.metadata
 operator_principals = Table(
     "operator_principals", m,
     Column("id", Text, primary_key=True), Column("display_name", Text, nullable=False),
+    Column("password_hash", Text),
     Column("status", Text, nullable=False, server_default=text("'active'")), created_at(), updated_at(),
     prefix_check("id", "principal_", "id_prefix"),
     CheckConstraint("status IN ('active','disabled')", name="status"),

@@ -9,6 +9,7 @@ from app.services.application.use_cases import (
 )
 from app.services.ingestion.import_session_service import ImportSessionService
 from app.services.settings.settings_service import SettingsService
+from app.services.security import AccessService
 
 
 application_container = ApplicationContainer()
@@ -44,3 +45,7 @@ def get_search_use_cases() -> SearchUseCases:
 
 def get_settings_service() -> SettingsService:
     return application_container.settings_service
+
+
+def get_access_service() -> AccessService:
+    return application_container.access_service

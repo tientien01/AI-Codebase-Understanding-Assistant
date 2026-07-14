@@ -14,6 +14,10 @@ from app.schemas import api as compatibility_api
 
 OPENAPI_ARTIFACT = Path(__file__).parents[1] / "docs" / "06-api-and-integrations" / "artifacts" / "openapi-v1.json"
 EXPECTED_SCHEMA_EXPORTS = {
+    "AccessOperationResponse",
+    "ApiTokenCreateRequest",
+    "ApiTokenIssuedResponse",
+    "BootstrapRequest",
     "ChatRequest",
     "ChatResponse",
     "CitationDTO",
@@ -58,6 +62,7 @@ EXPECTED_SCHEMA_EXPORTS = {
     "IndexStatusResponse",
     "IndexWarningDTO",
     "IndexWarningsResponse",
+    "LoginRequest",
     "ModuleDTO",
     "OverviewResponse",
     "ReadingPathItemDTO",
@@ -71,6 +76,8 @@ EXPECTED_SCHEMA_EXPORTS = {
     "SearchAskWithEvidenceRequest",
     "SearchResponse",
     "SearchResultDTO",
+    "SessionIssuedResponse",
+    "SessionResponse",
     "SettingsResponse",
     "SkippedFileDTO",
     "SkippedFilesResponse",
@@ -79,6 +86,7 @@ EXPECTED_SCHEMA_EXPORTS = {
     "SymbolListResponse",
 }
 EXPECTED_ROUTE_MODULE_COUNTS = {
+    "app.api.v1.routes.auth": 6,
     "app.api.v1.routes.assistant": 4,
     "app.api.v1.routes.exploration": 4,
     "app.api.v1.routes.graph": 8,
@@ -90,6 +98,7 @@ EXPECTED_ROUTE_MODULE_COUNTS = {
 }
 EXPECTED_SCHEMA_MODULES = {
     "app.schemas.assistant",
+    "app.schemas.auth",
     "app.schemas.exploration",
     "app.schemas.graph",
     "app.schemas.imports",
@@ -129,14 +138,18 @@ def test_route_inventory_and_auth_dependencies_are_preserved() -> None:
         if f"{prefix}{route.path}".startswith("/api/v1")
     ]
 
-    assert len(registered_routes) == 43
-    assert len(versioned_routes) == 42
+    assert len(registered_routes) == 49
+    assert len(versioned_routes) == 48
     assert {
         f"{prefix}{route.path}"
         for prefix, route in registered_routes
         if not f"{prefix}{route.path}".startswith("/api/v1")
     } == {"/health"}
-    for route in versioned_routes:
+    public_auth_paths = {"/api/v1/auth/bootstrap", "/api/v1/auth/login"}
+    for prefix, route in registered_routes:
+        full_path = f"{prefix}{route.path}"
+        if not full_path.startswith("/api/v1") or full_path in public_auth_paths:
+            continue
         assert any(dependency.call is require_api_auth for dependency in route.dependant.dependencies)
 
 
@@ -149,7 +162,7 @@ def test_openapi_operation_ids_are_present_and_unique() -> None:
         if method in {"get", "post", "put", "patch", "delete"}
     ]
 
-    assert len(operation_ids) == 43
+    assert len(operation_ids) == 49
     assert len(operation_ids) == len(set(operation_ids))
 
 

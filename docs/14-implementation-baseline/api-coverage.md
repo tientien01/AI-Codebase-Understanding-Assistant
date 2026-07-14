@@ -7,11 +7,12 @@ Verified: 2026-07-14
 
 ## Surface summary
 
-The application currently declares 43 HTTP handlers: one public `/health` handler and 42 handlers under `/api/v1`. Import-session, repository, and settings routers use the optional API-token dependency. When `api_auth_token` is blank, authorization is bypassed; otherwise Bearer or `X-API-Key` must equal the configured token.
+The application currently declares 49 HTTP handlers: one public `/health` handler and 48 handlers under `/api/v1`. Bootstrap and login are the only public versioned endpoints. The other 46 handlers resolve an authenticated principal; production accepts strict browser sessions or named Bearer tokens, while the optional blank/shared-token bypass remains local/test compatibility only.
 
 | Group | Current handlers | Coverage |
 | --- | ---: | --- |
 | Health | 1 | Process-level `GET /health`; no dependency readiness split |
+| Operator access | 6 | One-time bootstrap, login/logout/session and named token create/revoke |
 | Import sessions | 6 | ZIP/folder/Git create, preview, confirm, cancel |
 | Repository management/import compatibility | 5 | list/delete/bulk-delete plus direct ZIP/folder upload |
 | Indexing and job inspection/control | 10 | start, status, jobs, pause/resume/cancel, warnings/skipped/failed, staleness |
@@ -26,6 +27,11 @@ The application currently declares 43 HTTP handlers: one public `/health` handle
 All paths below are relative to `/api/v1` unless noted.
 
 ```text
+POST   /auth/bootstrap|login|logout
+GET    /auth/session
+POST   /auth/tokens
+DELETE /auth/tokens/{token_id}
+
 POST   /import-sessions/upload-zip
 POST   /import-sessions/upload-folder
 POST   /import-sessions/github
@@ -72,11 +78,11 @@ GET    /health  # unversioned
 - No settings mutation/provider test flow on the current frontend production path.
 - No cursor pagination for large repository/symbol/search/job collections.
 - No idempotency-key contract for import/index/delete operations.
-- Optional shared token is not a complete identity, ownership, authorization, or audit design.
+- Frontend login/session UX, rate limiting, TLS/container exposure and automated audit-retention execution remain future gates.
 - OpenAPI is checked into a deterministic artifact and drift-tested against the backend; generated frontend types remain pending a frontend API-contract task.
 
 ## Domain ownership
 
-The 42 versioned handlers are now owned by eight route modules: import sessions, repository management, indexing, exploration, assistant/evidence, graph/impact, search/files, and settings. Their 68 Pydantic models are owned by eight matching schema modules; `app.schemas.api` retains the previous 63-model compatibility export surface for services that will migrate in later boundary tasks.
+The 48 versioned handlers are owned by nine route modules: operator access, import sessions, repository management, indexing, exploration, assistant/evidence, graph/impact, search/files, and settings. Their 75 Pydantic models are owned by nine matching schema modules; `app.schemas.api` retains a compatibility export surface for services that will migrate in later boundary tasks.
 
 `FND-003` preserved the complete pre-split OpenAPI artifact byte-for-byte. `FND-004` then replaced every versioned route dependency on the broad `codebase_service` facade with one of eight typed dependency providers. The providers return stable domain-specific service instances from one composition root, while `CodebaseService` remains a compatibility adapter for existing direct callers. `UI-003` intentionally regenerated the artifact for additive bounded graph query parameters and response metadata; the drift test passes against that new baseline.
