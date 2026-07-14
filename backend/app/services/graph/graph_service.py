@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO, GraphResponse
+from app.schemas.graph import GraphProjectionRequest
+from app.services.graph.graph_projection_service import GraphProjectionService
 from app.services.graph.graph_schema_service import GraphSchemaService
 from app.services.index_models import RepositoryState
 from app.services.text_utils import node_id, normalize_route
@@ -12,8 +14,8 @@ class GraphService:
     def __init__(self, schema: GraphSchemaService | None = None) -> None:
         self.schema = schema or GraphSchemaService()
 
-    def get_graph(self, repository: RepositoryState) -> GraphResponse:
-        return GraphResponse(nodes=repository.graph_nodes, edges=repository.graph_edges)
+    def get_graph(self, repository: RepositoryState, request: GraphProjectionRequest | None = None) -> GraphResponse:
+        return GraphProjectionService().all(repository, request)
 
     def build_graph(self, repository: RepositoryState) -> None:
         nodes: dict[str, GraphNodeDTO] = {node.id: node for node in repository.graph_nodes}

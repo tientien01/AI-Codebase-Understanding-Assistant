@@ -22,6 +22,7 @@ import { pathForPage } from '../routing/routes'
 import type { AppRoute } from '../routing/routes'
 import type {
   Citation,
+  GraphProjectionInput,
   GraphView,
   Page,
   Repository,
@@ -33,11 +34,21 @@ const workspacePages: Page[] = ['overview', 'code', 'graph', 'api', 'assistant',
 const overviewPages: Page[] = ['overview', 'code', 'graph', 'api', 'impact']
 const graphViews: GraphView[] = ['project-map', 'dependencies', 'api-flow', 'function-flow', 'data-flow']
 const emptyRepositories: Repository[] = []
+const defaultGraphProjection: Omit<GraphProjectionInput, 'indexVersion' | 'rootKeys' | 'maxDepth'> = {
+  nodeTypes: [],
+  edgeTypes: [],
+  direction: 'both',
+  maxNodes: 80,
+  maxEdges: 160,
+  minConfidence: 0,
+  supportLevels: [],
+}
 
 export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   const page = route.status === 'valid' ? route.page : 'projects'
   const [selectedRepositoryId, setSelectedRepositoryId] = useState('')
   const [graphViewFallback, setGraphViewFallback] = useState<GraphView>('project-map')
+  const [graphProjectionControls, setGraphProjectionControls] = useState(defaultGraphProjection)
   const [chatInput, setChatInput] = useState('How does the login flow work?')
   const [searchQueryDraft, setSearchQueryDraft] = useState('login auth token')
   const [impactTargetType, setImpactTargetType] = useState('symbol')
@@ -68,10 +79,16 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   }, [repositories, routeRepositoryId, selectedRepositoryId])
   const usableRepository = isRepositoryUsable(selectedRepository) ? selectedRepository : undefined
   const isWorkspacePage = Boolean(routeRepositoryId && workspacePages.includes(page))
+  const graphProjection: GraphProjectionInput = {
+    ...graphProjectionControls,
+    indexVersion: usableRepository?.current_index_version,
+    rootKeys: route.status === 'valid' && route.page === 'graph' && route.graphRoot ? [route.graphRoot] : [],
+    maxDepth: route.status === 'valid' && route.page === 'graph' && route.graphDepth !== undefined ? route.graphDepth : 2,
+  }
 
   const indexStatusQuery = useIndexStatusQuery(selectedRepository?.id, page === 'indexing')
   const overviewQuery = useOverviewQuery(usableRepository, overviewPages.includes(page))
-  const graphQuery = useGraphQuery(usableRepository, graphView, page === 'graph')
+  const graphQuery = useGraphQuery(usableRepository, graphView, graphProjection, page === 'graph')
   const fileTreeQuery = useFileTreeQuery(usableRepository, page === 'code')
   const defaultFilePath = page === 'code' ? findFirstFile(fileTreeQuery.data ?? [])?.path : undefined
   const selectedFilePath = route.status === 'valid' && route.page === 'code'
@@ -221,6 +238,26 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     }))
   }
 
+  function changeGraphProjection(patch: Partial<GraphProjectionInput>) {
+    const next = { ...graphProjection, ...patch }
+    setGraphProjectionControls({
+      nodeTypes: next.nodeTypes,
+      edgeTypes: next.edgeTypes,
+      direction: next.direction,
+      maxNodes: next.maxNodes,
+      maxEdges: next.maxEdges,
+      minConfidence: next.minConfidence,
+      supportLevels: next.supportLevels,
+    })
+    if (route.status === 'valid' && route.page === 'graph' && route.repositoryId) {
+      navigate(pathForPage('graph', route.repositoryId, {
+        graphView,
+        graphRoot: next.rootKeys[0],
+        graphDepth: next.maxDepth,
+      }), { replace: true })
+    }
+  }
+
   function setSearchQuery(value: string) {
     setSearchQueryDraft(value)
     if (route.status === 'valid' && route.page === 'search' && route.repositoryId) {
@@ -263,6 +300,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     indexStatus: indexStatusQuery.data ?? null,
     graph: graphQuery.data ?? null,
     graphView,
+    graphProjection,
     fileTree: fileTreeQuery.data ?? [],
     selectedFilePath,
     fileContent: fileContentQuery.data ?? null,
@@ -299,6 +337,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     analyzeGraphArea,
     runImpactAnalysis,
     changeGraphView,
+    changeGraphProjection,
   }
 }
 

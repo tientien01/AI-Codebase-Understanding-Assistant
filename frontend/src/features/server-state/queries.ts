@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { serverApi } from '../../api/server'
-import type { ChatMessage, GraphView, Repository } from '../../types/api'
+import type { ChatMessage, GraphProjectionInput, GraphView, Repository } from '../../types/api'
 import { queryKeys } from './keys'
 import { indexRefetchInterval, isTerminalJobStatus } from './policy'
 
@@ -43,10 +43,10 @@ export function useOverviewQuery(repository: Repository | undefined, enabled: bo
   })
 }
 
-export function useGraphQuery(repository: Repository | undefined, view: GraphView, enabled: boolean) {
+export function useGraphQuery(repository: Repository | undefined, view: GraphView, projection: GraphProjectionInput, enabled: boolean) {
   return useQuery({
-    queryKey: queryKeys.graph(repository?.id ?? 'unselected', repository?.current_index_version, view),
-    queryFn: ({ signal }) => serverApi.graph(repository!.id, view, signal),
+    queryKey: queryKeys.graph(repository?.id ?? 'unselected', repository?.current_index_version, view, projection),
+    queryFn: ({ signal }) => serverApi.graph(repository!.id, view, projection, signal),
     enabled: Boolean(repository && enabled),
   })
 }

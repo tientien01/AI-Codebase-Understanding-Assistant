@@ -89,6 +89,21 @@ export type ChatMessage = {
   evidenceSufficient?: boolean
 }
 
+export type GraphDirection = 'outgoing' | 'incoming' | 'both'
+
+export type GraphProjectionInput = {
+  indexVersion?: number
+  rootKeys: string[]
+  nodeTypes: string[]
+  edgeTypes: string[]
+  direction: GraphDirection
+  maxDepth: number
+  maxNodes: number
+  maxEdges: number
+  minConfidence: number
+  supportLevels: string[]
+}
+
 export type GraphData = {
   nodes: {
     id: string
@@ -115,6 +130,45 @@ export type GraphData = {
     weight?: number
     metadata?: Record<string, string>
   }[]
+  repository_id?: string
+  index_version?: number
+  view?: string
+  projection?: {
+    index_version?: number
+    root_keys: string[]
+    node_types: string[]
+    edge_types: string[]
+    direction: GraphDirection
+    max_depth: number
+    max_nodes: number
+    max_edges: number
+    min_confidence: number
+    support_levels: string[]
+  }
+  counts?: {
+    available_nodes: number
+    included_nodes: number
+    available_edges: number
+    included_edges: number
+    available_counts_are_estimates: boolean
+  }
+  coverage?: {
+    state: 'ready' | 'limited'
+    measured: Record<string, number>
+    unknown: string[]
+  }
+  truncation?: {
+    truncated: boolean
+    reason?: string | null
+    continuation_token?: string | null
+  }
+  unsupported_hops?: string[]
+  can_expand?: boolean
+  provenance?: {
+    source: string
+    deterministic_order: boolean
+    support_levels: string[]
+  }
 }
 
 export type GraphView = 'project-map' | 'dependencies' | 'api-flow' | 'function-flow' | 'data-flow'

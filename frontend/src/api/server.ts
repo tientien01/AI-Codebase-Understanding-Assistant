@@ -5,6 +5,7 @@ import type {
   FileContent,
   FileTreeNode,
   GraphData,
+  GraphProjectionInput,
   GraphView,
   ImpactResult,
   ImportPreview,
@@ -20,8 +21,8 @@ export const serverApi = {
     requestJson<Overview>(`${API_V1}/repositories/${repositoryId}/overview`, { signal }),
   indexStatus: (repositoryId: string, signal?: AbortSignal) =>
     requestJson<IndexStatus>(`${API_V1}/repositories/${repositoryId}/index/status`, { signal }),
-  graph: (repositoryId: string, view: GraphView, signal?: AbortSignal) =>
-    requestJson<GraphData>(`${API_V1}/repositories/${repositoryId}/graph/${view}`, { signal }),
+  graph: (repositoryId: string, view: GraphView, projection: GraphProjectionInput, signal?: AbortSignal) =>
+    requestJson<GraphData>(`${API_V1}/repositories/${repositoryId}/graph/${view}?${graphProjectionParams(projection)}`, { signal }),
   fileTree: (repositoryId: string, signal?: AbortSignal) =>
     requestJson<FileTreeNode[]>(`${API_V1}/repositories/${repositoryId}/files/tree`, { signal }),
   fileContent: (repositoryId: string, filePath: string, signal?: AbortSignal) =>
@@ -63,6 +64,26 @@ export const serverApi = {
       index_profile: 'balanced',
       duplicate_action: 'import_as_new',
     })),
+}
+
+export function graphProjectionParams(projection: GraphProjectionInput) {
+  const params = new URLSearchParams({
+    direction: projection.direction,
+    max_depth: String(projection.maxDepth),
+    max_nodes: String(projection.maxNodes),
+    max_edges: String(projection.maxEdges),
+    min_confidence: String(projection.minConfidence),
+  })
+  if (projection.indexVersion !== undefined) params.set('index_version', String(projection.indexVersion))
+  for (const root of normalizedValues(projection.rootKeys)) params.append('root_keys', root)
+  for (const nodeType of normalizedValues(projection.nodeTypes)) params.append('node_types', nodeType)
+  for (const edgeType of normalizedValues(projection.edgeTypes)) params.append('edge_types', edgeType)
+  for (const support of normalizedValues(projection.supportLevels)) params.append('support_levels', support)
+  return params.toString()
+}
+
+function normalizedValues(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort()
 }
 
 function jsonRequest(body: unknown): RequestInit {
