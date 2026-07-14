@@ -3,7 +3,7 @@
 Status: Source- and OpenAPI-verified baseline
 Authority: `backend/app/main.py`, registered route decorators, and `../06-api-and-integrations/artifacts/openapi-v1.json`
 Owner: API owner  
-Verified: 2026-07-13
+Verified: 2026-07-14
 
 ## Surface summary
 
@@ -68,7 +68,7 @@ GET    /health  # unversioned
 - No first-class repository index-version, artifact manifest, validation issue, or capability-readiness APIs.
 - No durable job attempt/lease/heartbeat/retry/recovery semantics.
 - No conversation/message/trace CRUD or persistent evaluation-run API.
-- No versioned bounded projection request contract with server-enforced node/edge/coverage budgets.
+- Compatibility graph `GET` projections now validate root/type/direction/depth/confidence/support filters, bind the active integer compatibility version, enforce 220-node/520-edge server maxima and disclose counts/coverage/truncation/provenance. The canonical opaque-version `POST /graph/projections|paths` surface remains unimplemented.
 - No settings mutation/provider test flow on the current frontend production path.
 - No cursor pagination for large repository/symbol/search/job collections.
 - No idempotency-key contract for import/index/delete operations.
@@ -77,6 +77,6 @@ GET    /health  # unversioned
 
 ## Domain ownership
 
-The 42 versioned handlers are now owned by eight route modules: import sessions, repository management, indexing, exploration, assistant/evidence, graph/impact, search/files, and settings. Their 63 existing Pydantic models are owned by eight matching schema modules; `app.schemas.api` remains a compatibility export surface for services that will migrate in later boundary tasks.
+The 42 versioned handlers are now owned by eight route modules: import sessions, repository management, indexing, exploration, assistant/evidence, graph/impact, search/files, and settings. Their 68 Pydantic models are owned by eight matching schema modules; `app.schemas.api` retains the previous 63-model compatibility export surface for services that will migrate in later boundary tasks.
 
-`FND-003` preserved the complete pre-split OpenAPI artifact byte-for-byte. `FND-004` then replaced every versioned route dependency on the broad `codebase_service` facade with one of eight typed dependency providers. The providers return stable domain-specific service instances from one composition root, while `CodebaseService` remains a compatibility adapter for existing direct callers. The OpenAPI artifact remains byte-for-byte unchanged.
+`FND-003` preserved the complete pre-split OpenAPI artifact byte-for-byte. `FND-004` then replaced every versioned route dependency on the broad `codebase_service` facade with one of eight typed dependency providers. The providers return stable domain-specific service instances from one composition root, while `CodebaseService` remains a compatibility adapter for existing direct callers. `UI-003` intentionally regenerated the artifact for additive bounded graph query parameters and response metadata; the drift test passes against that new baseline.

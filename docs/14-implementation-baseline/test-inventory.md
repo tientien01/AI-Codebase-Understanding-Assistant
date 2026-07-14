@@ -7,11 +7,11 @@ Verified: 2026-07-14
 
 ## Backend suite
 
-The repository contains 289 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, 12 bounded workflow/tool tests, 10 sufficiency/citation tests, 6 trace privacy/persistence tests, and 32 versioned evaluation dataset/metric/runner/gate tests. The canonical verified commands are:
+The repository contains 297 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 7 bounded graph projection tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, 12 bounded workflow/tool tests, 10 sufficiency/citation tests, 6 trace privacy/persistence tests, 32 versioned evaluation dataset/metric/runner/gate tests, and 6 API-contract tests. The canonical verified commands are:
 
 ```powershell
-backend\.venv-clean\Scripts\python.exe -m pytest tests -q
-backend\.venv-clean\Scripts\python.exe -m pytest -q
+backend\.venv\Scripts\python.exe -m pytest tests -q
+backend\.venv\Scripts\python.exe -m pytest -q
 ```
 
 With `TEST_POSTGRES_ADMIN_URL` and `TEST_REDIS_URL` pointing to the pinned integration services, the latest locked-environment run passed **132 tests with 1 existing duplicate-ZIP warning and 1 dependency deprecation warning**. PostgreSQL/Redis coverage includes migration, repository, job/version transition, active-job conflict, artifact metadata immutability, ownership, rollback, queue payload, broker outage, concurrent claim, lease heartbeat/fencing, bounded retry, durable cancellation, stale-attempt replacement, worker-loss recovery, validation persistence, and atomic activation/failed-build-preservation gates. Filesystem coverage adds safe logical keys, immutable atomic finalization, exact checksum/size verification, deterministic manifests, corruption rejection, and concurrent idempotent writes.
@@ -61,7 +61,8 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 | `evaluation/` | 32 | versioned bounded dataset/fixture validation, hand-computed retrieval metrics, three baseline methods, reproducible checksums, content-addressed CI smoke policy, identity/integrity rules, deterministic diagnostics and CLI pass/fail export |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
-| `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
+| `test_graph_projection.py` | 7 | server maxima, truncation/count consistency, filter/support/direction/depth traversal, missing roots, deterministic 1,000-node ordering, active-version conflict mapping |
+| `test_api_contract.py` | 6 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership and bounded graph parameters/disclosure fields |
 | `artifacts/test_artifact_store.py` and `test_manifest.py` | 18 | Safe keys, filesystem staging/finalization, immutable retries/conflicts, verified reads, canonical manifest validation and publication |
 | `indexing/test_phase_contracts.py`, `test_phase_pipeline.py`, `test_validation_activation.py`, `test_incremental_planner.py`, and `test_equivalence_service.py` | 38 | Typed phases/checkpoints, deterministic validation/activation, bounded typed affected-set planning, safe full fallback, and exact canonical-family equivalence diagnostics |
 | `migrations/test_migrations.py` | 7 | PostgreSQL 18.4 empty install, drift, constraints, rollback/recovery, and supported SQLite mapping |
@@ -89,7 +90,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - The synthetic full/incremental comparison fixture matrix is verified, but no production parser/resolver/graph pipeline fixture has yet populated and passed the canonical equivalence snapshot.
 - Python has one canonical file-local adapter/IR authority, typed import/call references, reference-derived graph candidates and tested compatibility projections. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates, global canonical graph composition and production pipeline composition remain incomplete.
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
-- Frontend coverage now includes 38 tests across routing/application, API client, import and server-state policy suites; no MSW contract, accessibility, or Playwright suite exists.
+- Frontend coverage now includes 42 tests across routing/application, API client, import, server-state policy and bounded graph component suites; no MSW contract, automated accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
 - EVA-001 adds a versioned deterministic retrieval dataset and keyword/semantic-fixture/hybrid comparison, but no claim-level support benchmark, real embedding/provider run, accepted quality/latency threshold, answer judge or load qualification.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
@@ -103,14 +104,16 @@ Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, vir
 
 | Command | Result |
 | --- | --- |
-| `npm.cmd run test -- src/features/server-state src/App.test.tsx src/api/client.test.ts src/hooks/useImportController.test.tsx` | Passed: 22 tests across 4 files |
-| `npm.cmd run test` | Passed: 38 tests across 5 files |
+| `npm.cmd run test -- src/pages/workspace/GraphPage.test.tsx src/features/server-state/serverState.test.tsx src/App.test.tsx` | Passed: 19 tests across 3 files |
+| `npm.cmd run test` | Passed: 42 tests across 6 files |
 | `npm.cmd run lint` | Passed with 0 errors |
 | `npx.cmd tsc -b` | Passed |
-| `npm.cmd run build` | Passed from a clean environment-free worktree: 131 modules; JS 356.06 kB (109.35 kB gzip), CSS 23.78 kB (5.83 kB gzip) |
+| `npm.cmd run build` | Passed from a clean environment-free worktree: 131 modules; JS 362.30 kB (110.98 kB gzip), CSS 25.18 kB (6.08 kB gzip) |
 
 `FND-005` added a minimal Vitest/jsdom/Testing Library harness, preserved the abort error cause in `src/api/client.ts`, and moved the three automatic-preview effects after their called declarations in `src/hooks/useImportController.ts`. Targeted tests cover the timeout cause and folder/ZIP/GitHub automatic previews. Broader frontend behavior and E2E coverage remain future UI work.
 
 `UI-001` adds deterministic canonical route parsing/building plus application tests for root redirect, direct source/line and owned-evidence restoration, URL-owned search state, missing/unsafe recovery, and browser history. A clean Vite preview returned the canonical source deep link with HTTP 200. MSW API contracts, accessibility automation and Playwright flows remain future Phase 6 gates.
 
 `UI-002` adds deterministic tests for repository/version query keys, cancellation, bounded retry, terminal/hidden polling, async-state classification, same-key cache retention and mutation invalidation. Application/import tests verify QueryClient integration and retry recovery. The exact lock survived `npm ci` unchanged; clean typecheck, lint, targeted/full tests and production build pass.
+
+`UI-003` adds seven service tests and one API-contract test for bounded deterministic graph projections, plus component/query tests proving normalized projection identity, full rendering of the 220-node server maximum, limited-state disclosure, bounded expansion and keyboard-native controls/relation fallback. A clean LF checkout passed 31 targeted and the full 297-test backend collection (268 passed, 29 integration-profile skips); frontend targeted/full/lint/typecheck/build gates also pass.

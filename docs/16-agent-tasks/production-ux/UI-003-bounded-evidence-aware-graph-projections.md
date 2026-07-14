@@ -1,7 +1,7 @@
 ---
 id: UI-003
 title: Add bounded evidence-aware graph projections
-status: in_progress
+status: completed
 priority: P0
 phase: 6
 owner: project-maintainer
@@ -119,3 +119,7 @@ Use the existing project `.venv` and locked frontend environment. Run targeted g
 ## Rollback
 
 Restore legacy graph responses and frontend query signature, then restore the client visualization. No schema, data or dependency rollback is required.
+
+## Completion evidence
+
+Completed locally on 2026-07-14. Detached LF commit `9a49599` passed 31 targeted backend tests and the full 297-test local-profile collection (268 passed, 29 integration-profile skips), plus 19 targeted and all 42 frontend tests, lint, TypeScript and clean production build. The unchanged npm lock, deterministic 1,000-node service projection, full 220-node UI render and bundle observations are recorded in `docs/18-production-evidence/frontend-graph-projection-report.md`.
