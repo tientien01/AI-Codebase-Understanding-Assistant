@@ -36,7 +36,7 @@ export function CodeExplorerPage({
           <div className="file-tabs">
             <span>{fileContent?.file_path ?? 'empty'}</span>
           </div>
-          <pre className="code-block">
+          <pre className="code-block" tabIndex={0} aria-label={fileContent ? `Source content for ${fileContent.file_path}` : 'Source content'}>
             {fileContent ? fileContent.lines.map((line, index) => {
               const lineNumber = index + 1
               return (

@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 6 has verified UI-001 through UI-003; UI-004 local implementation gates pass, but its E2E/accessibility evidence, UI-005, composition and release qualification remain open |
-| Active task | `UI-004` evidence-backed architecture, guided tour, graph exploration and diff-impact UX is authorized and in progress |
-| Next task candidate | Supply the UI-004 Evidence-backed UX E2E/accessibility prerequisites and complete its production evidence |
+| Active delivery phase | Phase 6 has verified UI-001 through UI-003; UI-004 local implementation/browser gates pass and its named CI job is pending, while UI-005, composition and release qualification remain open |
+| Active task | `UI-004` evidence-backed architecture, guided tour, graph exploration and current-impact UX is in final CI qualification |
+| Next task candidate | Authorize `UI-005` separately after the UI-004 named CI gate passes |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -47,7 +47,7 @@ This page is the operational front door. It reports verified progress; it does n
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
 - TanStack Query now owns current frontend repository/workspace reads, mutation results, import previews and scoped chat transcripts. Repository/index-version keys, cancellation, bounded classified retry, terminal/hidden polling, scoped invalidation, cached refresh retention and explicit recovery states pass the UI-002 targeted/full/lint/typecheck/clean-build gates.
 - Graph GET views now enforce deterministic server-side filters, depth and 220-node/520-edge maxima, disclose counts/coverage/truncation/unresolved roots/provenance, and reject stale compatibility versions. The UI renders the complete returned projection with limited-state, bounded expansion and accessible relation-list alternatives; UI-003 clean backend/frontend gates pass.
-- UI-004 now renders the complete bounded projection as a connected architecture-layer Graph Explorer with focus, zoom, minimap and contextual support/impact inspection. Overview supplies deterministic signal-backed reading tours, and Impact separates direct, inferred and unknown while declaring historical comparison unavailable; 45 frontend tests, lint, TypeScript and clean build pass, while E2E/accessibility evidence remains open.
+- UI-004 renders the complete bounded projection as a connected architecture-layer Graph Explorer with focus, zoom, minimap and contextual support/impact inspection. Overview supplies deterministic signal-backed reading tours, and Impact separates direct, inferred and unknown while declaring historical comparison unavailable. In addition to 45 Vitest tests, six deterministic Chromium tests pass locally with axe serious/critical = 0, reduced-motion coverage and complete 12/80/220-node observations; the named CI gate is pending.
 
 ## Blocking gaps
 
@@ -55,15 +55,15 @@ This page is the operational front door. It reports verified progress; it does n
 2. The incremental planner, intelligence artifacts and readiness calculator are verified independently, but production pipeline/manifest composition and real parser/resolver/graph/readiness equivalence are not proven.
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
 4. The deterministic retrieval evaluation dataset/runner exists, but real provider, answer/citation, graph, security, performance, resilience and load thresholds lack accepted release evidence.
-5. UI-004 architecture/tour/current-impact foundations are implemented locally, but historical diff, canonical opaque-version graph POST APIs, automated accessibility, Playwright Evidence-backed UX E2E and representative browser performance evidence remain incomplete; later UI-005 surfaces are also open.
+5. UI-004 architecture/tour/current-impact browser evidence exists locally, but its named CI gate is pending. Historical diff and canonical opaque-version graph POST APIs need separate accepted read models; accepted performance budgets and later UI-005 surfaces also remain open.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Add the missing approved Playwright/accessibility fixture and run the UI-004 Evidence-backed UX E2E gate.
-2. Complete UI-004 only after those gates pass; authorize `UI-005` separately afterward.
+1. Run the named UI-004 Playwright/accessibility job on the follow-up pull request and record its passing CI evidence.
+2. Complete UI-004 after that named gate passes; authorize `UI-005` separately afterward.
 
 ## Status update rule
 
