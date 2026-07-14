@@ -33,6 +33,14 @@ class ArchiveService:
                 relative_path = self.safe_zip_member_path(member, target_root, skipped_records, security_records)
                 if member.is_dir() or relative_path is None:
                     continue
+                if member.file_size > max_file_bytes:
+                    self.record_skipped(
+                        skipped_records,
+                        relative_path.as_posix(),
+                        "file_too_large",
+                        f"max {max_file_bytes} bytes",
+                    )
+                    continue
                 if relative_path.suffix.lower() in self.nested_archive_extensions:
                     self.record_skipped(skipped_records, relative_path.as_posix(), "nested_archive", relative_path.suffix.lower())
                     continue
@@ -71,7 +79,9 @@ class ArchiveService:
                 raise DomainError("DUPLICATE_ARCHIVE_PATH", "Zip archive contains duplicate paths after normalization.", 400)
             if member.is_dir():
                 continue
-            quota.add_file(member.file_size)
+            # Archive-wide entry and expanded-size limits remain fail-closed, while
+            # an individual oversized source file is skipped before extraction.
+            quota.add_file(member.file_size, enforce_file_size=False)
             if member.file_size > 0 and (
                 member.compress_size <= 0
                 or member.file_size / member.compress_size > settings.max_archive_compression_ratio

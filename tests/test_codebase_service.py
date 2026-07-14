@@ -350,6 +350,26 @@ def test_upload_zip_reports_nested_archive_as_skipped() -> None:
     assert any(item.reason == "nested_archive" for item in preview.ignore_summary)
 
 
+def test_upload_zip_reports_declared_oversized_source_as_skipped(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "max_file_size_mb", 1)
+    service = CodebaseService()
+    large_member = zipfile.ZipInfo("project/generated.py")
+    large_member.compress_type = zipfile.ZIP_STORED
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(large_member, b"x" * (1024 * 1024 + 1))
+        archive.writestr("project/app.py", "print('ready')\n")
+
+    session = asyncio.run(
+        service.create_zip_import_session(UploadFile(BytesIO(buffer.getvalue()), filename="large-source.zip"), "large-source-test")
+    )
+    preview = service.get_import_preview(session.import_session_id)
+
+    assert preview.status == "preview_ready"
+    assert preview.file_statistics.supported_files == 1
+    assert any(item.reason == "file_too_large" for item in preview.ignore_summary)
+
+
 def test_reindex_marks_existing_evidence_as_stale() -> None:
     service = CodebaseService()
     created = import_fixture_folder(service, "fixture-stale-evidence-test")

@@ -106,7 +106,7 @@ def test_archive_rejects_case_and_unicode_path_collisions(
     assert caught.value.code == "DUPLICATE_ARCHIVE_PATH"
 
 
-def test_archive_enforces_depth_entry_size_and_ratio_quotas(
+def test_archive_enforces_depth_entry_and_ratio_quotas(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     isolated_import_roots: Path,
@@ -123,14 +123,39 @@ def test_archive_enforces_depth_entry_size_and_ratio_quotas(
     assert entries.value.code == "TOO_MANY_FILES"
 
     monkeypatch.setattr(settings, "max_zip_entries", 20)
-    with pytest.raises(DomainError) as file_size:
-        _extract(_zip_bytes([("large.py", b"x" * (1024 * 1024 + 1))]), tmp_path)
-    assert file_size.value.code == "IMPORT_FILE_TOO_LARGE"
-
     monkeypatch.setattr(settings, "max_archive_compression_ratio", 2)
     with pytest.raises(DomainError) as ratio:
         _extract(_zip_bytes([("compressed.py", b"x" * 10_000)]), tmp_path)
     assert ratio.value.code == "ZIP_BOMB_RISK"
+
+
+def test_archive_skips_declared_oversized_source_file(
+    tmp_path: Path,
+    isolated_import_roots: Path,
+) -> None:
+    large_member = zipfile.ZipInfo("project/large.py")
+    large_member.compress_type = zipfile.ZIP_STORED
+    archive_path = tmp_path / "source.zip"
+    archive_path.write_bytes(
+        _zip_bytes([
+            (large_member, b"x" * (1024 * 1024 + 1)),
+            ("project/small.py", b"print('ready')"),
+        ])
+    )
+    skipped_records: list[dict[str, str | None]] = []
+
+    extracted = ArchiveService().safe_extract_zip(archive_path, tmp_path / "source", skipped_records)
+
+    assert extracted == 1
+    assert not (tmp_path / "source" / "project" / "large.py").exists()
+    assert (tmp_path / "source" / "project" / "small.py").is_file()
+    assert skipped_records == [
+        {
+            "file_path": "project/large.py",
+            "reason": "file_too_large",
+            "matched_pattern": "max 1048576 bytes",
+        }
+    ]
 
 
 def test_archive_counts_actual_streamed_bytes(
