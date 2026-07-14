@@ -55,6 +55,7 @@
 }
 
 .nav-list button,
+.nav-list a,
 .back-link {
   display: flex;
   align-items: center;
@@ -67,10 +68,13 @@
   color: #c6d0df;
   font-size: 15px;
   text-align: left;
+  text-decoration: none;
 }
 
 .nav-list button.active,
 .nav-list button:hover,
+.nav-list a.active,
+.nav-list a:hover,
 .back-link:hover {
   border-color: #3556ff;
   background: linear-gradient(90deg, rgba(45, 75, 205, 0.46), rgba(45, 75, 205, 0.08));
@@ -91,6 +95,11 @@
 
 .nav-list button.active .nav-mark,
 .nav-list button:hover .nav-mark {
+  color: #fff;
+}
+
+.nav-list a.active .nav-mark,
+.nav-list a:hover .nav-mark {
   color: #fff;
 }
 
@@ -185,6 +194,39 @@
 
 .content {
   padding: 20px 36px 34px;
+}
+
+.topbar a {
+  text-decoration: none;
+}
+
+.route-loading {
+  display: grid;
+  min-height: 40vh;
+  place-items: center;
+  color: #b9c8dd;
+}
+
+.route-recovery {
+  width: min(760px, 100%);
+  margin: 8vh auto 0;
+}
+
+.route-recovery code {
+  overflow-wrap: anywhere;
+  color: #b9c8ff;
+}
+
+.route-recovery-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.route-recovery-actions a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .page-title {

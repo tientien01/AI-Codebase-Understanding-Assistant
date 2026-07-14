@@ -1,6 +1,9 @@
 import type { FormEvent, ReactNode } from 'react'
 import { AssistantPanel } from './components/chat/AssistantChat'
 import { ImportPage, IndexingPage, ProjectsPage } from './pages/management'
+import { RouteRecoveryPage } from './pages/routing'
+import { pathForPage } from './routing/routes'
+import type { ValidAppRoute } from './routing/routes'
 import {
   ApiDetails,
   ApiExplorerPage,
@@ -38,6 +41,7 @@ import type {
 import { canChat } from './utils/repository'
 
 type AppRoutesProps = {
+  route: ValidAppRoute
   page: Page
   repositories: Repository[]
   selectedRepository?: Repository
@@ -122,7 +126,31 @@ export function AppRoutes(props: AppRoutesProps) {
     uploadProgress,
     isPreviewLoading,
     isWorkspacePage,
+    route,
   } = props
+
+  if (route.detail === 'symbol') {
+    return (
+      <RouteRecoveryPage
+        title="Symbol detail is not available yet"
+        description="The symbol identity is preserved in this deep link, but the current API does not expose the bounded symbol-detail read model required to render it safely."
+        requestedPath={route.pathname}
+        actionPath={pathForPage('code', route.repositoryId)}
+        actionLabel="Open Code Explorer"
+      />
+    )
+  }
+  if (route.detail === 'conversation') {
+    return (
+      <RouteRecoveryPage
+        title="Conversation replay is not available yet"
+        description="The conversation identity is preserved, but public owned-history loading is outside UI-001. Start from the current assistant without showing unrelated messages."
+        requestedPath={route.pathname}
+        actionPath={pathForPage('assistant', route.repositoryId)}
+        actionLabel="Open Assistant"
+      />
+    )
+  }
 
   if (page === 'projects') {
     return (
@@ -184,7 +212,7 @@ export function AppRoutes(props: AppRoutesProps) {
   if (page === 'code') {
     return (
       <AssistantWorkspace
-        main={<CodeExplorerPage fileTree={fileTree} selectedFilePath={selectedFilePath} fileContent={fileContent} overview={overview} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} />}
+        main={<CodeExplorerPage fileTree={fileTree} selectedFilePath={selectedFilePath} selectedLine={route.line} fileContent={fileContent} overview={overview} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} />}
         {...props}
       />
     )

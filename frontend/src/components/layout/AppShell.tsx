@@ -1,6 +1,8 @@
+import { Link, NavLink } from 'react-router-dom'
 import { Icon } from '../common/Icon'
 import { PreviewLine, Progress, SideInfo } from '../common/ui'
 import { managementNav, workspaceNav } from '../../config/navigation'
+import { pathForPage } from '../../routing/routes'
 import type { IndexStatus, Page, Repository } from '../../types/api'
 import { isRepositoryUsable } from '../../utils/repository'
 
@@ -8,22 +10,25 @@ export function ManagementShell({
   page,
   repository,
   status,
-  onNavigate,
 }: {
   page: Page
   repository?: Repository
   status: IndexStatus | null
-  onNavigate: (page: Page) => void
 }) {
   return (
     <aside className="sidebar">
       <Brand />
       <nav className="nav-list">
         {managementNav.map((item, index) => (
-          <button key={`${item.label}-${index}`} className={isManagementNavActive(page, item.label) ? 'active' : ''} onClick={() => onNavigate(item.page)}>
+          <NavLink
+            key={`${item.label}-${index}`}
+            aria-current={isManagementNavActive(page, item.label) ? 'page' : undefined}
+            className={() => isManagementNavActive(page, item.label) ? 'active' : ''}
+            to={pathForPage(item.page)}
+          >
             <span className="nav-mark"><Icon name={item.icon} /></span>
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
       <SideInfo title="Current Index Job">
@@ -44,27 +49,28 @@ export function WorkspaceShell({
   page,
   repository,
   status,
-  onNavigate,
-  onBack,
   onReindex,
 }: {
   page: Page
   repository?: Repository
   status: IndexStatus | null
-  onNavigate: (page: Page) => void
-  onBack: () => void
   onReindex: () => void
 }) {
   return (
     <aside className="sidebar">
       <Brand />
-      <button className="back-link" onClick={onBack}>Back to Projects</button>
+      <Link className="back-link" to="/projects">Back to Projects</Link>
       <nav className="nav-list">
         {workspaceNav.map((item) => (
-          <button key={item.page} className={page === item.page ? 'active' : ''} onClick={() => onNavigate(item.page)}>
+          <NavLink
+            key={item.page}
+            aria-current={page === item.page ? 'page' : undefined}
+            className={() => page === item.page ? 'active' : ''}
+            to={repository ? pathForPage(item.page, repository.id) : '/projects'}
+          >
             <span className="nav-mark"><Icon name={item.icon} /></span>
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
       <SideInfo title="Index Status">
@@ -84,15 +90,11 @@ export function TopBar({
   page,
   repository,
   status,
-  onNewProject,
-  onBack,
 }: {
   mode: 'management' | 'workspace'
   page: Page
   repository?: Repository
   status: IndexStatus | null
-  onNewProject: () => void
-  onBack: () => void
 }) {
   return (
     <header className="topbar">
@@ -112,11 +114,11 @@ export function TopBar({
       </label>
       {mode === 'management' ? (
         <>
-          {page !== 'projects' && <button className="secondary topbar-back" onClick={onBack}>Back to Projects</button>}
+          {page !== 'projects' && <Link className="secondary topbar-back" to="/projects">Back to Projects</Link>}
           <button className="ghost-icon" aria-label="Help"><Icon name="help" /></button>
           <button className="ghost-icon" aria-label="Notifications"><Icon name="bell" /></button>
           <div className="avatar">JD<span /></div>
-          <button className="primary new-project" onClick={onNewProject}><Icon name="plus" />New Project</button>
+          <Link className="primary new-project" to="/import"><Icon name="plus" />New Project</Link>
         </>
       ) : (
         <>
