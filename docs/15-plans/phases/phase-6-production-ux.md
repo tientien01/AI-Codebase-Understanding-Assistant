@@ -1,6 +1,6 @@
 # Phase 6 — Production Workspace UX
 
-Status: Approved; UI-001 routing, UI-002 server-state ownership and UI-003 bounded graph projections are verified; UI-004 is in progress, while UI-005 and Phase 6 release evidence remain open
+Status: Approved; UI-001 through UI-004 are verified, while UI-005 and Phase 6 release evidence remain open
 
 ## Outcome
 
@@ -32,4 +32,4 @@ Frontend CI reports, navigation/state E2E, accessibility report, performance bud
 
 `UI-003` replaces silent client graph slicing with deterministic server-enforced projections, additive count/coverage/truncation/provenance metadata, normalized version-owned query identities, bounded focus/expand controls and a keyboard-native relation-list fallback. The compatibility API still uses active integer version sequences and existing GET routes; canonical opaque-version POST projection/path APIs, architecture/tour/diff UX, later surfaces, accessibility automation, Playwright and accepted release performance budgets remain open.
 
-`UI-004` now has a locally verified implementation foundation: Graph Explorer renders the unchanged bounded projection as a connected architecture-layer canvas with contextual support/impact inspection; Overview exposes deterministic signal-backed tour steps; and Impact separates direct, inferred and unknown while declaring historical comparison unavailable. The named task remains `in_progress` because the task-register Evidence-backed UX E2E, automated accessibility and representative browser performance evidence are not available.
+`UI-004` is verified. It renders the unchanged bounded projection as a connected architecture-layer canvas with contextual support/impact inspection; Overview exposes deterministic signal-backed tour steps; and Impact separates direct, inferred and unknown while declaring historical comparison unavailable. Six deterministic Chromium journeys verify Architecture-to-source, Graph focus/relation/reduced-motion, current Impact disclosure, zero serious/critical axe findings and complete 12/80/220-node observations. The named GitHub Actions job passes; these observations are not an accepted Phase 6 performance budget.

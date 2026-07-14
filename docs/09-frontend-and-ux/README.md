@@ -19,6 +19,8 @@ Learn from Understand-Anything without replacing the designed workspace: use arc
 
 The static reconstruction under `references/ai-codebase-ui-reference/` records the supplied visual direction for workspace density, hierarchy, dark-theme tokens and page composition. Its screenshots are visual references and its HTML/CSS are structural examples only; accepted interaction/page contracts and current typed React boundaries remain authoritative. `assets/concepts/ui-004-graph-explorer.png` captures the UI-004 graph direction.
 
+UI-004 browser qualification lives under `frontend/e2e/`: deterministic owned fixtures exercise the architecture tour into source, complete graph focus/relations with reduced motion, and honest current-impact disclosure. Axe serious/critical checks and 12/80/220-node Chromium observations are part of the named CI gate; they do not create a Phase 6 release-performance threshold.
+
 ## Quality
 
 Keyboard navigation, color contrast, focus management, accessible status messages, virtualization for large lists/code, performance budgets, error boundaries, and critical Playwright flows are release requirements.

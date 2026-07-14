@@ -1,6 +1,6 @@
 # UI-004 Architecture, Tour, Graph, and Impact Evidence
 
-Status: Local implementation gates verified; Evidence-backed UX E2E and accessibility automation pending
+Status: Verified
 
 Task: `UI-004`
 
@@ -17,20 +17,23 @@ Verified: 2026-07-14
 - Impact presents current results as direct, inferred and unknown; missing relations remain visible and historical comparison is explicitly unavailable because the compatibility API has no version snapshots.
 - The supplied screenshots and HTML/CSS were preserved as visual references. The generated UI-004 concept is stored at `docs/09-frontend-and-ux/references/ai-codebase-ui-reference/assets/concepts/ui-004-graph-explorer.png`.
 
-No API, database, graph fact, dependency, lock, indexing, retrieval, storage or historical-version behavior changed.
+No API, database, graph fact, indexing, retrieval, storage or historical-version behavior changed. The locked frontend test toolchain adds `@playwright/test@1.61.1` and `@axe-core/playwright@4.12.1` only.
 
 ## Verification results
 
 | Gate | Observed result |
 | --- | --- |
-| Clean dependency install | `npm.cmd ci` added 234 locked packages successfully |
+| Clean dependency install | `npm.cmd ci` added 239 locked packages successfully |
 | Targeted frontend | 14 passed across `GraphPage`, UI-004 workspace and application routing suites |
 | Full frontend | 45 passed across 7 files |
 | Lint | Passed with zero errors or warnings |
 | TypeScript | `npx.cmd tsc -b --pretty false` passed |
 | Production build | Passed; 131 transformed modules |
-| Lock stability | `frontend/package-lock.json` unchanged |
-| Diff hygiene | `git diff --check -- frontend docs` passed |
+| Browser E2E | 6 passed: architecture/tour/source, graph focus/relation fallback/reduced motion, current impact disclosure, and three graph-size observations |
+| Accessibility | axe WCAG 2 A/AA and 2.1 A/AA: zero serious or critical violations on Architecture/Code, Graph and Impact journeys |
+| Lock review | Intentional exact additions only: Playwright 1.61.1 and axe-playwright 4.12.1 |
+| Diff hygiene | `git diff --check -- frontend docs` passed locally |
+| Named CI gate | `Frontend UI-004 E2E and accessibility` passed in 44 seconds for commit `5ef247d` ([GitHub Actions evidence](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29324767805/job/87058335963)) |
 
 ## Graph and bundle observations
 
@@ -38,17 +41,20 @@ The existing maximum-projection component fixture still renders all 220 returned
 
 | Asset | UI-003 | UI-004 | Delta |
 | --- | ---: | ---: | ---: |
-| JS | 362.30 kB / 110.98 kB gzip | 374.22 kB / 114.34 kB gzip | +11.92 kB / +3.36 kB gzip |
+| JS | 362.30 kB / 110.98 kB gzip | 374.30 kB / 114.36 kB gzip | +12.00 kB / +3.38 kB gzip |
 | CSS | 25.18 kB / 6.08 kB gzip | 36.15 kB / 8.59 kB gzip | +10.97 kB / +2.51 kB gzip |
 | Transformed modules | 131 | 131 | 0 |
 
-No accepted Phase 6 bundle threshold exists, so no release pass/fail is inferred from these values.
+The deterministic Chromium observations after a clean install were:
 
-## Remaining mandatory evidence
+| Projection | Returned graph | Ready | Navigation | DOM elements |
+| --- | ---: | ---: | ---: | ---: |
+| Small | 12 nodes / 11 edges | 283 ms | 165 ms | 375 |
+| Medium | 80 nodes / 79 edges | 321 ms | 172 ms | 1,055 |
+| Large | 220 nodes / 219 edges | 372 ms | 169 ms | 2,315 |
 
-- The task-register Evidence-backed UX E2E flow has no Playwright harness or approved fixture.
-- Automated accessibility, focus restoration, contrast and reduced-motion browser checks remain absent.
-- Representative Small/Medium/Large browser render, interaction, long-task and memory budgets remain unmeasured.
-- Historical version diff, opaque-version graph POST APIs and validated evidence IDs for architecture/tour steps need separately accepted API/read models.
+Every returned node and edge was present before the observation completed. These are repeatable qualification observations, not an accepted product latency or memory budget. No accepted Phase 6 bundle/browser threshold exists, so no release pass/fail is inferred from these values.
 
-UI-004 remains `in_progress`; these missing gates are not replaced by the passing component/build checks.
+## Remaining product boundaries
+
+Historical version diff, opaque-version graph POST APIs and validated evidence IDs for architecture/tour steps still need separately accepted API/read models; they are disclosed product limits, not fabricated by UI-004. Phase 6 release qualification and UI-005 remain separate work. They do not block the completed UI-004 scope.

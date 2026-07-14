@@ -36,6 +36,7 @@
 | Frontend API/state | `frontend/src/api/`, `frontend/src/features/server-state/`, `frontend/src/hooks/`, `frontend/src/components/common/AsyncState.tsx` |
 | Frontend canonical routing and recovery | `frontend/src/routing/routes.ts`, `frontend/src/App.tsx`, `frontend/src/pages/routing/` |
 | Frontend surfaces | `frontend/src/pages/`, `frontend/src/components/` |
+| Frontend UI-004 browser qualification | `frontend/e2e/`, `frontend/playwright.config.ts`; named job in `.github/workflows/ci.yml` |
 | Tests/fixture | `tests/` |
 
 The versioned API routes resolve domain-specific application boundaries from one
@@ -71,3 +72,5 @@ TanStack Query now owns repository/workspace reads, import previews, mutation re
 The compatibility graph API now resolves one active repository version and applies deterministic server-side view/root/type/direction/depth/confidence/support filters before fixed 220-node/520-edge maxima. Additive responses disclose available/included counts, measured coverage, truncation reason, unresolved roots, expansion availability and current DTO provenance. The frontend includes normalized projection inputs in version-owned query keys, renders every returned node/edge, and provides complete/limited disclosure plus a keyboard-native relation list. Canonical opaque-version POST projection/path APIs and graph storage composition remain later boundaries.
 
 UI-004 now presents that unchanged bounded projection through a deterministic architecture-layer canvas with SVG direction, selected-neighborhood focus, zoom/fit controls, a minimap summary, contextual relation/support/impact inspection and the complete UI-003 relation-list fallback. Overview derives a guided reading tour only from current module and important-file signals. Impact groups current compatibility results into direct, inferred and unknown and explicitly reports that historical comparison is unavailable. No new graph fact, API field, dependency or historical snapshot is synthesized by the client.
+
+The UI-004 browser harness intercepts only owned API routes with deterministic fixtures and verifies Architecture-to-source, Graph focus/relation/reduced-motion and Impact disclosure journeys in Chromium. It also applies axe serious/critical checks and records complete Small/Medium/Large returned-projection observations; these observations do not establish an accepted release performance budget.
