@@ -167,6 +167,39 @@ textarea {
   height: 16px;
 }
 
+.async-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #30415f;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #101a2a;
+}
+
+.async-state p {
+  margin: 4px 0 0;
+}
+
+.async-state.blocking {
+  min-height: 140px;
+}
+
+.async-state-error_retryable,
+.async-state-error_terminal,
+.async-state-permission_denied {
+  border-color: #6d3a42;
+  background: #24151b;
+}
+
+.async-state-refreshing,
+.async-state-stale {
+  border-color: #4c5f9f;
+  background: #111b38;
+}
+
 .wide {
   width: 100%;
 }

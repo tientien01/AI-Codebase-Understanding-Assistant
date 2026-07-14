@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 6 production workspace UX has a verified UI-001 navigation foundation; UI-002 through UI-005, composition and release qualification remain open |
-| Active task | None; `UI-001` canonical routing/deep-link work is verified pending review/merge |
-| Next task candidate | `UI-002` after UI-001 review/merge and separate owner authorization |
+| Active delivery phase | Phase 6 production workspace UX has verified UI-001 navigation and UI-002 server-state foundations; UI-003 through UI-005, composition and release qualification remain open |
+| Active task | None; `UI-002` server-state ownership work is verified pending review/merge |
+| Next task candidate | `UI-003` after UI-002 review/merge and separate owner authorization |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -45,6 +45,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
+- TanStack Query now owns current frontend repository/workspace reads, mutation results, import previews and scoped chat transcripts. Repository/index-version keys, cancellation, bounded classified retry, terminal/hidden polling, scoped invalidation, cached refresh retention and explicit recovery states pass the UI-002 targeted/full/lint/typecheck/clean-build gates.
 
 ## Blocking gaps
 
@@ -52,15 +53,15 @@ This page is the operational front door. It reports verified progress; it does n
 2. The incremental planner, intelligence artifacts and readiness calculator are verified independently, but production pipeline/manifest composition and real parser/resolver/graph/readiness equivalence are not proven.
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
 4. The deterministic retrieval evaluation dataset/runner exists, but real provider, answer/citation, graph, security, performance, resilience and load thresholds lack accepted release evidence.
-5. Frontend server-state ownership, complete async/error states, bounded graph UX, accessibility and Playwright E2E coverage remain incomplete; UI-001 now covers canonical navigation and deep-link recovery.
+5. Frontend bounded graph UX, later production surfaces, accessibility and Playwright E2E coverage remain incomplete; UI-001 covers canonical navigation/deep-link recovery and UI-002 covers current server-state ownership and applicable async/error states.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Review and merge `UI-001` canonical routing, deep-link recovery and frontend navigation evidence.
-2. Select and authorize `UI-002` separately after UI-001 is merged.
+1. Review and merge `UI-002` server-state ownership and frontend query evidence.
+2. Select and authorize `UI-003` separately after UI-002 is merged.
 
 ## Status update rule
 

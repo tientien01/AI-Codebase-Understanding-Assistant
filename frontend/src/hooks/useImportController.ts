@@ -1,67 +1,84 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { API_V1, safeErrorMessage } from '../api/client'
+import { serverApi } from '../api/server'
 import { uploadFormData } from '../api/upload'
-import type { ImportMode, ImportPreview, Page } from '../types/api'
+import { toAsyncViewState, toMutationAsyncViewState, useImportPreviewQuery } from '../features/server-state'
+import { queryKeys } from '../features/server-state/keys'
+import type { ImportMode, Page } from '../types/api'
 
 type ImportControllerDeps = {
-  request: <T>(url: string, options?: RequestInit) => Promise<T>
-  apiV1: string
-  loadRepositories: () => Promise<void>
-  loadIndexStatus: (repositoryId: string) => Promise<void>
   setSelectedRepositoryId: (repositoryId: string) => void
   setPage: (page: Page) => void
   setApiError: (message: string) => void
 }
 
-export function useImportController({
-  request,
-  apiV1,
-  loadRepositories,
-  loadIndexStatus,
-  setSelectedRepositoryId,
-  setPage,
-  setApiError,
-}: ImportControllerDeps) {
+export function useImportController({ setSelectedRepositoryId, setPage, setApiError }: ImportControllerDeps) {
+  const queryClient = useQueryClient()
   const [projectName, setProjectName] = useState('fastapi-react-sample')
   const [githubUrl, setGithubUrlState] = useState('')
   const [importMode, setImportMode] = useState<ImportMode>('folder')
   const [folderFiles, setFolderFiles] = useState<File[]>([])
   const [zipFile, setZipFile] = useState<File | null>(null)
   const [importSessionId, setImportSessionId] = useState('')
-  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const lastPreviewKey = useRef('')
 
+  const previewQuery = useImportPreviewQuery(importSessionId)
+  const githubSession = useMutation({
+    mutationFn: ({ url, name }: { url: string; name?: string }) => serverApi.createGithubImport(url, name),
+  })
+  const uploadSession = useMutation({
+    mutationFn: ({ url, formData }: { url: string; formData: FormData }) => uploadFormData<{ import_session_id: string }>({
+      url,
+      formData,
+      onProgress: setUploadProgress,
+    }),
+  })
+  const confirmSession = useMutation({
+    mutationFn: ({ sessionId, name }: { sessionId: string; name: string }) => serverApi.confirmImport(sessionId, name),
+    onSuccess: async (result) => {
+      setSelectedRepositoryId(result.repository_id)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.repositories }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.status(result.repository_id) }),
+      ])
+    },
+  })
+
+  const activeMutation = confirmSession.isPending || confirmSession.isError
+    ? confirmSession
+    : githubSession.isPending || githubSession.isError
+      ? githubSession
+      : uploadSession
+  const asyncState = importSessionId
+    ? toAsyncViewState(previewQuery, { enabled: true })
+    : toMutationAsyncViewState(activeMutation)
+
   function clearImportPreview() {
+    if (importSessionId) queryClient.removeQueries({ queryKey: queryKeys.importPreview(importSessionId) })
     setImportSessionId('')
-    setImportPreview(null)
     setUploadProgress(0)
-    setIsPreviewLoading(false)
     lastPreviewKey.current = ''
+    githubSession.reset()
+    uploadSession.reset()
+    confirmSession.reset()
   }
 
   function updateGithubUrl(value: string) {
     setGithubUrlState(value)
-    setImportSessionId('')
-    setImportPreview(null)
-    setUploadProgress(0)
+    clearImportPreview()
   }
 
   async function submitImport(event: FormEvent) {
     event.preventDefault()
-    if (importSessionId && importPreview) {
+    if (importSessionId && previewQuery.data) {
       await confirmImportSession(importSessionId)
       return
     }
-    if (importMode === 'github') {
-      await uploadGithubRepository()
-      return
-    }
-    if (importMode === 'zip') {
-      await uploadZipRepository()
-      return
-    }
+    if (importMode === 'github') await uploadGithubRepository()
+    if (importMode === 'zip') await uploadZipRepository()
     if (importMode === 'folder') await uploadFolderRepository()
   }
 
@@ -73,7 +90,7 @@ export function useImportController({
     const formData = new FormData()
     formData.append('file', zipFile)
     formData.append('name', projectName || zipFile.name.replace(/\.zip$/i, ''))
-    await createPreviewFromUpload(`${apiV1}/import-sessions/upload-zip`, formData)
+    await createPreviewFromUpload(`${API_V1}/import-sessions/upload-zip`, formData)
   }
 
   async function uploadFolderRepository() {
@@ -88,7 +105,7 @@ export function useImportController({
       formData.append('relative_paths', uploadFile.webkitRelativePath || file.name)
     }
     formData.append('name', projectName || folderFiles[0].name)
-    await createPreviewFromUpload(`${apiV1}/import-sessions/upload-folder`, formData)
+    await createPreviewFromUpload(`${API_V1}/import-sessions/upload-folder`, formData)
   }
 
   async function uploadGithubRepository() {
@@ -96,61 +113,34 @@ export function useImportController({
       setApiError('Enter a valid public GitHub repository URL.')
       return
     }
-    setIsPreviewLoading(true)
     setUploadProgress(0)
     try {
-      const session = await request<{ import_session_id: string }>(`${apiV1}/import-sessions/github`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: githubUrl.trim(), name: projectName || undefined }),
-      })
-      await loadImportPreview(session.import_session_id)
-    } finally {
-      setIsPreviewLoading(false)
+      setApiError('')
+      const session = await githubSession.mutateAsync({ url: githubUrl.trim(), name: projectName || undefined })
+      setImportSessionId(session.import_session_id)
+    } catch (error) {
+      setApiError(safeErrorMessage(error))
     }
   }
 
   async function createPreviewFromUpload(url: string, formData: FormData) {
-    setIsPreviewLoading(true)
     try {
-      const session = await uploadWithErrorHandling(url, formData)
-      await loadImportPreview(session.import_session_id)
-    } finally {
-      setIsPreviewLoading(false)
+      setApiError('')
+      const session = await uploadSession.mutateAsync({ url, formData })
+      setImportSessionId(session.import_session_id)
+    } catch (error) {
+      setApiError(safeErrorMessage(error))
     }
   }
 
-  async function loadImportPreview(nextImportSessionId: string) {
-    const preview = await request<ImportPreview>(`${apiV1}/import-sessions/${nextImportSessionId}/preview`)
-    setImportSessionId(nextImportSessionId)
-    setImportPreview(preview)
-  }
-
-  async function confirmImportSession(nextImportSessionId: string) {
-    const result = await request<{ repository_id: string }>(`${apiV1}/import-sessions/${nextImportSessionId}/confirm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: projectName, start_indexing: true, index_profile: 'balanced', duplicate_action: 'import_as_new' }),
-    })
-    setSelectedRepositoryId(result.repository_id)
-    setImportSessionId('')
-    setImportPreview(null)
-    await loadRepositories()
-    await loadIndexStatus(result.repository_id)
-    setPage('indexing')
-  }
-
-  async function uploadWithErrorHandling(url: string, formData: FormData) {
+  async function confirmImportSession(sessionId: string) {
     try {
-      return await uploadFormData<{ import_session_id: string }>({
-        url,
-        formData,
-        onProgress: setUploadProgress,
-      })
+      setApiError('')
+      await confirmSession.mutateAsync({ sessionId, name: projectName })
+      clearImportPreview()
+      setPage('indexing')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Upload failed'
-      setApiError(message)
-      throw error
+      setApiError(safeErrorMessage(error))
     }
   }
 
@@ -190,9 +180,10 @@ export function useImportController({
     importMode,
     folderFiles,
     zipFile,
-    importPreview,
+    importPreview: previewQuery.data ?? null,
     uploadProgress,
-    isPreviewLoading,
+    isPreviewLoading: githubSession.isPending || uploadSession.isPending || previewQuery.isFetching,
+    asyncState,
     setProjectName,
     setGithubUrl: updateGithubUrl,
     setImportMode,

@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AppRoutes } from './AppRoutes'
+import { AsyncStateNotice } from './components/common/AsyncState'
 import { ManagementShell, TopBar, WorkspaceShell } from './components/layout/AppShell'
+import { isBlockingAsyncState } from './features/server-state'
 import { useAppController } from './hooks/useAppController'
 import { RouteRecoveryPage } from './pages/routing'
 import { pathForPage, resolveAppRoute } from './routing/routes'
@@ -64,6 +66,9 @@ function App() {
         />
       )
     }
+    if (isBlockingAsyncState(controller.pageState)) {
+      return <AsyncStateNotice state={controller.pageState} onRetry={controller.retryActivePage} />
+    }
     return <AppRoutes {...controller} route={route} />
   })()
 
@@ -93,6 +98,9 @@ function App() {
         />
         {controller.apiError && <div className="error-banner">{controller.apiError}</div>}
         <section className="content">
+          {!isBlockingAsyncState(controller.pageState) && (
+            <AsyncStateNotice state={controller.pageState} onRetry={controller.retryActivePage} />
+          )}
           {routeContent}
         </section>
       </main>
