@@ -7,7 +7,7 @@ Verified: 2026-07-14
 
 ## Backend suite
 
-The repository contains 257 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, 12 bounded workflow/tool tests, 10 sufficiency/citation tests, and 6 trace privacy/persistence tests. The canonical verified commands are:
+The repository contains 276 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, 12 bounded workflow/tool tests, 10 sufficiency/citation tests, 6 trace privacy/persistence tests, and 19 versioned evaluation dataset/metric/runner tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
@@ -40,6 +40,8 @@ The AGT-002 sufficiency/citation gate passed **10 tests**, its assistant/evidenc
 
 The AGT-003 trace-persistence gate passed **6 tests**, its assistant/evidence/retrieval/service regression passed **108 tests**, and the local-profile full suite passed **228 tests with 29 integration-profile tests skipped**. The matrix verifies atomic local writes/rollback, repository-scoped replay, ordered allowlisted events, credential redaction, source/prompt exclusion from trace payloads, non-allowlisted payload rejection, fail-closed ChatService persistence and accepted production-table mapping. PostgreSQL runtime integration remains covered by the declared integration profile and was skipped in this local run; public history, automated retention execution and accepted agent thresholds remain outside this evidence.
 
+The EVA-001 clean-environment gate passed **19 targeted tests**, its evaluation/retrieval/evidence/assistant compatibility regression passed **95 tests**, and the local-profile full suite passed **247 tests with 29 integration-profile tests skipped**. The matrix validates content-addressed dataset/fixture identities, bounded dataset/candidate/file inputs, exact/lexical/semantic/graph/negative/ambiguous cases, source hash/range/path safety, three same-input baselines, hand-computed metric formulas, input-order invariance, frozen run identities, reviewed aggregate regressions, checksums and CLI export. Deterministic semantic observations do not establish real provider quality, production latency/load, answer quality or accepted release thresholds.
+
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
@@ -54,6 +56,7 @@ The AGT-003 trace-persistence gate passed **6 tests**, its assistant/evidence/re
 | `assistant/test_bounded_workflow_tools.py` | 12 | canonical workflow configuration, typed tool interchange, immutable allowlist identity, ownership/version rejection, exact/hybrid routing, budgets, cancellation, deduplication, safe failures and prompt-like input isolation |
 | `assistant/test_sufficiency_citation_repair.py` | 10 | question-specific sufficiency, controlled repair decisions, heuristic refusal, current/selected claim-citation binding, duplicate/scope/stale/cross-owner rejection and provider fail-closed behavior |
 | `assistant/test_trace_persistence.py` | 6 | atomic local persistence/rollback, redaction, allowlist rejection, ordered owned replay, ChatService fail-closed behavior and accepted production trace schema mapping |
+| `evaluation/` | 19 | versioned bounded dataset/fixture validation, path/hash/range/rank failures, hand-computed retrieval metrics, exact/keyword-naive-semantic-hybrid comparison, input-order invariance, reproducible checksums, reviewed aggregates and CLI export |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
@@ -86,13 +89,13 @@ The AGT-003 trace-persistence gate passed **6 tests**, its assistant/evidence/re
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
 - Frontend coverage is limited to four targeted timeout/import-preview tests; no broad component, MSW contract, accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
-- RET-003 adds deterministic validated evidence selection and whole-span context budgeting, but no claim-level support validator, versioned evaluation dataset or accepted quality/latency benchmark comparing keyword, naive vector, and production hybrid workflows.
+- EVA-001 adds a versioned deterministic retrieval dataset and keyword/semantic-fixture/hybrid comparison, but no claim-level support benchmark, real embedding/provider run, accepted quality/latency threshold, answer judge or load qualification.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
 - AGT-003 adds atomic redacted conversation/structured-trace persistence and owned internal replay, but no semantic entailment model/benchmark, public history API, automated retention executor or accepted agent threshold.
 
 ## Collection boundary
 
-Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The AGT-003 local-profile run collected 257 project tests, passed 228 and skipped 29 integration-profile tests; no imported repository test participated.
+Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The EVA-001 clean local-profile run collected 276 project tests, passed 247 and skipped 29 existing integration-profile tests; no imported repository test participated.
 
 ## Frontend gates
 

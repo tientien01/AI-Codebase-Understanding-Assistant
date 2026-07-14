@@ -17,6 +17,7 @@
 | Graph/projections | `backend/app/services/graph/` |
 | Typed retrieval and ranking | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`, `ranking.py`; compatibility facade in `retrieval_service.py` |
 | Validated evidence selection and context budgeting | `backend/app/services/evidence/selection.py`; persistence/citation projection in `evidence_service.py` |
+| Versioned retrieval evaluation | `backend/app/services/evaluation/`; immutable dataset in `evaluation/datasets/retrieval-v1/`; synthetic fixture in `tests/fixtures/retrieval_benchmark_repo/` |
 | Bounded assistant, sufficiency, citation validation and trace contracts | `backend/app/services/chat/workflow_contracts.py`, `tool_registry.py`, `sufficiency.py`, `citation_validation.py`, `trace_persistence.py`; compatibility orchestration/provider boundary in `agent_workflow_service.py`, `chat_service.py`, `llm_client.py` |
 | Impact | `backend/app/services/impact/` |
 | Persistence | `backend/app/db/`, `services/repositories/repository_store.py` |
@@ -51,6 +52,8 @@ Resolved Python reference edges now pass through `graph-candidate/v1` and `norma
 Capability readiness can now be calculated deterministically from declared validated evidence into the accepted five states and manifest-compatible summaries. The calculator is an internal composition boundary; the current local indexer does not yet publish its output into a production manifest/activation transaction.
 
 Retrieval now crosses one immutable request/candidate contract with repository/index ownership, controlled retriever names, stable identities/ranks/reasons/support and a deterministic typed query classifier. Exact, lexical, symbol, endpoint, metadata, graph/context and optional local-semantic adapters feed a content-addressed `ranking-config/v1` and deterministic weighted reciprocal-rank fusion. Ranked candidates are validated against the current source snapshot before deterministic whole-span selection within an inspectable token budget; only selected blocks are persisted and projected as citations. Claim extraction, claim-support validation and evaluation thresholds remain later boundaries.
+
+Retrieval evaluation now validates a content-addressed six-case `evaluation-case/v1` dataset and its inert synthetic source hashes/ranges, then compares exact/keyword, naive semantic top-k and deterministic hybrid methods on identical candidate observations. It exports per-case results, reviewed metric formulas, frozen run identities and semantic/report checksums. Semantic candidates are fixtures rather than provider measurements; numeric release thresholds, answer judging, load and provider-quality evidence remain later gates.
 
 The compatibility assistant now routes through immutable `assistant-config/v1`, typed request/plan/tool input/output/observation/budget contracts and an explicit exact/hybrid allowlist. Eligible direct questions stop after an exact hit; exact misses fall back once and multi-step types use hybrid retrieval directly. Tool-call/time/context budgets, cancellation, equivalent-call deduplication and safe failure diagnostics are enforced before RET-003 context selection. Multi-round repair, claim/citation validation and persistent traces remain later assistant boundaries.
 

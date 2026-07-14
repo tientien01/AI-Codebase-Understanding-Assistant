@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 5: bounded assistant foundation (incremental delivery; Phase 3 composition and Phase 4 evaluation evidence remain open) |
-| Active task | None; `AGT-003` structured trace/conversation persistence is verified pending review/merge |
-| Next task candidate | `EVA-001` versioned evaluation datasets, baselines and runner |
+| Active delivery phase | Phase 5 bounded assistant and Phase 4 deterministic evaluation foundations are verified; composition and release qualification remain open |
+| Active task | None; `EVA-001` deterministic retrieval evaluation foundation is verified pending review/merge |
+| Next task candidate | `EVA-002` CI AI/graph/incremental regression gates, requiring separate authorization |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -42,13 +42,14 @@ This page is the operational front door. It reports verified progress; it does n
 - Assistant routing now uses immutable versioned workflow/tool contracts and an explicit exact/hybrid allowlist. Exact hits avoid hybrid/semantic work, exact misses fall back once, multi-step types route directly to hybrid, and call/time/context/cancellation/deduplication boundaries emit safe observations. The AGT-001 routing/tool matrix passes.
 - Assistant sufficiency now requires question-specific strong support/source/endpoint/graph coverage, permits only one controlled budgeted repair, validates claims against selected current citation IDs/scope and rejects optional provider output without valid declarations. The AGT-002 positive/refusal/repair/citation matrix passes.
 - Completed assistant turns now persist atomically as redacted conversation messages, claims, citations, budget summaries and controlled ordered trace events. Local SQLite replay enforces repository ownership, production mapping targets the accepted PostgreSQL schema, and persistence failure prevents a successful response. The AGT-003 privacy/rollback/replay matrix passes.
+- Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
 
 ## Blocking gaps
 
 1. The production worker is not yet composed over the typed phase/checkpoint/activation boundary.
 2. The incremental planner, intelligence artifacts and readiness calculator are verified independently, but production pipeline/manifest composition and real parser/resolver/graph/readiness equivalence are not proven.
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
-4. Retrieval/evidence evaluation datasets and accepted quality, citation, graph, security, performance, resilience and load thresholds lack complete release evidence.
+4. The deterministic retrieval evaluation dataset/runner exists, but real provider, answer/citation, graph, security, performance, resilience and load thresholds lack accepted release evidence.
 5. Frontend navigation, server state, error states, accessibility, and E2E coverage are incomplete.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
@@ -56,8 +57,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review and merge the `AGT-003` structured trace/conversation persistence evidence.
-2. Authorize `EVA-001` evaluation dataset, baseline and runner work before `EVA-002` agent gates.
+1. Review and merge the `EVA-001` versioned dataset, baseline runner and evidence.
+2. Decide whether to authorize `EVA-002` CI AI/graph/incremental gates; its task file must be created and promoted separately before implementation.
 
 ## Status update rule
 
