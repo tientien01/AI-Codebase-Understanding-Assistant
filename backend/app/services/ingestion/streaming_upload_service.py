@@ -12,7 +12,15 @@ class StreamingUploadService:
     def __init__(self, chunk_size_mb: int | None = None) -> None:
         self.chunk_size_bytes = (chunk_size_mb or settings.upload_chunk_size_mb) * 1024 * 1024
 
-    async def save_upload(self, file: UploadFile, target_path: Path, max_size_bytes: int) -> int:
+    async def save_upload(
+        self,
+        file: UploadFile,
+        target_path: Path,
+        max_size_bytes: int,
+        *,
+        limit_error_code: str = "UPLOAD_TOO_LARGE",
+        limit_error_message: str = "Uploaded file is larger than the configured limit.",
+    ) -> int:
         target_path.parent.mkdir(parents=True, exist_ok=True)
         total_bytes = 0
         try:
@@ -23,7 +31,7 @@ class StreamingUploadService:
                         break
                     total_bytes += len(chunk)
                     if total_bytes > max_size_bytes:
-                        raise DomainError("UPLOAD_TOO_LARGE", "Uploaded file is larger than the configured limit.", 413)
+                        raise DomainError(limit_error_code, limit_error_message, 413)
                     output.write(chunk)
         except Exception:
             target_path.unlink(missing_ok=True)

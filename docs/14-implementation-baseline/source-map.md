@@ -6,7 +6,7 @@
 | API dependency providers | `backend/app/api/dependencies.py` |
 | Schemas | `backend/app/schemas/api.py` |
 | Application composition/use cases | `backend/app/services/application/` |
-| Ingestion | `backend/app/services/ingestion/` |
+| Quota-bound import acquisition | `backend/app/services/ingestion/import_policy.py`, `archive_service.py`, `upload_service.py`, `streaming_upload_service.py`, `import_session_service.py` |
 | Indexing | `backend/app/services/indexing/` |
 | Parsing | `backend/app/services/parsing/` |
 | Deep code analysis | `backend/app/services/code_analysis/` |
@@ -45,6 +45,8 @@ single-process composition root. `backend/app/services/codebase_service.py` rema
 a compatibility adapter for direct callers; versioned routes no longer import it.
 
 Agents use this map for targeted inspection and must not scan ignored dependency/build/runtime storage directories.
+
+Import acquisition now shares one normalized relative-path identity and file/tree quota boundary across ZIP, folder, and public Git inputs. ZIP extraction validates its complete plan before writes and counts streamed bytes; folder uploads reject normalized duplicates and aggregate overflow; public Git uses a canonical GitHub URL/ref policy, isolated configuration, disabled redirects/prompts/hooks/submodules/LFS, shallow timeout-bound execution, post-clone tree validation, and failure cleanup. Container/network namespaces, parser resource isolation, content secret scanning, rate limits, auth/audit, and accepted capacity thresholds remain separate Phase 7 work.
 
 `ParserService` now routes Python through one `PythonAdapter -> IRModule` authority. `CanonicalPythonParser` is the explicit projection into the current mutable `RepositoryState`; `PythonAstParser` remains only as a deprecated import-compatible class name and contains no second AST extractor. Other language parsers still use the compatibility `LanguageParser` boundary and do not yet claim production-v1 IR capability.
 

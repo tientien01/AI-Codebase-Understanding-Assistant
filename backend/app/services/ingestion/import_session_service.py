@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import math
+import os
+import re
 import shutil
+import stat
 import subprocess
 import zipfile
 from pathlib import Path
@@ -26,11 +29,16 @@ from app.schemas.api import (
 from app.services.index_models import FileRecord, ImportSessionRecord, RepositoryState
 from app.services.indexing.indexing_service import IndexingService
 from app.services.ingestion.archive_service import ArchiveService
+from app.services.ingestion.import_policy import ImportQuota, ensure_unique_path, normalized_relative_path
 from app.services.ingestion.streaming_upload_service import StreamingUploadService
 from app.services.ingestion.upload_service import UploadService
 from app.services.repositories.repository_service import RepositoryService
 from app.services.scanning.scanner_service import ScanResult, ScannerService
 from app.services.text_utils import utc_now
+
+
+_GITHUB_OWNER = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?")
+_GITHUB_REPOSITORY = re.compile(r"[A-Za-z0-9_.-]{1,100}")
 
 
 class ImportSessionService:
@@ -97,16 +105,20 @@ class ImportSessionService:
         source_dir.mkdir(parents=True, exist_ok=True)
         zip_path = session_root / "source.zip"
         max_upload_size = settings.max_upload_size_mb * 1024 * 1024
-        await self.streaming_upload.save_upload(file, zip_path, max_upload_size)
-        self._append_activity_log(activity_logs, "upload_saved", "ZIP upload saved to temporary storage.")
-
         skipped_records: list[dict[str, str | None]] = []
         security_records: list[dict[str, str]] = []
         try:
+            await self.streaming_upload.save_upload(file, zip_path, max_upload_size)
+            self._append_activity_log(activity_logs, "upload_saved", "ZIP upload saved to temporary storage.")
             extracted_files = self.archive.safe_extract_zip(zip_path, source_dir, skipped_records, security_records)
         except zipfile.BadZipFile as exc:
+            self._cleanup_session_root(session_root)
             raise DomainError("INVALID_ARCHIVE", "Uploaded file is not a valid zip archive.", 400) from exc
+        except Exception:
+            self._cleanup_session_root(session_root)
+            raise
         if extracted_files == 0:
+            self._cleanup_session_root(session_root)
             raise DomainError("NO_SUPPORTED_FILES", "Archive contains no supported non-secret files.", 400)
         self._append_activity_log(
             activity_logs,
@@ -144,6 +156,8 @@ class ImportSessionService:
             raise DomainError("INVALID_REPOSITORY", "No files were uploaded.", 400)
         if len(files) != len(relative_paths):
             raise DomainError("INVALID_REPOSITORY", "Uploaded files and relative paths do not match.", 400)
+        if len(files) > settings.max_zip_entries:
+            raise DomainError("TOO_MANY_FILES", "Folder upload contains too many files.", 413)
 
         session_id = f"import_{uuid4().hex[:10]}"
         activity_logs: list[dict[str, str | dict[str, str]]] = []
@@ -153,42 +167,53 @@ class ImportSessionService:
             "Folder upload received.",
             submitted_files=len(files),
         )
-        source_dir = settings.upload_storage_dir / "import_sessions" / session_id / "source"
+        session_root = settings.upload_storage_dir / "import_sessions" / session_id
+        source_dir = session_root / "source"
         source_dir.mkdir(parents=True, exist_ok=True)
         saved_files = 0
         skipped_records: list[dict[str, str | None]] = []
         security_records: list[dict[str, str]] = []
-        for upload, relative_path in zip(files, relative_paths, strict=True):
-            safe_path = self.upload.safe_upload_relative_path(
-                relative_path or upload.filename or "",
-                skipped_records,
-                security_records,
-            )
-            if safe_path is None:
-                continue
-            target = (source_dir / safe_path).resolve()
-            if not self.upload.is_relative_to(target, source_dir.resolve()):
-                continue
-            target.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                await self.streaming_upload.save_upload(
+        quota = ImportQuota.configured()
+        seen_paths: set[str] = set()
+        try:
+            for upload, relative_path in zip(files, relative_paths, strict=True):
+                submitted_path = normalized_relative_path(relative_path or upload.filename or "")
+                ensure_unique_path(submitted_path, seen_paths)
+                safe_path = self.upload.safe_upload_relative_path(
+                    submitted_path.as_posix(),
+                    skipped_records,
+                    security_records,
+                )
+                if safe_path is None:
+                    continue
+                target = (source_dir / safe_path).resolve()
+                if not self.upload.is_relative_to(target, source_dir.resolve()):
+                    raise DomainError("UNSAFE_IMPORT_PATH", "Folder upload contains an unsafe path.", 400)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                remaining_bytes = quota.max_total_bytes - quota.total_bytes
+                limit_bytes = min(quota.max_file_bytes, remaining_bytes)
+                if limit_bytes <= 0:
+                    raise DomainError("REPOSITORY_TOO_LARGE", "Folder upload is larger than the configured limit.", 413)
+                total_limited = remaining_bytes < quota.max_file_bytes
+                saved_bytes = await self.streaming_upload.save_upload(
                     upload,
                     target,
-                    settings.max_file_size_mb * 1024 * 1024,
+                    limit_bytes,
+                    limit_error_code="REPOSITORY_TOO_LARGE" if total_limited else "IMPORT_FILE_TOO_LARGE",
+                    limit_error_message=(
+                        "Folder upload is larger than the configured limit."
+                        if total_limited
+                        else "Folder upload contains a file larger than the configured limit."
+                    ),
                 )
-            except DomainError as exc:
-                if exc.code != "UPLOAD_TOO_LARGE":
-                    raise
-                self.archive.record_skipped(
-                    skipped_records,
-                    safe_path.as_posix(),
-                    "file_too_large",
-                    f">{settings.max_file_size_mb}MB",
-                )
-                continue
-            saved_files += 1
+                quota.add_file(saved_bytes)
+                saved_files += 1
+        except Exception:
+            self._cleanup_session_root(session_root)
+            raise
 
         if saved_files == 0:
+            self._cleanup_session_root(session_root)
             raise DomainError("INVALID_REPOSITORY", "No supported non-secret files were uploaded.", 400)
         self._append_activity_log(
             activity_logs,
@@ -220,6 +245,7 @@ class ImportSessionService:
 
     def create_github_import_session(self, url: str, name: str | None, branch: str | None = None) -> ImportSessionCreateResponse:
         clone_url, source_label, suggested_name = self._validate_github_url(url)
+        validated_branch = self._validate_git_ref(branch)
         session_id = f"import_{uuid4().hex[:10]}"
         activity_logs: list[dict[str, str | dict[str, str]]] = []
         self._append_activity_log(
@@ -227,23 +253,27 @@ class ImportSessionService:
             "github_received",
             "GitHub import request received.",
             source_label=source_label,
-            branch=branch or "default",
+            branch=validated_branch or "default",
         )
         session_root = settings.upload_storage_dir / "import_sessions" / session_id
         source_dir = session_root / "source"
         session_root.mkdir(parents=True, exist_ok=True)
         try:
-            self._clone_github_repository(clone_url, source_dir, branch)
+            self._clone_github_repository(clone_url, source_dir, validated_branch)
+            self._remove_git_metadata(source_dir)
+            self._validate_import_tree(source_dir)
         except FileNotFoundError as exc:
+            self._cleanup_session_root(session_root)
             raise DomainError("GIT_NOT_AVAILABLE", "Git executable is not available on this machine.", 500) from exc
         except subprocess.TimeoutExpired as exc:
+            self._cleanup_session_root(session_root)
             raise DomainError("GITHUB_IMPORT_TIMEOUT", "GitHub import timed out before preview could be prepared.", 504) from exc
         except subprocess.CalledProcessError as exc:
+            self._cleanup_session_root(session_root)
             raise DomainError("GITHUB_IMPORT_FAILED", "Could not clone the GitHub repository for preview.", 400) from exc
-
-        git_dir = source_dir / ".git"
-        if git_dir.exists():
-            shutil.rmtree(git_dir)
+        except Exception:
+            self._cleanup_session_root(session_root)
+            raise
         self._append_activity_log(activity_logs, "github_cloned", "GitHub repository cloned for preview.")
 
         session = ImportSessionRecord(
@@ -575,22 +605,163 @@ class ImportSessionService:
 
     def _validate_github_url(self, raw_url: str) -> tuple[str, str, str]:
         parsed = urlparse(raw_url.strip())
-        host = parsed.netloc.lower()
-        if parsed.scheme != "https" or host not in {"github.com", "www.github.com"}:
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise DomainError("INVALID_GITHUB_URL", "Only public HTTPS GitHub repository URLs are supported.", 400) from exc
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname not in {"github.com", "www.github.com"}
+            or parsed.username is not None
+            or parsed.password is not None
+            or port is not None
+            or parsed.query
+            or parsed.fragment
+            or parsed.params
+        ):
             raise DomainError("INVALID_GITHUB_URL", "Only public HTTPS GitHub repository URLs are supported.", 400)
         parts = [part for part in parsed.path.strip("/").split("/") if part]
-        if len(parts) < 2:
+        if len(parts) != 2:
             raise DomainError("INVALID_GITHUB_URL", "GitHub URL must include owner and repository name.", 400)
         owner = parts[0]
         repository = parts[1].removesuffix(".git")
-        if not owner or not repository or any(part in {".", ".."} for part in (owner, repository)):
+        if (
+            not _GITHUB_OWNER.fullmatch(owner)
+            or not _GITHUB_REPOSITORY.fullmatch(repository)
+            or repository in {".", ".."}
+        ):
             raise DomainError("INVALID_GITHUB_URL", "GitHub URL contains an invalid owner or repository name.", 400)
         source_label = f"{owner}/{repository}"
         return f"https://github.com/{source_label}.git", source_label, repository
 
+    def _validate_git_ref(self, branch: str | None) -> str | None:
+        if branch is None:
+            return None
+        candidate = branch.strip()
+        forbidden = ("..", "@{", "\\", " ", "~", "^", ":", "?", "*", "[")
+        if (
+            not candidate
+            or len(candidate) > 255
+            or candidate.startswith(("-", ".", "/"))
+            or candidate.endswith((".", "/", ".lock"))
+            or "//" in candidate
+            or any(token in candidate for token in forbidden)
+            or any(ord(character) < 32 or ord(character) == 127 for character in candidate)
+        ):
+            raise DomainError("INVALID_GIT_REF", "Git reference is invalid.", 400)
+        return candidate
+
     def _clone_github_repository(self, clone_url: str, source_dir: Path, branch: str | None = None) -> None:
-        command = ["git", "clone", "--depth", "1"]
+        sandbox_home = source_dir.parent / ".git-home"
+        disabled_hooks = source_dir.parent / ".disabled-git-hooks"
+        sandbox_home.mkdir(parents=True, exist_ok=True)
+        disabled_hooks.mkdir(parents=True, exist_ok=True)
+        command = [
+            "git",
+            "-c",
+            "protocol.allow=never",
+            "-c",
+            "protocol.https.allow=always",
+            "-c",
+            "http.followRedirects=false",
+            "-c",
+            "credential.helper=",
+            "-c",
+            f"core.hooksPath={disabled_hooks}",
+            "-c",
+            "submodule.recurse=false",
+            "-c",
+            "filter.lfs.smudge=",
+            "-c",
+            "filter.lfs.required=false",
+            "clone",
+            "--depth",
+            "1",
+            "--single-branch",
+            "--no-tags",
+            "--no-recurse-submodules",
+        ]
         if branch:
             command.extend(["--branch", branch])
         command.extend([clone_url, str(source_dir)])
-        subprocess.run(command, check=True, capture_output=True, text=True, timeout=120)
+        inherited_environment = {
+            "PATH",
+            "PATHEXT",
+            "SYSTEMROOT",
+            "WINDIR",
+            "TEMP",
+            "TMP",
+            "LANG",
+            "LC_ALL",
+            "SSL_CERT_FILE",
+            "SSL_CERT_DIR",
+            "HTTPS_PROXY",
+            "NO_PROXY",
+        }
+        environment = {
+            key: value
+            for key, value in os.environ.items()
+            if key.upper() in inherited_environment
+        }
+        environment.update(
+            {
+                "GIT_CONFIG_NOSYSTEM": "1",
+                "GIT_TERMINAL_PROMPT": "0",
+                "GCM_INTERACTIVE": "Never",
+                "GIT_ALLOW_PROTOCOL": "https",
+                "GIT_LFS_SKIP_SMUDGE": "1",
+                "GIT_PROTOCOL_FROM_USER": "0",
+                "HOME": str(sandbox_home),
+                "USERPROFILE": str(sandbox_home),
+                "XDG_CONFIG_HOME": str(sandbox_home),
+            }
+        )
+        try:
+            subprocess.run(
+                command,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=settings.git_clone_timeout_seconds,
+                env=environment,
+            )
+        finally:
+            shutil.rmtree(sandbox_home, ignore_errors=True)
+            shutil.rmtree(disabled_hooks, ignore_errors=True)
+
+    def _remove_git_metadata(self, source_dir: Path) -> None:
+        git_path = source_dir / ".git"
+        if git_path.is_symlink():
+            raise DomainError("GIT_METADATA_INVALID", "Cloned repository contains invalid Git metadata.", 400)
+        if git_path.is_dir():
+            shutil.rmtree(git_path)
+        elif git_path.exists():
+            git_path.unlink()
+
+    def _validate_import_tree(self, source_dir: Path) -> None:
+        source_root = source_dir.resolve()
+        quota = ImportQuota.configured()
+        seen_paths: set[str] = set()
+        for current_root, directory_names, file_names in os.walk(source_root, followlinks=False):
+            current_path = Path(current_root)
+            for name in [*directory_names, *file_names]:
+                candidate = current_path / name
+                relative_path = normalized_relative_path(candidate.relative_to(source_root).as_posix())
+                ensure_unique_path(relative_path, seen_paths)
+                metadata = candidate.lstat()
+                if stat.S_ISLNK(metadata.st_mode):
+                    raise DomainError("IMPORT_LINK_NOT_ALLOWED", "Imported repository links are not allowed.", 400)
+                if name in file_names:
+                    if not stat.S_ISREG(metadata.st_mode):
+                        raise DomainError("IMPORT_SPECIAL_FILE_NOT_ALLOWED", "Imported repository special files are not allowed.", 400)
+                    quota.add_file(metadata.st_size)
+
+    def _cleanup_session_root(self, session_root: Path) -> None:
+        upload_root = settings.upload_storage_dir.resolve()
+        resolved_session = session_root.resolve()
+        if (
+            resolved_session != upload_root
+            and self.archive.is_relative_to(resolved_session, upload_root)
+            and resolved_session.exists()
+        ):
+            shutil.rmtree(resolved_session, ignore_errors=True)
