@@ -28,6 +28,7 @@ import type {
   FileContent,
   FileTreeNode,
   GraphData,
+  GraphProjectionInput,
   GraphView,
   ImpactResult,
   ImportMode,
@@ -49,6 +50,7 @@ type AppRoutesProps = {
   indexStatus: IndexStatus | null
   graph: GraphData | null
   graphView: GraphView
+  graphProjection: GraphProjectionInput
   fileTree: FileTreeNode[]
   selectedFilePath: string
   fileContent: FileContent | null
@@ -94,6 +96,7 @@ type AppRoutesProps = {
   runImpactAnalysis: (event?: FormEvent) => void
   analyzeGraphArea: (scopePath: string) => void
   changeGraphView: (view: GraphView) => void
+  changeGraphProjection: (patch: Partial<GraphProjectionInput>) => void
   isWorkspacePage: boolean
 }
 
@@ -106,6 +109,7 @@ export function AppRoutes(props: AppRoutesProps) {
     indexStatus,
     graph,
     graphView,
+    graphProjection,
     fileTree,
     selectedFilePath,
     fileContent,
@@ -217,7 +221,7 @@ export function AppRoutes(props: AppRoutesProps) {
       />
     )
   }
-  if (page === 'graph') return <WorkspacePage main={<GraphPage graph={graph} graphView={graphView} overview={overview} onGraphView={props.changeGraphView} onAnalyzeArea={props.analyzeGraphArea} />} side={<GraphDetails graph={graph} />} />
+  if (page === 'graph') return <WorkspacePage main={<GraphPage graph={graph} graphView={graphView} projection={graphProjection} overview={overview} onGraphView={props.changeGraphView} onProjection={props.changeGraphProjection} onAnalyzeArea={props.analyzeGraphArea} />} side={<GraphDetails graph={graph} />} />
   if (page === 'api') return <WorkspacePage main={<ApiExplorerPage overview={overview} />} side={<ApiDetails overview={overview} />} />
   if (page === 'assistant') {
     return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />

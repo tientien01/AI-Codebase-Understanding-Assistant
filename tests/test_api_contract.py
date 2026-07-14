@@ -153,6 +153,19 @@ def test_openapi_operation_ids_are_present_and_unique() -> None:
     assert len(operation_ids) == len(set(operation_ids))
 
 
+def test_graph_projection_openapi_declares_bounded_inputs_and_disclosure_fields() -> None:
+    document = app.openapi()
+    operation = document["paths"]["/api/v1/repositories/{repository_id}/graph/project-map"]["get"]
+    parameters = {parameter["name"]: parameter for parameter in operation["parameters"]}
+
+    assert parameters["max_nodes"]["schema"]["maximum"] == 220
+    assert parameters["max_edges"]["schema"]["maximum"] == 520
+    assert parameters["max_depth"]["schema"]["maximum"] == 6
+    assert {"root_keys", "node_types", "edge_types", "direction", "min_confidence", "support_levels"} <= parameters.keys()
+    response_schema = document["components"]["schemas"]["GraphResponse"]["properties"]
+    assert {"nodes", "edges", "counts", "coverage", "truncation", "unsupported_hops", "can_expand", "provenance"} <= response_schema.keys()
+
+
 def test_compatibility_schema_module_exports_all_existing_models() -> None:
     exported_models = {
         name

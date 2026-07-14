@@ -869,8 +869,230 @@
         "title": "GraphNodeDTO",
         "type": "object"
       },
+      "GraphProjectionCounts": {
+        "properties": {
+          "available_counts_are_estimates": {
+            "default": false,
+            "title": "Available Counts Are Estimates",
+            "type": "boolean"
+          },
+          "available_edges": {
+            "default": 0,
+            "title": "Available Edges",
+            "type": "integer"
+          },
+          "available_nodes": {
+            "default": 0,
+            "title": "Available Nodes",
+            "type": "integer"
+          },
+          "included_edges": {
+            "default": 0,
+            "title": "Included Edges",
+            "type": "integer"
+          },
+          "included_nodes": {
+            "default": 0,
+            "title": "Included Nodes",
+            "type": "integer"
+          }
+        },
+        "title": "GraphProjectionCounts",
+        "type": "object"
+      },
+      "GraphProjectionCoverage": {
+        "properties": {
+          "measured": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "title": "Measured",
+            "type": "object"
+          },
+          "state": {
+            "default": "ready",
+            "enum": [
+              "ready",
+              "limited"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "unknown": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknown",
+            "type": "array"
+          }
+        },
+        "title": "GraphProjectionCoverage",
+        "type": "object"
+      },
+      "GraphProjectionProvenance": {
+        "properties": {
+          "deterministic_order": {
+            "default": true,
+            "title": "Deterministic Order",
+            "type": "boolean"
+          },
+          "source": {
+            "default": "active_index_compatibility_graph",
+            "title": "Source",
+            "type": "string"
+          },
+          "support_levels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Support Levels",
+            "type": "array"
+          }
+        },
+        "title": "GraphProjectionProvenance",
+        "type": "object"
+      },
+      "GraphProjectionRequest": {
+        "properties": {
+          "direction": {
+            "default": "both",
+            "enum": [
+              "outgoing",
+              "incoming",
+              "both"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "edge_types": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Edge Types",
+            "type": "array"
+          },
+          "index_version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Version"
+          },
+          "max_depth": {
+            "default": 2,
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Max Depth",
+            "type": "integer"
+          },
+          "max_edges": {
+            "default": 520,
+            "maximum": 520.0,
+            "minimum": 0.0,
+            "title": "Max Edges",
+            "type": "integer"
+          },
+          "max_nodes": {
+            "default": 220,
+            "maximum": 220.0,
+            "minimum": 1.0,
+            "title": "Max Nodes",
+            "type": "integer"
+          },
+          "min_confidence": {
+            "default": 0.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Min Confidence",
+            "type": "number"
+          },
+          "node_types": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Node Types",
+            "type": "array"
+          },
+          "root_keys": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Root Keys",
+            "type": "array"
+          },
+          "support_levels": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Support Levels",
+            "type": "array"
+          }
+        },
+        "title": "GraphProjectionRequest",
+        "type": "object"
+      },
+      "GraphProjectionTruncation": {
+        "properties": {
+          "continuation_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Continuation Token"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "truncated": {
+            "default": false,
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "title": "GraphProjectionTruncation",
+        "type": "object"
+      },
       "GraphResponse": {
         "properties": {
+          "can_expand": {
+            "default": false,
+            "title": "Can Expand",
+            "type": "boolean"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/GraphProjectionCounts"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/GraphProjectionCoverage"
+          },
           "edges": {
             "items": {
               "$ref": "#/components/schemas/GraphEdgeDTO"
@@ -878,12 +1100,55 @@
             "title": "Edges",
             "type": "array"
           },
+          "index_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Version"
+          },
           "nodes": {
             "items": {
               "$ref": "#/components/schemas/GraphNodeDTO"
             },
             "title": "Nodes",
             "type": "array"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/GraphProjectionRequest"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/GraphProjectionProvenance"
+          },
+          "repository_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repository Id"
+          },
+          "truncation": {
+            "$ref": "#/components/schemas/GraphProjectionTruncation"
+          },
+          "unsupported_hops": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unsupported Hops",
+            "type": "array"
+          },
+          "view": {
+            "default": "all",
+            "title": "View",
+            "type": "string"
           }
         },
         "required": [
@@ -4019,6 +4284,146 @@
             }
           },
           {
+            "in": "query",
+            "name": "index_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Index Version"
+            }
+          },
+          {
+            "in": "query",
+            "name": "root_keys",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Root Keys",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Node Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "edge_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Edge Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "enum": [
+                "outgoing",
+                "incoming",
+                "both"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 6,
+              "minimum": 0,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 220,
+              "maximum": 220,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 520,
+              "maximum": 520,
+              "minimum": 0,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_confidence",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Min Confidence",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "support_levels",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "title": "Support Levels",
+              "type": "array"
+            }
+          },
+          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -4106,6 +4511,146 @@
                 }
               ],
               "title": "Endpoint Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "index_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Index Version"
+            }
+          },
+          {
+            "in": "query",
+            "name": "root_keys",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Root Keys",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Node Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "edge_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Edge Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "enum": [
+                "outgoing",
+                "incoming",
+                "both"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 6,
+              "minimum": 0,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 220,
+              "maximum": 220,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 520,
+              "maximum": 520,
+              "minimum": 0,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_confidence",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Min Confidence",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "support_levels",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "title": "Support Levels",
+              "type": "array"
             }
           },
           {
@@ -4199,6 +4744,146 @@
             }
           },
           {
+            "in": "query",
+            "name": "index_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Index Version"
+            }
+          },
+          {
+            "in": "query",
+            "name": "root_keys",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Root Keys",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Node Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "edge_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Edge Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "enum": [
+                "outgoing",
+                "incoming",
+                "both"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 6,
+              "minimum": 0,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 220,
+              "maximum": 220,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 520,
+              "maximum": 520,
+              "minimum": 0,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_confidence",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Min Confidence",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "support_levels",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "title": "Support Levels",
+              "type": "array"
+            }
+          },
+          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -4286,6 +4971,146 @@
                 }
               ],
               "title": "File Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "index_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Index Version"
+            }
+          },
+          {
+            "in": "query",
+            "name": "root_keys",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Root Keys",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Node Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "edge_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Edge Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "enum": [
+                "outgoing",
+                "incoming",
+                "both"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 6,
+              "minimum": 0,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 220,
+              "maximum": 220,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 520,
+              "maximum": 520,
+              "minimum": 0,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_confidence",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Min Confidence",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "support_levels",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "title": "Support Levels",
+              "type": "array"
             }
           },
           {
@@ -4463,6 +5288,146 @@
             }
           },
           {
+            "in": "query",
+            "name": "index_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Index Version"
+            }
+          },
+          {
+            "in": "query",
+            "name": "root_keys",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Root Keys",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Node Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "edge_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Edge Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "enum": [
+                "outgoing",
+                "incoming",
+                "both"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 6,
+              "minimum": 0,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 220,
+              "maximum": 220,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 520,
+              "maximum": 520,
+              "minimum": 0,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_confidence",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Min Confidence",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "support_levels",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "title": "Support Levels",
+              "type": "array"
+            }
+          },
+          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -4534,6 +5499,146 @@
             "schema": {
               "title": "Repository Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "index_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Index Version"
+            }
+          },
+          {
+            "in": "query",
+            "name": "root_keys",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Root Keys",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Node Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "edge_types",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Edge Types",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "enum": [
+                "outgoing",
+                "incoming",
+                "both"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 6,
+              "minimum": 0,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 220,
+              "maximum": 220,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 520,
+              "maximum": 520,
+              "minimum": 0,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_confidence",
+            "required": false,
+            "schema": {
+              "default": 0.0,
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "title": "Min Confidence",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "support_levels",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "maxLength": 200,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "title": "Support Levels",
+              "type": "array"
             }
           },
           {

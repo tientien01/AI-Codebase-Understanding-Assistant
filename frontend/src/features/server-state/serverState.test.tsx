@@ -3,6 +3,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../api/client'
+import { graphProjectionParams } from '../../api/server'
 import type { Repository } from '../../types/api'
 import { toAsyncViewState } from './asyncState'
 import { queryKeys } from './keys'
@@ -37,6 +38,35 @@ describe('server-state ownership policy', () => {
     ])
     expect(queryKeys.fileContent('repo-2', 7, 'src/a.ts')).not.toEqual(queryKeys.fileContent('repo-1', 7, 'src/a.ts'))
     expect(queryKeys.fileContent('repo-1', 8, 'src/a.ts')).not.toEqual(queryKeys.fileContent('repo-1', 7, 'src/a.ts'))
+  })
+
+  it('normalizes graph projection identity and serializes every bounded request input', () => {
+    const projection = {
+      indexVersion: 7,
+      rootKeys: ['node-b', 'node-a', 'node-a'],
+      nodeTypes: ['function'],
+      edgeTypes: ['calls'],
+      direction: 'outgoing' as const,
+      maxDepth: 3,
+      maxNodes: 80,
+      maxEdges: 160,
+      minConfidence: 0.5,
+      supportLevels: ['deep'],
+    }
+    const reordered = { ...projection, rootKeys: ['node-a', 'node-b'] }
+
+    expect(queryKeys.graph('repo-1', 7, 'function-flow', projection)).toEqual(
+      queryKeys.graph('repo-1', 7, 'function-flow', reordered),
+    )
+    const params = new URLSearchParams(graphProjectionParams(reordered))
+    expect(params.get('index_version')).toBe('7')
+    expect(params.getAll('root_keys')).toEqual(['node-a', 'node-b'])
+    expect(params.get('direction')).toBe('outgoing')
+    expect(params.get('max_depth')).toBe('3')
+    expect(params.get('max_nodes')).toBe('80')
+    expect(params.get('max_edges')).toBe('160')
+    expect(params.get('min_confidence')).toBe('0.5')
+    expect(params.getAll('support_levels')).toEqual(['deep'])
   })
 
   it('bounds retries to classified transient failures', () => {

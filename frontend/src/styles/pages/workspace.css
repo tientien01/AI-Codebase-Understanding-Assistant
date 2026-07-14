@@ -134,6 +134,51 @@
   margin-bottom: 16px;
 }
 
+.graph-projection-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.graph-projection-controls label,
+.graph-root-form {
+  display: grid;
+  align-content: end;
+  gap: 6px;
+}
+
+.graph-root-form {
+  grid-column: span 2;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.graph-root-form label {
+  grid-column: 1 / -1;
+}
+
+.graph-root-form .panel-search {
+  margin: 0;
+}
+
+.graph-projection-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  border: 1px solid #245b43;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #0d2c22;
+  color: #d8f8e9;
+}
+
+.graph-projection-status.limited {
+  border-color: #8b6a25;
+  background: #30240d;
+  color: #ffe5a3;
+}
+
 .graph-workspace,
 .api-layout,
 .impact-grid,
@@ -144,17 +189,21 @@
 }
 
 .graph-canvas {
-  position: relative;
-  min-height: 620px;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  align-content: start;
+  gap: 12px;
+  min-height: 240px;
+  max-height: 620px;
+  overflow: auto;
   border-radius: 14px;
+  padding: 14px;
   background-image: radial-gradient(#26354c 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
 .graph-node {
-  position: absolute;
-  min-width: 150px;
+  min-width: 0;
   border: 1px solid #536cff;
   border-radius: 12px;
   padding: 12px;
@@ -162,6 +211,59 @@
   color: #f8fafc;
   text-align: left;
   cursor: pointer;
+}
+
+.graph-relation-list {
+  margin-top: 16px;
+  border: 1px solid #26344b;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.graph-relation-list summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.graph-relation-list ul {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.graph-relation-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.graph-relation-list button {
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.graph-relation-list span {
+  color: #9fb6ff;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .graph-projection-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .graph-root-form {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .graph-relation-list li {
+    grid-template-columns: 1fr;
+  }
 }
 
 .graph-node span {

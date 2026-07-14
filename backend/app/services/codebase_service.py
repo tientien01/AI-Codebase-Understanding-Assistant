@@ -34,6 +34,7 @@ from app.schemas.api import (
     SymbolListResponse,
 )
 from app.services.application.container import ApplicationContainer
+from app.schemas.graph import GraphProjectionRequest
 
 
 class CodebaseService(ApplicationContainer):
@@ -167,29 +168,29 @@ class CodebaseService(ApplicationContainer):
     ) -> ChatResponse:
         return self.chat_service.ask_with_evidence(repository_id, message, evidence_ids, conversation_id)
 
-    def get_graph(self, repository_id: str) -> GraphResponse:
+    def get_graph(self, repository_id: str, request: GraphProjectionRequest | None = None) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
-        return self.graph.get_graph(repository)
+        return self.graph.get_graph(repository, request)
 
-    def get_project_map_graph(self, repository_id: str) -> GraphResponse:
+    def get_project_map_graph(self, repository_id: str, request: GraphProjectionRequest | None = None) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
-        return self.graph_projection.project_map(repository)
+        return self.graph_projection.project_map(repository, request)
 
-    def get_dependency_graph(self, repository_id: str, file_path: str | None = None) -> GraphResponse:
+    def get_dependency_graph(self, repository_id: str, file_path: str | None = None, request: GraphProjectionRequest | None = None) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
-        return self.graph_projection.dependencies(repository, file_path)
+        return self.graph_projection.dependencies(repository, file_path, request)
 
-    def get_api_flow_graph(self, repository_id: str, endpoint_id: str | None = None) -> GraphResponse:
+    def get_api_flow_graph(self, repository_id: str, endpoint_id: str | None = None, request: GraphProjectionRequest | None = None) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
-        return self.graph_projection.api_flow(repository, endpoint_id)
+        return self.graph_projection.api_flow(repository, endpoint_id, request)
 
-    def get_function_flow_graph(self, repository_id: str, symbol_id: str | None = None) -> GraphResponse:
+    def get_function_flow_graph(self, repository_id: str, symbol_id: str | None = None, request: GraphProjectionRequest | None = None) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
-        return self.graph_projection.function_flow(repository, symbol_id)
+        return self.graph_projection.function_flow(repository, symbol_id, request)
 
-    def get_data_flow_graph(self, repository_id: str, symbol_id: str | None = None) -> GraphResponse:
+    def get_data_flow_graph(self, repository_id: str, symbol_id: str | None = None, request: GraphProjectionRequest | None = None) -> GraphResponse:
         repository = self.repositories_service.get_indexed_repository(repository_id)
-        return self.graph_projection.data_flow(repository, symbol_id)
+        return self.graph_projection.data_flow(repository, symbol_id, request)
 
     def expand_graph_area(self, repository_id: str, scope_path: str) -> GraphExpansionResponse:
         result = self.indexing.start_indexing(repository_id, force_reindex=True)

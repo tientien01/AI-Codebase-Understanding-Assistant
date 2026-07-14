@@ -1,6 +1,6 @@
 # Phase 6 — Production Workspace UX
 
-Status: Approved; UI-001 canonical routing/deep-link foundation and UI-002 server-state ownership are verified, while UI-003 through UI-005 and Phase 6 release evidence remain open
+Status: Approved; UI-001 routing, UI-002 server-state ownership and UI-003 bounded graph projections are verified, while UI-004, UI-005 and Phase 6 release evidence remain open
 
 ## Outcome
 
@@ -29,3 +29,5 @@ Frontend CI reports, navigation/state E2E, accessibility report, performance bud
 `UI-001` establishes React Router browser/history ownership, the accepted canonical route set, reloadable source/line and evidence links, URL-owned search/graph/impact identities, and fail-closed route/repository recovery. Symbol and conversation identities remain explicit unavailable states until their public read models exist. Server-state ownership, the complete async-state matrix, bounded graph UX, later feature surfaces, accessibility automation, critical Playwright flows and accepted performance budgets remain outside this task.
 
 `UI-002` establishes one TanStack Query client, repository/index-version-owned query keys, cancellable typed reads, bounded classified retry, terminal/hidden polling, scoped mutations and explicit active-surface async/recovery states while preserving UI-001 URL ownership. Bounded graph UX, architecture/tour/diff and real evaluation/settings/status surfaces, accessibility automation, critical Playwright flows and accepted performance budgets remain open.
+
+`UI-003` replaces silent client graph slicing with deterministic server-enforced projections, additive count/coverage/truncation/provenance metadata, normalized version-owned query identities, bounded focus/expand controls and a keyboard-native relation-list fallback. The compatibility API still uses active integer version sequences and existing GET routes; canonical opaque-version POST projection/path APIs, architecture/tour/diff UX, later surfaces, accessibility automation, Playwright and accepted release performance budgets remain open.

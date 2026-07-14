@@ -2,11 +2,18 @@ import { InDevelopmentInline, Panel, PreviewLine } from '../../components/common
 import type { GraphData, Overview } from '../../types/api'
 
 export function GraphDetails({ graph }: { graph: GraphData | null }) {
+  const includedNodes = graph?.counts?.included_nodes ?? graph?.nodes.length ?? 0
+  const availableNodes = graph?.counts?.available_nodes ?? includedNodes
+  const includedEdges = graph?.counts?.included_edges ?? graph?.edges.length ?? 0
+  const availableEdges = graph?.counts?.available_edges ?? includedEdges
   return (
     <Panel title="Analysis Coverage">
       <PreviewLine label="Ready" value={String(graph?.nodes.filter((node) => node.coverage === 'deep_indexed').length ?? 0)} />
       <PreviewLine label="Needs analysis" value={String(graph?.nodes.filter((node) => node.coverage === 'mapped').length ?? 0)} />
-      <PreviewLine label="Relationships" value={String(graph?.edges.length ?? 0)} />
+      <PreviewLine label="Nodes included" value={`${includedNodes} of ${availableNodes}`} />
+      <PreviewLine label="Relationships included" value={`${includedEdges} of ${availableEdges}`} />
+      <PreviewLine label="Projection state" value={graph?.coverage?.state === 'limited' ? 'Limited' : 'Complete within scope'} />
+      <PreviewLine label="Truncation" value={graph?.truncation?.reason?.replaceAll('_', ' ') ?? 'None'} />
       <h3>Status</h3>
       <div className="setting-chips">
         <span>Ready</span>

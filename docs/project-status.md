@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 6 production workspace UX has verified UI-001 navigation and UI-002 server-state foundations; UI-003 through UI-005, composition and release qualification remain open |
-| Active task | None; `UI-002` server-state ownership work is verified pending review/merge |
-| Next task candidate | `UI-003` after UI-002 review/merge and separate owner authorization |
+| Active delivery phase | Phase 6 production workspace UX has verified UI-001 navigation, UI-002 server state and UI-003 bounded graph foundations; UI-004, UI-005, composition and release qualification remain open |
+| Active task | None; `UI-003` bounded graph projection work is verified pending review/merge |
+| Next task candidate | `UI-004` after UI-003 review/merge and separate owner authorization |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -46,6 +46,7 @@ This page is the operational front door. It reports verified progress; it does n
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
 - TanStack Query now owns current frontend repository/workspace reads, mutation results, import previews and scoped chat transcripts. Repository/index-version keys, cancellation, bounded classified retry, terminal/hidden polling, scoped invalidation, cached refresh retention and explicit recovery states pass the UI-002 targeted/full/lint/typecheck/clean-build gates.
+- Graph GET views now enforce deterministic server-side filters, depth and 220-node/520-edge maxima, disclose counts/coverage/truncation/unresolved roots/provenance, and reject stale compatibility versions. The UI renders the complete returned projection with limited-state, bounded expansion and accessible relation-list alternatives; UI-003 clean backend/frontend gates pass.
 
 ## Blocking gaps
 
@@ -53,15 +54,15 @@ This page is the operational front door. It reports verified progress; it does n
 2. The incremental planner, intelligence artifacts and readiness calculator are verified independently, but production pipeline/manifest composition and real parser/resolver/graph/readiness equivalence are not proven.
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
 4. The deterministic retrieval evaluation dataset/runner exists, but real provider, answer/citation, graph, security, performance, resilience and load thresholds lack accepted release evidence.
-5. Frontend bounded graph UX, later production surfaces, accessibility and Playwright E2E coverage remain incomplete; UI-001 covers canonical navigation/deep-link recovery and UI-002 covers current server-state ownership and applicable async/error states.
+5. Frontend architecture/tour/diff and later production surfaces, canonical opaque-version graph POST APIs, accessibility automation and Playwright E2E coverage remain incomplete; UI-001 through UI-003 cover navigation, server-state ownership and bounded graph UX foundations.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Review and merge `UI-002` server-state ownership and frontend query evidence.
-2. Select and authorize `UI-003` separately after UI-002 is merged.
+1. Review and merge `UI-003` bounded graph projection and frontend graph evidence.
+2. Select and authorize `UI-004` separately after UI-003 is merged.
 
 ## Status update rule
 
