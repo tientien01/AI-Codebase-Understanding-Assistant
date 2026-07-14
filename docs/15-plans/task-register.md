@@ -42,6 +42,7 @@ Phase outcomes and gates are canonical in `master-roadmap.md` and `phases/`. Thi
 | UI-003 | Add bounded evidence-aware graph projections | INT-004,UI-002 | Large graph/performance tests |
 | UI-004 | Add architecture view, guided tour, diff impact | UI-003,AGT-002 | Evidence-backed UX E2E |
 | UI-005 | Connect real evaluation/settings/status surfaces | EVA-001,UI-002 | Feature E2E |
+| UI-009 | Refine Code Explorer workspace from approved visual reference | UI-002 | Responsive Code Explorer component and build gates |
 | SEC-001 | Complete threat model, quotas and Git/import isolation | JOB-003 | Adversarial security suite |
 | SEC-002 | Complete auth/access/audit design | DAT-003 | Authorization tests |
 | OPS-001 | Add structured logs, metrics, traces and health | JOB-003 | Telemetry/readiness tests |

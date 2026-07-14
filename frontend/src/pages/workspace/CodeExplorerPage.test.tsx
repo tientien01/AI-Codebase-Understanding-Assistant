@@ -1,0 +1,80 @@
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { CodeExplorerPage } from './CodeExplorerPage'
+import type { FileContent, FileTreeNode, Overview } from '../../types/api'
+
+afterEach(cleanup)
+
+describe('CodeExplorerPage', () => {
+  it('filters the tree, preserves file selection, and presents source-focused intelligence', () => {
+    const onSelectFile = vi.fn()
+    const { container, rerender } = render(<CodeExplorerPage fileTree={fileTree} selectedFilePath="backend/app/routes.py" fileContent={fileContent} overview={overview} onSelectFile={onSelectFile} />)
+
+    expect(container.querySelectorAll('.file-tree')).toHaveLength(1)
+    expect(screen.getAllByText('routes.py').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('backend/app/routes.py').length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('Code editor')).toBeTruthy()
+    expect(screen.getByLabelText('Open files')).toBeTruthy()
+    expect(screen.getByText('Open in Editor')).toBeTruthy()
+    expect(screen.getByText('Ln 1, Col 1')).toBeTruthy()
+    expect(screen.getByText('Symbols')).toBeTruthy()
+    expect(screen.getByText('POST /login')).toBeTruthy()
+    expect(screen.queryByText('Call Relationships')).toBeNull()
+    expect(screen.queryByText('Navigation unavailable')).toBeNull()
+    expect(screen.queryByText(/Dang phat trien/i)).toBeNull()
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search repository files' }), { target: { value: 'readme' } })
+    expect(screen.getByText('README.md')).toBeTruthy()
+    expect(within(screen.getByLabelText('Repository files')).queryByText('routes.py')).toBeNull()
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search repository files' }), { target: { value: '' } })
+    fireEvent.click(within(screen.getByLabelText('Repository files')).getByRole('button', { name: 'routes.py' }))
+    expect(onSelectFile).toHaveBeenCalledWith('backend/app/routes.py')
+
+    rerender(<CodeExplorerPage fileTree={fileTree} selectedFilePath="README.md" fileContent={null} overview={overview} onSelectFile={onSelectFile} />)
+    expect(within(screen.getByLabelText(/Source content for backend\/app\/routes.py/)).getByText(/def login/)).toBeTruthy()
+    expect(screen.getByText('Loading selection')).toBeTruthy()
+  })
+
+  it('does not render intelligence panels when the selected file has no parsed intelligence', () => {
+    render(<CodeExplorerPage fileTree={fileTree} selectedFilePath="README.md" fileContent={{ ...fileContent, file_path: 'README.md', symbols: [] }} overview={{ ...overview, endpoints: [] }} onSelectFile={vi.fn()} />)
+
+    expect(screen.queryByLabelText('File intelligence')).toBeNull()
+    expect(screen.queryByText('Symbols')).toBeNull()
+    expect(screen.queryByText('API endpoints')).toBeNull()
+  })
+})
+
+const fileTree: FileTreeNode[] = [
+  {
+    name: 'backend',
+    path: 'backend',
+    type: 'directory',
+    children: [{
+      name: 'app',
+      path: 'backend/app',
+      type: 'directory',
+      children: [{ name: 'routes.py', path: 'backend/app/routes.py', type: 'file', children: [] }],
+    }],
+  },
+  { name: 'README.md', path: 'README.md', type: 'file', children: [] },
+]
+
+const fileContent: FileContent = {
+  file_path: 'backend/app/routes.py',
+  language: 'python',
+  content: 'def login():\n    return "ok"',
+  lines: ['def login():', '    return "ok"'],
+  symbols: [{ evidence_id: 'symbol-login', file_path: 'backend/app/routes.py', symbol_name: 'login', start_line: 1, end_line: 2 }],
+}
+
+const overview: Overview = {
+  repository_id: 'repo-code',
+  name: 'Code Explorer',
+  detected_stack: ['FastAPI'],
+  important_files: [],
+  modules: [],
+  endpoints: [{ method: 'POST', path: '/login', handler: 'login', file_path: 'backend/app/routes.py', start_line: 1, end_line: 2 }],
+  documentation_gaps: [],
+  stats: {},
+}

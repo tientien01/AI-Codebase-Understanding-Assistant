@@ -1,29 +1,45 @@
+import { Icon } from '../common/Icon'
 import type { FileTreeNode } from '../../types/api'
 
 export function FileTree({
   nodes,
   selectedFilePath,
   onSelectFile,
-  depth = 0,
 }: {
   nodes: FileTreeNode[]
   selectedFilePath: string
   onSelectFile: (filePath: string) => void
-  depth?: number
 }) {
   return (
-    <div className="file-tree">
-      {nodes.map((node) => (
-        <div key={node.path}>
-          {node.type === 'file' ? (
-            <button className={selectedFilePath === node.path ? 'active' : ''} style={{ paddingLeft: `${12 + depth * 16}px` }} onClick={() => onSelectFile(node.path)}>
-              <span>File</span>{node.name}
-            </button>
-          ) : (
-            <div className="tree-folder" style={{ paddingLeft: `${12 + depth * 16}px` }}><span>Dir</span>{node.name}</div>
-          )}
-          {node.children.length > 0 && <FileTree nodes={node.children} selectedFilePath={selectedFilePath} onSelectFile={onSelectFile} depth={depth + 1} />}
+    <div className="file-tree" aria-label="Repository files">
+      {nodes.map((node) => <TreeNode key={node.path} node={node} selectedFilePath={selectedFilePath} onSelectFile={onSelectFile} />)}
+    </div>
+  )
+}
+
+function TreeNode({ node, selectedFilePath, onSelectFile, depth = 0 }: {
+  node: FileTreeNode
+  selectedFilePath: string
+  onSelectFile: (filePath: string) => void
+  depth?: number
+}) {
+  const style = { paddingLeft: `${12 + depth * 16}px` }
+
+  return (
+    <div className="tree-node">
+      {node.type === 'file' ? (
+        <button type="button" className={selectedFilePath === node.path ? 'active' : ''} style={style} onClick={() => onSelectFile(node.path)} title={node.path}>
+          <Icon name="file" />
+          <span className="tree-node-name">{node.name}</span>
+        </button>
+      ) : (
+        <div className="tree-folder" style={style} title={node.path}>
+          <Icon name="folder" />
+          <span className="tree-node-name">{node.name}</span>
         </div>
+      )}
+      {node.children.length > 0 && node.children.map((child) => (
+        <TreeNode key={child.path} node={child} selectedFilePath={selectedFilePath} onSelectFile={onSelectFile} depth={depth + 1} />
       ))}
     </div>
   )

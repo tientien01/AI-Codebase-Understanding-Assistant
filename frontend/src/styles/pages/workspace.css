@@ -396,10 +396,217 @@
   color: #9fb6ff;
 }
 
+.workspace-layout:has(.code-explorer-page) {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  gap: 14px;
+  align-items: start;
+  overflow: hidden;
+}
+
+.workspace-layout:has(.code-explorer-page) > div,
+.workspace-layout:has(.code-explorer-page) > aside,
+.code-explorer-page {
+  min-width: 0;
+}
+
+.workspace-layout:has(.code-explorer-page) > div {
+  overflow: hidden;
+}
+
 .code-explorer-grid {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) 320px;
-  gap: 18px;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.code-explorer-grid > .panel,
+.code-explorer-reader,
+.code-explorer-intelligence,
+.code-explorer-ide {
+  min-width: 0;
+}
+
+.code-explorer-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #2a384f;
+  border-radius: 9px;
+  padding: 0 10px;
+  background: #0b1320;
+  color: #91a0b5;
+}
+
+.code-explorer-search .panel-search {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  padding-inline: 0;
+  background: transparent;
+}
+
+.code-explorer-reader { display: grid; gap: 12px; min-width: 0; }
+
+.code-explorer-ide {
+  overflow: hidden;
+  border: 1px solid #26364d;
+  border-radius: 10px;
+  background: #08111d;
+}
+
+.code-explorer-source-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  border-bottom: 1px solid #203048;
+  padding: 8px 10px;
+  color: #9baac0;
+  font-size: 12px;
+}
+
+.code-explorer-breadcrumb,
+.code-explorer-language {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-explorer-breadcrumb { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.code-explorer-language { color: #9fb6ff; text-transform: capitalize; }
+
+.code-explorer-toolbar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-explorer-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  border: 1px solid #2b3e5b;
+  border-radius: 7px;
+  padding: 4px 8px;
+  background: #0b1523;
+  color: #c7d3e4;
+  font-size: 11px;
+}
+
+.code-explorer-toolbar button:disabled {
+  opacity: .7;
+}
+
+.code-explorer-loading {
+  border: 1px solid #37517a;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #10213a;
+  color: #9fb6ff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.code-explorer-tabs {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid #203048;
+  background: #0b1523;
+}
+
+.code-explorer-tabs button,
+.code-explorer-tabs span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  max-width: 190px;
+  border: 0;
+  border-right: 1px solid #22334c;
+  padding: 7px 12px;
+  background: transparent;
+  color: #9eacc2;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-explorer-tabs button.active {
+  background: #0f1c2f;
+  color: #eef4ff;
+}
+
+.code-explorer-intelligence {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.code-explorer-intelligence-group {
+  overflow: hidden;
+  border: 1px solid #253650;
+  border-radius: 10px;
+  background: #0d1725;
+}
+
+.code-explorer-intelligence-group h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  border-bottom: 1px solid #22324b;
+  padding: 10px 12px;
+  color: #e8edf7;
+  font-size: 13px;
+}
+
+.code-explorer-symbol-list,
+.code-explorer-endpoint-list {
+  display: grid;
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px;
+}
+
+.code-explorer-symbol-list div,
+.code-explorer-endpoint-list div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #1f2f47;
+  padding: 8px 4px;
+}
+
+.code-explorer-symbol-list div:last-child,
+.code-explorer-endpoint-list div:last-child {
+  border-bottom: 0;
+}
+
+.code-explorer-symbol-list strong,
+.code-explorer-endpoint-list strong,
+.code-explorer-symbol-list span,
+.code-explorer-endpoint-list span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-explorer-symbol-list span,
+.code-explorer-endpoint-list span {
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 .panel-search {
@@ -408,7 +615,8 @@
 
 .file-tree {
   max-height: 640px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .file-tree button,
@@ -431,25 +639,30 @@
   color: #fff;
 }
 
-.file-tree span {
-  min-width: 34px;
-  color: #8da1bf;
-  font-size: 11px;
-  text-transform: uppercase;
+.file-tree .icon { flex: 0 0 auto; width: 16px; height: 16px; color: #8da1bf; }
+
+.tree-node-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .code-block {
   overflow: auto;
+  width: 100%;
+  max-width: 100%;
   min-height: 560px;
   max-height: 660px;
   margin: 0;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 0;
+  padding: 14px 16px;
   background: #070c15;
   color: #dce7ff;
   font-family: ui-monospace, Consolas, monospace;
   font-size: 13px;
   line-height: 1.65;
+  box-sizing: border-box;
 }
 
 .code-block.compact {
@@ -467,6 +680,19 @@
   padding-inline: 5px 8px;
   background: rgba(82, 107, 255, 0.18);
 }
+
+.code-explorer-statusbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  border-top: 1px solid #203048;
+  padding: 6px 12px;
+  background: #0b1523;
+  color: #8fa0b8;
+  font-size: 11px;
+}
+
+.code-explorer-empty { margin: 4px 0; color: #9ba8ba; line-height: 1.55; }
 
 .graph-toolbar {
   margin-bottom: 16px;
@@ -1305,6 +1531,13 @@
   .graph-explorer-workspace,
   .impact-result-groups { grid-template-columns: 1fr; }
   .graph-inspector { position: static; }
+}
+
+@media (max-width: 960px) {
+  .workspace-layout:has(.code-explorer-page),
+  .code-explorer-grid,
+  .code-explorer-intelligence { grid-template-columns: 1fr; }
+  .file-tree { max-height: 300px; }
 }
 
 @media (max-width: 760px) {
