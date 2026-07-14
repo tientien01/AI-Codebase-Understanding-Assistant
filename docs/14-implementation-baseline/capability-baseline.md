@@ -11,9 +11,9 @@ The source now includes a tested internal calculator for the target runtime stat
 
 | Capability | Baseline state | Evidence and limitation |
 | --- | --- | --- |
-| Folder/ZIP import session | Implemented | Preview, cache, fingerprint duplicate candidate, confirm, cancel and upload tests exist |
-| ZIP safety | Implemented MVP | Traversal/duplicate rejection, nested archive skip and unsafe-content filtering tested; full adversarial/DoS suite absent |
-| Public GitHub import | Partial | URL validation, shallow clone implementation and network-free preview test exist; SSRF/redirect/protocol/submodule/hook/size hardening is not production verified |
+| Folder/ZIP import session | Implemented hardened local boundary | Preview/confirm/cancel remain compatible; normalized duplicates, file/tree quotas, streamed bytes and failed-session cleanup are adversarially tested |
+| ZIP safety | Implemented hardened local boundary | Traversal, links, special files, case/Unicode collisions, nested archives, depth/count/size/ratio limits and actual streamed-byte enforcement are tested; container resource isolation and capacity qualification remain open |
+| Public GitHub import | Partial hardened boundary | Canonical credential-free GitHub URL/ref checks, no redirect/prompt/hooks/submodules/LFS, HTTPS-only isolated configuration, shallow timeout, post-clone tree quotas, metadata removal and cleanup are network-free tested; OS/container network and resource isolation remain open |
 | Repository persistence | Implemented MVP | SQLite ORM persists repository/index records; production schema/migrations absent |
 | Background indexing | Production-blocked | Daemon thread and process-local controls; job status persists but worker execution/control is not recoverable |
 | Incremental indexing | Partial | Changed-file behavior and failed-reindex preservation tested; full/incremental equivalence is not benchmarked |

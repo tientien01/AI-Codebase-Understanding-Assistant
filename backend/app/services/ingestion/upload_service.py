@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.services.ingestion.archive_service import ArchiveService
+from app.services.ingestion.import_policy import normalized_relative_path
 from app.services.scanning.file_rules import IGNORE_DIRS, is_secret_file, is_supported_file
 
 
@@ -16,14 +17,10 @@ class UploadService:
         skipped_records: list[dict[str, str | None]] | None = None,
         security_records: list[dict[str, str]] | None = None,
     ) -> Path | None:
-        normalized = raw_path.replace("\\", "/").strip("/")
-        if not normalized:
-            return None
-        path = Path(normalized)
-        if path.is_absolute() or ".." in path.parts:
-            self.archive.record_skipped(skipped_records, normalized, "unsafe_path")
-            return None
-        ignored_part = next((part for part in path.parts if part in IGNORE_DIRS), None)
+        path = normalized_relative_path(raw_path)
+        normalized = path.as_posix()
+        ignored_names = {item.casefold() for item in IGNORE_DIRS}
+        ignored_part = next((part for part in path.parts if part.casefold() in ignored_names), None)
         if ignored_part:
             self.archive.record_skipped(skipped_records, normalized, "ignored_folder", ignored_part)
             return None

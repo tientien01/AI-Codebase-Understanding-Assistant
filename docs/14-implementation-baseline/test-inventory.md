@@ -47,6 +47,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
+| `security/test_import_acquisition_security.py` | 26 | archive traversal/link/special/collision/depth/count/size/ratio/stream limits; folder duplicate/count/byte cleanup; canonical hardened offline Git acquisition |
 | `test_code_analysis.py` | 18 | stable symbol IDs, CFG/DFG/CPG-related graph behavior, resolver, projections, hybrid retrieval, impact, enrichment, diagnostics |
 | `intelligence/test_parser_golden.py` | 11 | parsed-file envelope/provenance, aliases/nested symbols, deterministic serialization, line-shift identity, malformed syntax, path safety, single adapter authority and compatibility fallback |
 | `intelligence/test_resolver_accuracy.py` | 5 | typed reference ownership/outcomes, relative/internal imports, aliases, local/class calls, ambiguity, unresolved reasons and deterministic ordering |
@@ -78,7 +79,8 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - Failed re-index retains the previous index.
 - Incremental indexing parses only changed files in the tested scenario.
 - Re-index marks prior evidence stale and validation distinguishes stale/invalid evidence.
-- ZIP traversal and duplicate paths are rejected; nested archives are skipped.
+- ZIP traversal, links, special files, normalized collisions and quota abuse are rejected before unsafe writes; actual extraction bytes are bounded and nested archives are skipped.
+- Folder and mocked public-Git acquisition enforce normalized path/tree quotas and remove failed staging without network access.
 - Managed repository deletion removes persisted records and managed source.
 - Fake LLM provider is treated as not configured.
 
@@ -91,7 +93,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - Python has one canonical file-local adapter/IR authority, typed import/call references, reference-derived graph candidates and tested compatibility projections. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates, global canonical graph composition and production pipeline composition remain incomplete.
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
 - Frontend coverage includes 51 Vitest tests across routing/application, API client, import, server-state policy, bounded graph, UI-004 and UI-005 workspace component suites. UI-004 has six deterministic Chromium tests; UI-005 adds four Settings/Evaluation Chromium tests covering success, permission, retry recovery, unavailable capability and repository/index context. Axe serious/critical checks cover both UI-005 primary surfaces. Broader MSW API contracts and accepted release performance budgets remain absent.
-- No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
+- SEC-001 now has adversarial archive/folder/Git acquisition coverage. Parser isolation, content secret scanning, rate/abuse load, auth, container/network, dependency scan, backup/restore, and broader release evidence remain absent.
 - EVA-001 adds a versioned deterministic retrieval dataset and keyword/semantic-fixture/hybrid comparison, but no claim-level support benchmark, real embedding/provider run, accepted quality/latency threshold, answer judge or load qualification.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
 - AGT-003 adds atomic redacted conversation/structured-trace persistence and owned internal replay, but no semantic entailment model/benchmark, public history API, automated retention executor or accepted agent threshold.
@@ -99,6 +101,8 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 ## Collection boundary
 
 Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The EVA-002 clean local-profile run collected 289 project tests, passed 260 and skipped 29 existing integration-profile tests; no imported repository test participated.
+
+The current SEC-001 focused gate passes **49 tests** (26 adversarial acquisition tests plus 23 ingestion/service regressions). The non-evaluation backend regression passes **262 tests with 29 integration-profile tests skipped**. The mandatory all-tests attempt passed 276 and skipped 29 but failed 18 evaluation tests before scoring because the checked-out benchmark fixture reported a content-hash mismatch for `backend/auth_service.py`; the dataset was not opened or modified. SEC-001 therefore remains `in_progress` until the clean full-suite prerequisite is restored and rerun.
 
 ## Frontend gates
 

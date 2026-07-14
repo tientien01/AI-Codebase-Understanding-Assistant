@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -8,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
+SETTINGS_ENV_FILE = None if os.environ.get("APP_ENV") == "test" else BACKEND_ROOT / ".env"
 
 
 class Settings(BaseSettings):
@@ -29,6 +31,7 @@ class Settings(BaseSettings):
     max_extracted_size_mb: int = 4096
     max_archive_compression_ratio: int = 100
     max_path_depth: int = 30
+    git_clone_timeout_seconds: int = 120
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     llm_provider: str = "fake"
     llm_model: str = "fake-chat-model"
@@ -42,7 +45,7 @@ class Settings(BaseSettings):
     api_auth_token: str = ""
     vite_api_base_url: str = "http://localhost:8000"
 
-    model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=SETTINGS_ENV_FILE, env_file_encoding="utf-8")
 
     @model_validator(mode="after")
     def validate_database_profile(self) -> "Settings":
@@ -62,6 +65,17 @@ class Settings(BaseSettings):
             raise ValueError("Index lease, heartbeat, and attempt settings must be positive")
         if self.index_heartbeat_seconds >= self.index_lease_seconds:
             raise ValueError("INDEX_HEARTBEAT_SECONDS must be shorter than INDEX_LEASE_SECONDS")
+        if min(
+            self.max_upload_size_mb,
+            self.upload_chunk_size_mb,
+            self.max_file_size_mb,
+            self.max_zip_entries,
+            self.max_extracted_size_mb,
+            self.max_archive_compression_ratio,
+            self.max_path_depth,
+            self.git_clone_timeout_seconds,
+        ) <= 0:
+            raise ValueError("Import quotas and Git clone timeout must be positive")
         required_job_settings = {
             "index_lease_seconds",
             "index_heartbeat_seconds",
