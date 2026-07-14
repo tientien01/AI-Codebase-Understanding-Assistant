@@ -129,8 +129,4 @@ export function useImportSessionStatusQuery(sessionId: string) {
   })
 }
 
-const initialChatTranscript: ChatMessage[] = [{
-  role: 'assistant',
-  content: 'Import and index a repository, then ask architecture, API flow, debugging, onboarding, or impact questions.',
-  evidenceSufficient: false,
-}]
+const initialChatTranscript: ChatMessage[] = []

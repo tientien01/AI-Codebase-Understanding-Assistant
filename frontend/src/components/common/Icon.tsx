@@ -14,7 +14,21 @@ import {
   Layers,
   List,
   MoreHorizontal,
+  Monitor,
   Network,
+  Database,
+  BookOpen,
+  Box,
+  Paperclip,
+  Send,
+  History,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronRight,
+  MessageSquare,
+  User,
+  Server,
+  Shield,
   Pause,
   Plus,
   RefreshCw,
@@ -60,10 +74,24 @@ const icons: Record<IconName, LucideIcon> = {
   warning: TriangleAlert,
   check: Check,
   git: GitBranch,
+  monitor: Monitor,
+  shield: Shield,
+  server: Server,
+  database: Database,
+  book: BookOpen,
+  box: Box,
+  paperclip: Paperclip,
+  send: Send,
+  history: History,
+  collapse: ChevronsRight,
+  expand: ChevronsLeft,
+  user: User,
+  message: MessageSquare,
+  chevronRight: ChevronRight,
 }
 
-export function Icon({ name }: { name: IconName }) {
+export function Icon({ name, size }: { name: IconName; size?: number }) {
   const Lucide = icons[name]
 
-  return <Lucide className="icon" aria-hidden="true" strokeWidth={2} />
+  return <Lucide className="icon" aria-hidden="true" size={size} strokeWidth={2} />
 }

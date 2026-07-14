@@ -1,5 +1,5 @@
 import type { FormEvent, ReactNode } from 'react'
-import { AssistantPanel } from './components/chat/AssistantChat'
+import { CollapsibleAssistantPanel } from './components/chat/AssistantChat'
 import { ImportPage, IndexingPage, ProjectsPage } from './pages/management'
 import { RouteRecoveryPage } from './pages/routing'
 import { pathForPage } from './routing/routes'
@@ -240,6 +240,7 @@ export function AppRoutes(props: AppRoutesProps) {
             overview={overview}
             onQuestion={props.setChatInput}
             onExploreArchitecture={() => props.changeGraphView('project-map')}
+            onExploreFlow={() => props.changeGraphView('api-flow')}
             onOpenFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)}
           />
         }
@@ -348,7 +349,18 @@ function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages,
   return (
     <WorkspacePage
       main={main}
-      side={<AssistantPanel input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={setChatInput} onSubmit={sendChatMessage} onEvidence={openEvidence} />}
+      compactSide
+      side={
+        <CollapsibleAssistantPanel
+          input={chatInput}
+          messages={chatMessages}
+          disabled={!canChat(selectedRepository)}
+          suggestions={['Explain the architecture', 'Trace the login flow', 'Where should I start reading?']}
+          onInput={setChatInput}
+          onSubmit={sendChatMessage}
+          onEvidence={openEvidence}
+        />
+      }
     />
   )
 }

@@ -23,6 +23,7 @@ allowed_paths:
   - backend/app/schemas/api.py
   - backend/app/schemas/imports.py
   - backend/app/services/index_models.py
+  - backend/app/services/ingestion/archive_service.py
   - backend/app/services/ingestion/import_session_service.py
   - docs/06-api-and-integrations/specifications/detailed-rest-api-contract.md
   - frontend/src/api/server.ts
@@ -78,10 +79,11 @@ Replace the blocking generic GitHub-import loading screen with an explicit prepa
 - Remove automatic GitHub acquisition after paste and wire explicit cancel/prepare actions.
 - Preserve background indexing and show its actual job state.
 - Give GitHub, ZIP and folder sources one source-aware preparation flow; folder uploads use bounded batches instead of one unbounded multipart request.
+- Keep archive-wide ZIP safety limits fail-closed while skipping an individually oversized source file that cannot be indexed.
 
 ## Verification
 
-After the owner observed a blank page and requested automated verification, the frontend build/typecheck, lint and all 55 Vitest tests passed. Focused backend import/security/service and API contract coverage passed 66 tests. Two headless Chromium runs exercised the real `Hoang-Sang/recommend_hotel` URL through Prepare Preview and Start Indexing: 63 files were acquired, 34 were indexed, 29 were truthfully skipped, the index completed in 0.7 seconds, cleanup returned 200, and the final run had no console/page errors. The import page now exposes the single implemented indexing pipeline, removes inactive profile controls, uses source-aware four-step preparation for GitHub/ZIP/folder, filters common generated folders locally and uploads browser folders in bounded 200-file batches under a server-owned session. The owner retained visual UX acceptance. The full backend suite has 286 passes and 31 skips; its 18 failures are the pre-existing frozen evaluation fixture CRLF/checksum mismatch, so this task remains `in_progress` rather than claiming a clean mandatory full gate.
+After the owner observed a blank page and requested automated verification, the frontend build/typecheck, lint and all 55 Vitest tests passed. Focused backend import/security/service and API contract coverage passed 68 tests. Two headless Chromium runs exercised the real `Hoang-Sang/recommend_hotel` URL through Prepare Preview and Start Indexing: 63 files were acquired, 34 were indexed, 29 were truthfully skipped, the index completed in 0.7 seconds, cleanup returned 200, and the final run had no console/page errors. The import page now exposes the single implemented indexing pipeline, removes inactive profile controls, uses source-aware four-step preparation for GitHub/ZIP/folder, filters common generated folders locally and uploads browser folders in bounded 200-file batches under a server-owned session. ZIP archives retain path, entry-count, expanded-size and compression-ratio gates, but a truthfully declared oversized source file is now skipped rather than rejecting an otherwise indexable archive; a streamed-size mismatch still fails closed. The owner retained visual UX acceptance. The full backend suite has 288 passes and 31 skips; its 18 failures are the pre-existing frozen evaluation fixture CRLF/checksum mismatch, so this task remains `in_progress` rather than claiming a clean mandatory full gate.
 
 ## Rollback
 

@@ -76,8 +76,6 @@ export function WorkspaceShell({
       <SideInfo title="Index Status">
         <span className={`badge ${isRepositoryUsable(repository) ? 'green' : 'blue'}`}>{repository?.status ?? 'empty'}</span>
         <PreviewLine label="Files indexed" value={String(repository?.indexed_files ?? 0)} />
-        <PreviewLine label="Chunks" value={String(repository?.chunks ?? 0)} />
-        <PreviewLine label="Step" value={status?.current_step ?? 'completed'} />
         <Progress value={status?.progress ?? (isRepositoryUsable(repository) ? 100 : 0)} />
         <button className="secondary wide" disabled={!repository} onClick={onReindex}>Re-index Project</button>
       </SideInfo>
@@ -89,7 +87,6 @@ export function TopBar({
   mode,
   page,
   repository,
-  status,
 }: {
   mode: 'management' | 'workspace'
   page: Page
@@ -125,7 +122,6 @@ export function TopBar({
           <button className="ghost-icon" aria-label="Help"><Icon name="help" /></button>
           <button className="ghost-icon" aria-label="Notifications"><Icon name="bell" /></button>
           <div className="avatar">JD<span /></div>
-          <div className="topbar-meta">Indexing {status?.progress ?? (isRepositoryUsable(repository) ? 100 : 0)}%</div>
         </>
       )}
     </header>

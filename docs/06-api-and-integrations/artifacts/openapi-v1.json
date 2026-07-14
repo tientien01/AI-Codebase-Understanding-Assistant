@@ -64,6 +64,336 @@
         "title": "ApiTokenIssuedResponse",
         "type": "object"
       },
+      "ArchitectureComponentDTO": {
+        "properties": {
+          "endpoint_count": {
+            "default": 0,
+            "title": "Endpoint Count",
+            "type": "integer"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureEvidenceDTO"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "file_paths": {
+            "items": {
+              "type": "string"
+            },
+            "title": "File Paths",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "actor",
+              "presentation",
+              "container",
+              "api",
+              "application",
+              "domain",
+              "data_access",
+              "messaging",
+              "external_adapter",
+              "entrypoint",
+              "infrastructure",
+              "module"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "layer": {
+            "title": "Layer",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "support": {
+            "default": "inferred",
+            "enum": [
+              "confirmed",
+              "inferred",
+              "unknown"
+            ],
+            "title": "Support",
+            "type": "string"
+          },
+          "technology": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technology"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "layer",
+          "summary"
+        ],
+        "title": "ArchitectureComponentDTO",
+        "type": "object"
+      },
+      "ArchitectureEvidenceDTO": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "detail"
+        ],
+        "title": "ArchitectureEvidenceDTO",
+        "type": "object"
+      },
+      "ArchitectureFlowDTO": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureEvidenceDTO"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureFlowStepDTO"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "summary"
+        ],
+        "title": "ArchitectureFlowDTO",
+        "type": "object"
+      },
+      "ArchitectureFlowStepDTO": {
+        "properties": {
+          "component_id": {
+            "title": "Component Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "support": {
+            "enum": [
+              "confirmed",
+              "inferred",
+              "unknown"
+            ],
+            "title": "Support",
+            "type": "string"
+          }
+        },
+        "required": [
+          "component_id",
+          "label",
+          "support"
+        ],
+        "title": "ArchitectureFlowStepDTO",
+        "type": "object"
+      },
+      "ArchitectureOverviewDTO": {
+        "properties": {
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureComponentDTO"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "coverage_state": {
+            "default": "limited",
+            "enum": [
+              "ready",
+              "limited"
+            ],
+            "title": "Coverage State",
+            "type": "string"
+          },
+          "detector_version": {
+            "default": "rule-based/v1",
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "primary_flows": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureFlowDTO"
+            },
+            "title": "Primary Flows",
+            "type": "array"
+          },
+          "relations": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureRelationDTO"
+            },
+            "title": "Relations",
+            "type": "array"
+          },
+          "style": {
+            "default": "package_map",
+            "enum": [
+              "layered_web",
+              "backend_api",
+              "mvc",
+              "modular",
+              "event_driven",
+              "library",
+              "cli",
+              "package_map"
+            ],
+            "title": "Style",
+            "type": "string"
+          },
+          "style_reason": {
+            "default": "Architecture style was not classified.",
+            "title": "Style Reason",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "system_type": {
+            "title": "System Type",
+            "type": "string"
+          },
+          "technologies": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Technologies",
+            "type": "array"
+          },
+          "unknowns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknowns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "system_type",
+          "summary"
+        ],
+        "title": "ArchitectureOverviewDTO",
+        "type": "object"
+      },
+      "ArchitectureRelationDTO": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureEvidenceDTO"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "support": {
+            "enum": [
+              "confirmed",
+              "inferred",
+              "unknown"
+            ],
+            "title": "Support",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "target",
+          "label",
+          "support"
+        ],
+        "title": "ArchitectureRelationDTO",
+        "type": "object"
+      },
       "Body_create_folder_import_session_api_v1_import_sessions_upload_folder_post": {
         "properties": {
           "files": {
@@ -2435,6 +2765,9 @@
       },
       "OverviewResponse": {
         "properties": {
+          "architecture": {
+            "$ref": "#/components/schemas/ArchitectureOverviewDTO"
+          },
           "detected_stack": {
             "items": {
               "type": "string"
@@ -2494,7 +2827,8 @@
           "modules",
           "endpoints",
           "documentation_gaps",
-          "stats"
+          "stats",
+          "architecture"
         ],
         "title": "OverviewResponse",
         "type": "object"
