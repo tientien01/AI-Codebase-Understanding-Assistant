@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { API_V1, safeErrorMessage } from '../api/client'
 import { serverApi } from '../api/server'
 import { uploadFormData } from '../api/upload'
-import { toAsyncViewState, toMutationAsyncViewState, useImportPreviewQuery } from '../features/server-state'
+import { useImportPreviewQuery, useImportSessionStatusQuery } from '../features/server-state'
 import { queryKeys } from '../features/server-state/keys'
 import type { ImportMode, Page } from '../types/api'
 
@@ -20,12 +20,18 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
   const [githubUrl, setGithubUrlState] = useState('')
   const [importMode, setImportMode] = useState<ImportMode>('folder')
   const [folderFiles, setFolderFiles] = useState<File[]>([])
+  const [folderSelectedCount, setFolderSelectedCount] = useState(0)
+  const [folderExcludedCount, setFolderExcludedCount] = useState(0)
   const [zipFile, setZipFile] = useState<File | null>(null)
   const [importSessionId, setImportSessionId] = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
-  const lastPreviewKey = useRef('')
+  const [acquisitionStartedAt, setAcquisitionStartedAt] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [isPreparingUpload, setIsPreparingUpload] = useState(false)
 
-  const previewQuery = useImportPreviewQuery(importSessionId)
+  const statusQuery = useImportSessionStatusQuery(importSessionId)
+  const previewReady = statusQuery.data?.status === 'preview_ready'
+  const previewQuery = useImportPreviewQuery(importSessionId, previewReady)
   const githubSession = useMutation({
     mutationFn: ({ url, name }: { url: string; name?: string }) => serverApi.createGithubImport(url, name),
   })
@@ -46,29 +52,39 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
       ])
     },
   })
-
-  const activeMutation = confirmSession.isPending || confirmSession.isError
-    ? confirmSession
-    : githubSession.isPending || githubSession.isError
-      ? githubSession
-      : uploadSession
-  const asyncState = importSessionId
-    ? toAsyncViewState(previewQuery, { enabled: true })
-    : toMutationAsyncViewState(activeMutation)
+  const cancelSession = useMutation({ mutationFn: (sessionId: string) => serverApi.cancelImport(sessionId) })
+  const asyncState = { kind: 'initial' as const }
 
   function clearImportPreview() {
     if (importSessionId) queryClient.removeQueries({ queryKey: queryKeys.importPreview(importSessionId) })
+    if (importSessionId) queryClient.removeQueries({ queryKey: queryKeys.importStatus(importSessionId) })
     setImportSessionId('')
     setUploadProgress(0)
-    lastPreviewKey.current = ''
+    setAcquisitionStartedAt(null)
+    setElapsedSeconds(0)
+    setIsPreparingUpload(false)
     githubSession.reset()
     uploadSession.reset()
     confirmSession.reset()
+    cancelSession.reset()
   }
 
   function updateGithubUrl(value: string) {
     setGithubUrlState(value)
     clearImportPreview()
+  }
+
+  function updateFolderFiles(files: File[]) {
+    clearImportPreview()
+    const eligibleFiles = files.filter((file) => !isLocallyExcluded(file))
+    setFolderSelectedCount(files.length)
+    setFolderExcludedCount(files.length - eligibleFiles.length)
+    setFolderFiles(eligibleFiles)
+  }
+
+  function updateZipFile(file: File | null) {
+    clearImportPreview()
+    setZipFile(file)
   }
 
   async function submitImport(event: FormEvent) {
@@ -95,17 +111,54 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
 
   async function uploadFolderRepository() {
     if (folderFiles.length === 0) {
-      setApiError('Choose a project folder before importing.')
+      setApiError('Choose a project folder with indexable files before importing.')
       return
     }
-    const formData = new FormData()
-    for (const file of folderFiles) {
-      const uploadFile = file as File & { webkitRelativePath?: string }
-      formData.append('files', file)
-      formData.append('relative_paths', uploadFile.webkitRelativePath || file.name)
+    const totalBytes = folderFiles.reduce((total, file) => total + file.size, 0)
+    setUploadProgress(0)
+    setAcquisitionStartedAt(Date.now())
+    setIsPreparingUpload(true)
+    let activeSessionId = ''
+    try {
+      setApiError('')
+      const session = await serverApi.startFolderImport(projectName || folderRootName(folderFiles), folderFiles.length, totalBytes)
+      activeSessionId = session.import_session_id
+      setImportSessionId(session.import_session_id)
+      let uploadedBytes = 0
+      for (const batch of fileBatches(folderFiles, 200)) {
+        const batchBytes = batch.reduce((total, file) => total + file.size, 0)
+        const formData = new FormData()
+        for (const file of batch) {
+          const uploadFile = file as File & { webkitRelativePath?: string }
+          formData.append('files', file)
+          formData.append('relative_paths', uploadFile.webkitRelativePath || file.name)
+        }
+        await uploadFormData({
+          url: `${API_V1}/import-sessions/${session.import_session_id}/upload-folder-batch`,
+          formData,
+          onProgress: (batchProgress) => {
+            const sentBytes = uploadedBytes + (batchBytes * batchProgress / 100)
+            setUploadProgress(totalBytes > 0 ? Math.min(99, Math.round((sentBytes / totalBytes) * 100)) : 0)
+          },
+        })
+        uploadedBytes += batchBytes
+        setUploadProgress(totalBytes > 0 ? Math.min(99, Math.round((uploadedBytes / totalBytes) * 100)) : 0)
+      }
+      await serverApi.completeFolderImport(session.import_session_id)
+      setUploadProgress(100)
+    } catch (error) {
+      if (activeSessionId) {
+        await serverApi.cancelImport(activeSessionId).catch(() => undefined)
+        queryClient.removeQueries({ queryKey: queryKeys.importStatus(activeSessionId) })
+        queryClient.removeQueries({ queryKey: queryKeys.importPreview(activeSessionId) })
+        setImportSessionId('')
+      }
+      setUploadProgress(0)
+      setAcquisitionStartedAt(null)
+      setApiError(safeErrorMessage(error))
+    } finally {
+      setIsPreparingUpload(false)
     }
-    formData.append('name', projectName || folderFiles[0].name)
-    await createPreviewFromUpload(`${API_V1}/import-sessions/upload-folder`, formData)
   }
 
   async function uploadGithubRepository() {
@@ -117,6 +170,7 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
     try {
       setApiError('')
       const session = await githubSession.mutateAsync({ url: githubUrl.trim(), name: projectName || undefined })
+      setAcquisitionStartedAt(Date.now())
       setImportSessionId(session.import_session_id)
     } catch (error) {
       setApiError(safeErrorMessage(error))
@@ -124,12 +178,16 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
   }
 
   async function createPreviewFromUpload(url: string, formData: FormData) {
+    setAcquisitionStartedAt(Date.now())
+    setIsPreparingUpload(true)
     try {
       setApiError('')
       const session = await uploadSession.mutateAsync({ url, formData })
       setImportSessionId(session.import_session_id)
     } catch (error) {
       setApiError(safeErrorMessage(error))
+    } finally {
+      setIsPreparingUpload(false)
     }
   }
 
@@ -144,68 +202,81 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
     }
   }
 
-  useEffect(() => {
-    if (importMode !== 'folder' || folderFiles.length === 0) return
-    const key = folderPreviewKey(folderFiles, projectName)
-    if (lastPreviewKey.current === key) return
-    lastPreviewKey.current = key
-    void uploadFolderRepository()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importMode, folderFiles])
+  async function cancelImportSession() {
+    if (!importSessionId) {
+      clearImportPreview()
+      return
+    }
+    try {
+      await cancelSession.mutateAsync(importSessionId)
+      clearImportPreview()
+    } catch (error) {
+      setApiError(safeErrorMessage(error))
+    }
+  }
 
   useEffect(() => {
-    if (importMode !== 'zip' || !zipFile) return
-    const key = `zip:${zipFile.name}:${zipFile.size}:${projectName}`
-    if (lastPreviewKey.current === key) return
-    lastPreviewKey.current = key
-    void uploadZipRepository()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importMode, zipFile])
+    if (!acquisitionStartedAt || ['preview_ready', 'failed', 'cancelled'].includes(statusQuery.data?.status ?? '')) return
+    const update = () => setElapsedSeconds(Math.max(0, Math.floor((Date.now() - acquisitionStartedAt) / 1_000)))
+    update()
+    const timer = window.setInterval(update, 1_000)
+    return () => window.clearInterval(timer)
+  }, [acquisitionStartedAt, statusQuery.data?.status])
 
   useEffect(() => {
-    if (importMode !== 'github' || !isValidGithubUrl(githubUrl)) return
-    const key = `github:${githubUrl.trim()}:${projectName}`
-    const timer = window.setTimeout(() => {
-      if (lastPreviewKey.current === key) return
-      lastPreviewKey.current = key
-      void uploadGithubRepository()
-    }, 800)
-    return () => window.clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importMode, githubUrl])
+    if (statusQuery.data?.status === 'failed') {
+      setApiError(statusQuery.data.error_message || 'Repository preview preparation failed.')
+    } else if (statusQuery.isError) {
+      setApiError(safeErrorMessage(statusQuery.error))
+    } else if (previewQuery.isError) {
+      setApiError(safeErrorMessage(previewQuery.error))
+    }
+  }, [previewQuery.error, previewQuery.isError, setApiError, statusQuery.data?.error_message, statusQuery.data?.status, statusQuery.error, statusQuery.isError])
 
   return {
     projectName,
     githubUrl,
     importMode,
     folderFiles,
+    folderSelectedCount,
+    folderExcludedCount,
     zipFile,
     importPreview: previewQuery.data ?? null,
+    importStatus: statusQuery.data ?? null,
     uploadProgress,
-    isPreviewLoading: githubSession.isPending || uploadSession.isPending || previewQuery.isFetching,
+    elapsedSeconds,
+    isConfirming: confirmSession.isPending,
+    isPreviewLoading: githubSession.isPending || uploadSession.isPending || isPreparingUpload || Boolean(importSessionId && !previewQuery.data && !statusQuery.isError && !previewQuery.isError && statusQuery.data?.status !== 'failed' && statusQuery.data?.status !== 'cancelled'),
+    canPreparePreview: importMode === 'github' ? isValidGithubUrl(githubUrl) : importMode === 'zip' ? Boolean(zipFile) : folderFiles.length > 0,
     asyncState,
     setProjectName,
     setGithubUrl: updateGithubUrl,
     setImportMode,
-    setFolderFiles,
-    setZipFile,
+    setFolderFiles: updateFolderFiles,
+    setZipFile: updateZipFile,
     clearImportPreview,
+    cancelImportSession,
     submitImport,
   }
 }
 
-function folderPreviewKey(files: File[], projectName: string) {
+const LOCAL_EXCLUDED_DIRECTORIES = new Set(['.git', 'node_modules', 'venv', '.venv', 'dist', 'build', '__pycache__'])
+
+function isLocallyExcluded(file: File) {
+  const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name
+  const directoryParts = relativePath.replace(/\\/g, '/').split('/').slice(1, -1)
+  return directoryParts.some((part) => LOCAL_EXCLUDED_DIRECTORIES.has(part.toLowerCase()))
+}
+
+function folderRootName(files: File[]) {
   const first = files[0] as (File & { webkitRelativePath?: string }) | undefined
-  const last = files[files.length - 1] as (File & { webkitRelativePath?: string }) | undefined
-  return [
-    'folder',
-    projectName,
-    files.length,
-    first?.webkitRelativePath || first?.name || '',
-    first?.size ?? 0,
-    last?.webkitRelativePath || last?.name || '',
-    last?.size ?? 0,
-  ].join(':')
+  return first?.webkitRelativePath?.replace(/\\/g, '/').split('/')[0] || first?.name || 'Imported folder'
+}
+
+function fileBatches(files: File[], batchSize: number) {
+  const batches: File[][] = []
+  for (let index = 0; index < files.length; index += batchSize) batches.push(files.slice(index, index + batchSize))
+  return batches
 }
 
 function isValidGithubUrl(value: string) {

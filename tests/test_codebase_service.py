@@ -119,7 +119,8 @@ def test_import_session_preview_and_confirm_creates_indexed_repository() -> None
     assert preview_response.file_statistics.supported_files >= 8
     assert "FastAPI" in preview_response.detected_stack
     assert [item.stage for item in preview_response.activity_logs] == [
-        "upload_received",
+        "folder_manifest_received",
+        "folder_upload_batch",
         "folder_saved",
         "preview_ready",
         "preview_scan_started",

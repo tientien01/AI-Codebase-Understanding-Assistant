@@ -11,6 +11,7 @@ export {
   useGraphQuery,
   useIgnorePatternsQuery,
   useImportPreviewQuery,
+  useImportSessionStatusQuery,
   useIndexStatusQuery,
   useOverviewQuery,
   useRepositoriesQuery,

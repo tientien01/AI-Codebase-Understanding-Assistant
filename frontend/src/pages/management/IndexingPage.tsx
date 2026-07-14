@@ -87,7 +87,7 @@ export function IndexingPage({
             {status?.warnings.length ? status.warnings.slice(0, 5).map((warning) => <ListRow key={warning} title={warning} detail="Review scanner or parser warning." />) : <p>No warnings or failed files reported.</p>}
           </Panel>
           <Panel title="Activity Log">
-            <div className="log-box">{activityLogs.length ? activityLogs.map((log) => <p key={`${log.time}-${log.message}`}><span>{log.time}</span>{log.message}</p>) : <p>No job log yet.</p>}</div>
+            <div className="log-box">{activityLogs.length ? activityLogs.map((log, index) => <p key={`${log.time}-${log.message}-${index}`}><span>{log.time}</span>{log.message}</p>) : <p>No job log yet.</p>}</div>
           </Panel>
         </div>
         <aside className="right-stack">

@@ -278,6 +278,16 @@ export type ImportActivityLog = {
   details: Record<string, string>
 }
 
+export type ImportSessionStatus = {
+  import_session_id: string
+  status: 'preparing' | 'cloning' | 'validating' | 'preview_ready' | 'failed' | 'cancelled' | string
+  stage: string
+  message: string
+  activity_logs: ImportActivityLog[]
+  error_code?: string | null
+  error_message?: string | null
+}
+
 export type ImportPreview = {
   import_session_id: string
   status: string

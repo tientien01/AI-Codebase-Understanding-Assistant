@@ -59,6 +59,7 @@ from app.schemas.imports import (
     ImportProjectSummaryDTO,
     ImportSecurityWarningDTO,
     ImportSessionCreateResponse,
+    ImportSessionStatusResponse,
 )
 from app.schemas.indexing import (
     FailedFileDTO,
@@ -127,6 +128,7 @@ __all__ = [
     "ImportProjectSummaryDTO",
     "ImportSecurityWarningDTO",
     "ImportSessionCreateResponse",
+    "ImportSessionStatusResponse",
     "LoginRequest",
     "IndexJobControlResponse",
     "IndexJobListResponse",

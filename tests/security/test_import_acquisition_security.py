@@ -269,7 +269,11 @@ def test_git_clone_is_hardened_and_metadata_is_removed(
         captured["command"] = command
         captured["kwargs"] = kwargs
         source_dir = Path(command[-1])
-        (source_dir / ".git").mkdir(parents=True)
+        pack_dir = source_dir / ".git" / "objects" / "pack"
+        pack_dir.mkdir(parents=True)
+        pack_index = pack_dir / "pack-test.idx"
+        pack_index.write_bytes(b"git pack index")
+        pack_index.chmod(stat.S_IREAD)
         (source_dir / "app.py").write_text("print('safe')", encoding="utf-8")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -292,7 +296,7 @@ def test_git_clone_is_hardened_and_metadata_is_removed(
     assert (source_dir / "app.py").is_file()
 
 
-def test_git_timeout_and_post_clone_quota_failure_clean_staging(
+def test_git_timeout_and_post_clone_limits_are_handled_safely(
     isolated_import_roots: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -305,13 +309,57 @@ def test_git_timeout_and_post_clone_quota_failure_clean_staging(
     assert timed_out.value.code == "GITHUB_IMPORT_TIMEOUT"
     assert not list((isolated_import_roots / "import_sessions").glob("*"))
 
-    def oversized_clone(command, **_kwargs):
+    def clone_with_large_file(command, **_kwargs):
         source_dir = Path(command[-1])
         (source_dir / ".git").mkdir(parents=True)
         (source_dir / "large.py").write_bytes(b"x" * (1024 * 1024 + 1))
+        (source_dir / "app.py").write_text("print('safe')", encoding="utf-8")
 
-    monkeypatch.setattr(subprocess, "run", oversized_clone)
-    with pytest.raises(DomainError) as oversized:
+    monkeypatch.setattr(subprocess, "run", clone_with_large_file)
+    service = CodebaseService()
+    session = service.create_github_import_session("https://github.com/owner/repo", None)
+    preview = service.get_import_preview(session.import_session_id)
+
+    assert preview.file_statistics.supported_files == 1
+    assert preview.file_statistics.skipped_files == 1
+    assert any(item.reason == "file_too_large" and item.skipped_count == 1 for item in preview.ignore_summary)
+    service.cancel_import_session(session.import_session_id)
+
+    monkeypatch.setattr(settings, "max_extracted_size_mb", 1)
+
+    def aggregate_oversized_clone(command, **_kwargs):
+        source_dir = Path(command[-1])
+        (source_dir / ".git").mkdir(parents=True)
+        (source_dir / "a.py").write_bytes(b"x" * 600_000)
+        (source_dir / "b.py").write_bytes(b"y" * 600_000)
+
+    monkeypatch.setattr(subprocess, "run", aggregate_oversized_clone)
+    with pytest.raises(DomainError) as aggregate:
         CodebaseService().create_github_import_session("https://github.com/owner/repo", None)
-    assert oversized.value.code == "IMPORT_FILE_TOO_LARGE"
+    assert aggregate.value.code == "REPOSITORY_TOO_LARGE"
     assert not list((isolated_import_roots / "import_sessions").glob("*"))
+
+
+def test_folder_session_accepts_bounded_batches_before_preview(
+    isolated_import_roots: Path,
+) -> None:
+    service = CodebaseService().ingestion
+    session = service.start_folder_import_session("sample", total_files=2, total_bytes=2)
+
+    first = asyncio.run(
+        service.upload_folder_batch(session.import_session_id, [_folder_upload(b"x", "a.py")], ["sample/a.py"])
+    )
+    assert first.received_files == 1
+    assert service.get_import_session_status(session.import_session_id).stage == "folder_upload_batch"
+
+    with pytest.raises(DomainError) as incomplete:
+        service.complete_folder_import_session(session.import_session_id)
+    assert incomplete.value.code == "INCOMPLETE_FOLDER_UPLOAD"
+
+    second = asyncio.run(
+        service.upload_folder_batch(session.import_session_id, [_folder_upload(b"y", "b.py")], ["sample/b.py"])
+    )
+    assert second.received_files == 2
+    completed = service.complete_folder_import_session(session.import_session_id)
+    assert completed.status == "preview_ready"
+    assert (isolated_import_roots / "import_sessions" / session.import_session_id / "source" / "sample" / "a.py").is_file()
