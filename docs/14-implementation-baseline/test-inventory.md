@@ -90,7 +90,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - The synthetic full/incremental comparison fixture matrix is verified, but no production parser/resolver/graph pipeline fixture has yet populated and passed the canonical equivalence snapshot.
 - Python has one canonical file-local adapter/IR authority, typed import/call references, reference-derived graph candidates and tested compatibility projections. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates, global canonical graph composition and production pipeline composition remain incomplete.
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
-- Frontend coverage now includes 42 tests across routing/application, API client, import, server-state policy and bounded graph component suites; no MSW contract, automated accessibility, or Playwright suite exists.
+- Frontend coverage now includes 45 tests across routing/application, API client, import, server-state policy, bounded graph and UI-004 workspace component suites; no MSW contract, automated accessibility, or Playwright suite exists.
 - No load, resilience, backup/restore, deployment, container, dependency, or security scan evidence.
 - EVA-001 adds a versioned deterministic retrieval dataset and keyword/semantic-fixture/hybrid comparison, but no claim-level support benchmark, real embedding/provider run, accepted quality/latency threshold, answer judge or load qualification.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
@@ -104,11 +104,11 @@ Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, vir
 
 | Command | Result |
 | --- | --- |
-| `npm.cmd run test -- src/pages/workspace/GraphPage.test.tsx src/features/server-state/serverState.test.tsx src/App.test.tsx` | Passed: 19 tests across 3 files |
-| `npm.cmd run test` | Passed: 42 tests across 6 files |
+| `npm.cmd test -- --run src/pages/workspace/GraphPage.test.tsx src/pages/workspace/UI004Workspace.test.tsx src/App.test.tsx` | Passed: 14 tests across 3 files |
+| `npm.cmd test -- --run` | Passed: 45 tests across 7 files |
 | `npm.cmd run lint` | Passed with 0 errors |
 | `npx.cmd tsc -b` | Passed |
-| `npm.cmd run build` | Passed from a clean environment-free worktree: 131 modules; JS 362.30 kB (110.98 kB gzip), CSS 25.18 kB (6.08 kB gzip) |
+| `npm.cmd run build` | Passed after clean `npm ci`: 131 modules; JS 374.22 kB (114.34 kB gzip), CSS 36.15 kB (8.59 kB gzip) |
 
 `FND-005` added a minimal Vitest/jsdom/Testing Library harness, preserved the abort error cause in `src/api/client.ts`, and moved the three automatic-preview effects after their called declarations in `src/hooks/useImportController.ts`. Targeted tests cover the timeout cause and folder/ZIP/GitHub automatic previews. Broader frontend behavior and E2E coverage remain future UI work.
 
@@ -117,3 +117,5 @@ Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, vir
 `UI-002` adds deterministic tests for repository/version query keys, cancellation, bounded retry, terminal/hidden polling, async-state classification, same-key cache retention and mutation invalidation. Application/import tests verify QueryClient integration and retry recovery. The exact lock survived `npm ci` unchanged; clean typecheck, lint, targeted/full tests and production build pass.
 
 `UI-003` adds seven service tests and one API-contract test for bounded deterministic graph projections, plus component/query tests proving normalized projection identity, full rendering of the 220-node server maximum, limited-state disclosure, bounded expansion and keyboard-native controls/relation fallback. A clean LF checkout passed 31 targeted and the full 297-test backend collection (268 passed, 29 integration-profile skips); frontend targeted/full/lint/typecheck/build gates also pass.
+
+`UI-004` adds component coverage for complete SVG edge rendering, selected-node context, retained accessible relations, architecture entry, source-backed tour steps and direct/inferred/unknown impact language. Clean install, 14 targeted tests, all 45 frontend tests, lint, TypeScript and production build pass. Automated accessibility and the task-register Evidence-backed UX Playwright flow do not exist yet, so UI-004 remains in progress and no Phase 6 release claim is made.

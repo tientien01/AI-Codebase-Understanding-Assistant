@@ -58,6 +58,17 @@ describe('GraphPage bounded projection UX', () => {
     expect(onProjection).toHaveBeenCalledWith({ direction: 'outgoing' })
     expect(onProjection).toHaveBeenCalledWith({ rootKeys: ['node-2'] })
   })
+
+  it('draws every returned relationship and exposes selected-node context without hiding the relation list', () => {
+    const { container } = renderGraph(graphFixture(4))
+
+    expect(container.querySelectorAll('.graph-edge')).toHaveLength(3)
+    fireEvent.click(within(screen.getByLabelText('Graph nodes')).getByRole('button', { name: /Node 2/ }))
+
+    const inspector = screen.getByLabelText('Selected graph entity')
+    expect(within(inspector).getByRole('heading', { name: 'Node 2' })).toBeTruthy()
+    expect(screen.getByText('Accessible relation list (3)')).toBeTruthy()
+  })
 })
 
 function renderGraph(graph: GraphData, onProjection = vi.fn()) {

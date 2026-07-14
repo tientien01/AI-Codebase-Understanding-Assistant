@@ -1,0 +1,3 @@
+.search-layout{display:grid;grid-template-columns:minmax(0,1fr) 520px;gap:36px}.query{display:flex;gap:0;margin:12px 0}.query input{flex:1;height:54px;border:1px solid var(--line);border-radius:12px 0 0 12px;background:#152033;padding:0 24px;font-size:18px}.query button{width:120px;border-radius:0 12px 12px 0}
+.result{padding:16px 18px;border:1px solid var(--line);border-radius:11px;background:#19263a;margin:18px 0}.score{min-width:95px;text-align:center;padding:6px;border-radius:9px;background:#15572f;color:#78e79d}
+.filters h3{font-size:21px;margin:20px 0 10px}.filters .ux{margin-top:280px}

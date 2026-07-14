@@ -275,6 +275,13 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     }
   }
 
+  function openImpact(targetType: string, targetRef: string) {
+    setImpactTargetType(targetType)
+    setImpactTargetRefDraft(targetRef)
+    if (!selectedRepository) return
+    navigate(pathForPage('impact', selectedRepository.id, { impactTarget: targetRef }))
+  }
+
   function setPage(nextPage: Page) {
     const needsRepository = workspacePages.includes(nextPage)
     navigate(pathForPage(nextPage, needsRepository ? selectedRepository?.id : undefined))
@@ -321,6 +328,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     setSearchQuery,
     setImpactTargetType,
     setImpactTargetRef,
+    openImpact,
     openWorkspace,
     reindexRepository,
     pauseIndexingJob,

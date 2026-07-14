@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Search</title>
+<link rel="stylesheet" href="../css/shared.css"><link rel="stylesheet" href="../css/search.css"></head><body><div class="shell">
+<header class="topbar">
+<div class="brand"><span class="logo"></span><strong>AI Codebase Assistant</strong><span class="beta">Beta</span></div>
+<div class="top-controls"><div class="control">▣ &nbsp; moodfood-backend <span>⌄</span></div><div class="control small">⑂ &nbsp; main <span>⌄</span></div><div class="status">Indexed ●</div></div>
+<div class="top-actions"><label class="searchbox">⌕<input placeholder="Search anything..."><span>⌘K</span></label><button class="icon-btn">?</button><button class="icon-btn">♧</button><span class="avatar"></span></div>
+</header>
+<div class="layout">
+<aside class="sidebar">
+<nav class="nav">
+<a href="overview.html" class=""><span class="ico">⌂</span>Overview</a>
+<a href="code-explorer.html" class=""><span class="ico">⌘</span>Code Explorer</a>
+<a href="graph-view.html" class=""><span class="ico">⌘</span>Graph View</a>
+<a href="api-explorer.html" class=""><span class="ico">⌘</span>API Explorer</a>
+<a href="impact-analysis.html" class=""><span class="ico">✥</span>Impact Analysis</a>
+<a href="search.html" class="active"><span class="ico">⌕</span>Search</a>
+<a href="evaluation.html" class=""><span class="ico">▥</span>Evaluation</a>
+<a href="settings.html" class=""><span class="ico">⚙</span>Settings</a>
+</nav>
+<section class="index-card">
+<div class="row-between"><h3>Index Status</h3><span class="pill green">● Indexed</span></div>
+<div class="index-grid"><span>Last updated</span><b>2 minutes ago</b><span>Files indexed</span><b>1,248</b><span>Chunks</span><b>18,732</b><span>Embed model</span><b>text-embedding-3-large</b></div>
+<div class="progress"><span></span></div><button class="btn full">↻ Re-index Project</button>
+</section><div class="minimize">↤ &nbsp; Minimize</div></aside>
+<main class="main"><div class="search-layout"><section><div class="page-head"><div><h1>Search</h1><p>Tìm kiếm codebase bằng keyword search và semantic search.</p></div></div><div class="query"><input value="phần tạo token nằm ở đâu"><button class="btn primary">Search</button></div><div class="chip-row"><span class="chip">● Semantic Search</span><span class="chip">● Keyword Search</span><span class="chip">● Hybrid</span><span class="chip">● Backend only</span><span class="chip">● Endpoints</span></div><section class="card" style="margin-top:14px"><h2>Results</h2><article class="result"><div class="row-between"><div><div style="color:#a9bdff">src/core/security.py</div><h2 style="margin:4px 0">create_access_token()</h2><div class="muted">Tạo JWT access token, encode payload và thời gian hết hạn.</div></div><div><div class="score">0.94</div><div class="muted" style="margin-top:12px">Lines 21-58</div></div></div></article><article class="result"><div class="row-between"><div><div style="color:#a9bdff">src/services/auth_service.py</div><h2 style="margin:4px 0">AuthService.create_refresh_token()</h2><div class="muted">Tạo refresh token sau khi user đăng nhập thành công.</div></div><div><div class="score">0.89</div><div class="muted" style="margin-top:12px">Lines 66-88</div></div></div></article><article class="result"><div class="row-between"><div><div style="color:#a9bdff">src/api/auth/routes.py</div><h2 style="margin:4px 0">POST /api/auth/login</h2><div class="muted">Endpoint login trả access token và refresh token cho client.</div></div><div><div class="score">0.83</div><div class="muted" style="margin-top:12px">Lines 42-68</div></div></div></article><article class="result"><div class="row-between"><div><div style="color:#a9bdff">src/api/auth/dependencies.py</div><h2 style="margin:4px 0">get_current_user()</h2><div class="muted">Giải mã token để lấy user hiện tại từ request.</div></div><div><div class="score">0.78</div><div class="muted" style="margin-top:12px">Lines 10-39</div></div></div></article></section></section><aside class="card filters"><h2>Filters</h2><h3>Scope</h3><div class="chip-row"><span class="chip">● Backend</span><span class="chip">● Frontend</span><span class="chip">● Docs</span><span class="chip">● Tests</span></div><h3>Entity Type</h3><div class="chip-row"><span class="chip">● File</span><span class="chip">● Function</span><span class="chip">● Class</span><span class="chip">● Endpoint</span><span class="chip">● Model</span></div><h3>Language</h3><div class="chip-row"><span class="chip">● Python</span><span class="chip">● TypeScript</span><span class="chip">● JavaScript</span><span class="chip">● Markdown</span></div><h3>Sort By</h3><div class="chip-row"><span class="chip">● Relevance</span><span class="chip">● Recently changed</span><span class="chip">● File path</span></div><div class="ux"><h2>UX note</h2><p class="muted">Kết quả search phải mở được trực tiếp trong Code Explorer và giữ được line range để trích dẫn.</p></div></aside></div></main></div></div></body></html>
