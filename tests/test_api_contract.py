@@ -54,6 +54,7 @@ EXPECTED_SCHEMA_EXPORTS = {
     "ImportProjectSummaryDTO",
     "ImportSecurityWarningDTO",
     "ImportSessionCreateResponse",
+    "ImportSessionStatusResponse",
     "IndexJobControlResponse",
     "IndexJobListResponse",
     "IndexJobSummaryDTO",
@@ -90,7 +91,7 @@ EXPECTED_ROUTE_MODULE_COUNTS = {
     "app.api.v1.routes.assistant": 4,
     "app.api.v1.routes.exploration": 4,
     "app.api.v1.routes.graph": 8,
-    "app.api.v1.routes.import_sessions": 6,
+    "app.api.v1.routes.import_sessions": 10,
     "app.api.v1.routes.indexing": 10,
     "app.api.v1.routes.repositories": 5,
     "app.api.v1.routes.search": 3,
@@ -138,8 +139,8 @@ def test_route_inventory_and_auth_dependencies_are_preserved() -> None:
         if f"{prefix}{route.path}".startswith("/api/v1")
     ]
 
-    assert len(registered_routes) == 49
-    assert len(versioned_routes) == 48
+    assert len(registered_routes) == 53
+    assert len(versioned_routes) == 52
     assert {
         f"{prefix}{route.path}"
         for prefix, route in registered_routes
@@ -162,7 +163,7 @@ def test_openapi_operation_ids_are_present_and_unique() -> None:
         if method in {"get", "post", "put", "patch", "delete"}
     ]
 
-    assert len(operation_ids) == 49
+    assert len(operation_ids) == 53
     assert len(operation_ids) == len(set(operation_ids))
 
 
@@ -177,6 +178,16 @@ def test_graph_projection_openapi_declares_bounded_inputs_and_disclosure_fields(
     assert {"root_keys", "node_types", "edge_types", "direction", "min_confidence", "support_levels"} <= parameters.keys()
     response_schema = document["components"]["schemas"]["GraphResponse"]["properties"]
     assert {"nodes", "edges", "counts", "coverage", "truncation", "unsupported_hops", "can_expand", "provenance"} <= response_schema.keys()
+
+
+def test_folder_import_openapi_declares_batched_session_flow() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "/api/v1/import-sessions/upload-folder/start" in paths
+    assert "/api/v1/import-sessions/{import_session_id}/upload-folder-batch" in paths
+    assert "/api/v1/import-sessions/{import_session_id}/upload-folder-complete" in paths
+    start_schema = paths["/api/v1/import-sessions/upload-folder/start"]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert start_schema["$ref"].endswith("/FolderImportStartRequest")
 
 
 def test_compatibility_schema_module_exports_all_existing_models() -> None:

@@ -25,6 +25,7 @@ export const queryKeys = {
   chat: (repositoryId: string, indexVersion?: number) =>
     [...queryKeys.version(repositoryId, indexVersion), 'chat'] as const,
   importPreview: (sessionId: string) => ['import-session', sessionId, 'preview'] as const,
+  importStatus: (sessionId: string) => ['import-session', sessionId, 'status'] as const,
 }
 
 export function normalizeGraphProjection(projection?: GraphProjectionInput) {

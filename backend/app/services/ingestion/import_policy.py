@@ -56,10 +56,10 @@ class ImportQuota:
             max_file_bytes=settings.max_file_size_mb * 1024 * 1024,
         )
 
-    def add_file(self, size_bytes: int) -> None:
+    def add_file(self, size_bytes: int, *, enforce_file_size: bool = True) -> None:
         if size_bytes < 0:
             raise DomainError("INVALID_IMPORT_SIZE", "Import contains an invalid file size.", 400)
-        if size_bytes > self.max_file_bytes:
+        if enforce_file_size and size_bytes > self.max_file_bytes:
             raise DomainError("IMPORT_FILE_TOO_LARGE", "Import contains a file larger than the configured limit.", 413)
         if self.files + 1 > self.max_files:
             raise DomainError("TOO_MANY_FILES", "Import contains too many files.", 413)

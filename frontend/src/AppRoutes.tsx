@@ -33,6 +33,7 @@ import type {
   ImpactResult,
   ImportMode,
   ImportPreview,
+  ImportSessionStatus,
   IndexStatus,
   Overview,
   Page,
@@ -66,9 +67,15 @@ type AppRoutesProps = {
   githubUrl: string
   importMode: ImportMode
   folderFiles: File[]
+  folderSelectedCount: number
+  folderExcludedCount: number
   zipFile: File | null
   importPreview: ImportPreview | null
+  importStatus: ImportSessionStatus | null
   uploadProgress: number
+  elapsedSeconds: number
+  canPreparePreview: boolean
+  isConfirming: boolean
   isPreviewLoading: boolean
   setPage: (page: Page) => void
   setChatInput: (value: string) => void
@@ -81,6 +88,7 @@ type AppRoutesProps = {
   setFolderFiles: (files: File[]) => void
   setZipFile: (file: File | null) => void
   clearImportPreview: () => void
+  cancelImportSession: () => void
   submitImport: (event: FormEvent) => void
   openWorkspace: (repositoryId: string) => void
   reindexRepository: (repositoryId: string) => void
@@ -126,9 +134,15 @@ export function AppRoutes(props: AppRoutesProps) {
     githubUrl,
     importMode,
     folderFiles,
+    folderSelectedCount,
+    folderExcludedCount,
     zipFile,
     importPreview,
+    importStatus,
     uploadProgress,
+    elapsedSeconds,
+    canPreparePreview,
+    isConfirming,
     isPreviewLoading,
     isWorkspacePage,
     route,
@@ -177,9 +191,15 @@ export function AppRoutes(props: AppRoutesProps) {
         projectName={projectName}
         githubUrl={githubUrl}
         folderCount={folderFiles.length}
+        folderSelectedCount={folderSelectedCount}
+        folderExcludedCount={folderExcludedCount}
         zipFileName={zipFile?.name ?? ''}
         preview={importPreview}
+        importStatus={importStatus}
         uploadProgress={uploadProgress}
+        elapsedSeconds={elapsedSeconds}
+        canPreparePreview={canPreparePreview}
+        isConfirming={isConfirming}
         isPreviewLoading={isPreviewLoading}
         onModeChange={(mode) => {
           props.setImportMode(mode)
@@ -196,6 +216,7 @@ export function AppRoutes(props: AppRoutesProps) {
           props.clearImportPreview()
         }}
         onSubmit={props.submitImport}
+        onCancel={props.cancelImportSession}
       />
     )
   }

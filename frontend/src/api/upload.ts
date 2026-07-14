@@ -1,3 +1,5 @@
+import { ApiError } from './client'
+
 type UploadOptions = {
   url: string
   formData: FormData
@@ -6,8 +8,10 @@ type UploadOptions = {
 
 type ErrorPayload = {
   error?: {
+    code?: string
     message?: string
   }
+  detail?: string | { msg?: string }[]
 }
 
 export function uploadFormData<T>({ url, formData, onProgress }: UploadOptions): Promise<T> {
@@ -24,11 +28,23 @@ export function uploadFormData<T>({ url, formData, onProgress }: UploadOptions):
         resolve(payload as T)
         return
       }
-      reject(new Error((payload as ErrorPayload | null)?.error?.message ?? `Upload failed with status ${xhr.status}`))
+      const errorPayload = payload as ErrorPayload | null
+      reject(new ApiError(uploadErrorMessage(errorPayload, xhr.status), {
+        status: xhr.status,
+        code: errorPayload?.error?.code,
+        retryable: xhr.status === 408 || xhr.status === 429 || xhr.status >= 500,
+      }))
     }
     xhr.onerror = () => reject(new Error('Network error during upload'))
     xhr.send(formData)
   })
+}
+
+function uploadErrorMessage(payload: ErrorPayload | null, status: number) {
+  if (payload?.error?.message) return payload.error.message
+  if (typeof payload?.detail === 'string') return payload.detail
+  const validationMessage = payload?.detail?.find((item) => item.msg)?.msg
+  return validationMessage ?? `Upload failed with status ${status}`
 }
 
 function parseResponse(responseText: string) {

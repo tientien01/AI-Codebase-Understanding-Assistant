@@ -9,10 +9,33 @@ class ImportSessionCreateResponse(BaseModel):
     source_type: str
 
 
+class ImportSessionStatusResponse(BaseModel):
+    import_session_id: str
+    status: str
+    stage: str
+    message: str
+    activity_logs: list["ImportActivityLogDTO"] = Field(default_factory=list)
+    error_code: str | None = None
+    error_message: str | None = None
+
+
 class GitHubImportRequest(BaseModel):
     url: str
     name: str | None = None
     branch: str | None = None
+
+
+class FolderImportStartRequest(BaseModel):
+    name: str
+    total_files: int = Field(gt=0)
+    total_bytes: int = Field(ge=0)
+
+
+class FolderImportBatchResponse(BaseModel):
+    import_session_id: str
+    received_files: int
+    total_files: int
+    status: str
 
 
 class ImportProjectSummaryDTO(BaseModel):
@@ -58,6 +81,9 @@ class ImportActivityLogDTO(BaseModel):
     stage: str
     message: str
     details: dict[str, str] = Field(default_factory=dict)
+
+
+ImportSessionStatusResponse.model_rebuild()
 
 
 class ImportPreviewResponse(BaseModel):

@@ -111,11 +111,11 @@ export function InDevelopmentPanel({ title, detail }: { title: string; detail: s
   )
 }
 
-export function WizardSteps() {
+export function WizardSteps({ activeStep = 0 }: { activeStep?: number }) {
   return (
     <div className="wizard">
-      {['Import Repo', 'Configure', 'Preview', 'Index'].map((step, index) => (
-        <div className={`wizard-step ${index === 0 ? 'active' : ''}`} key={step}>
+      {['Import', 'Preview', 'Index'].map((step, index) => (
+        <div className={`wizard-step ${index === activeStep ? 'active' : ''}`} key={step}>
           <span>{index + 1}</span>{step}
         </div>
       ))}

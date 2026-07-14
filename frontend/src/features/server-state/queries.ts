@@ -107,13 +107,25 @@ export function useChatTranscriptQuery(repository: Repository | undefined) {
   })
 }
 
-export function useImportPreviewQuery(sessionId: string) {
+export function useImportPreviewQuery(sessionId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.importPreview(sessionId || 'unselected'),
     queryFn: ({ signal }) => serverApi.importPreview(sessionId, signal),
-    enabled: Boolean(sessionId),
+    enabled: Boolean(sessionId && enabled),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 5 * 60_000,
+  })
+}
+
+export function useImportSessionStatusQuery(sessionId: string) {
+  return useQuery({
+    queryKey: queryKeys.importStatus(sessionId || 'unselected'),
+    queryFn: ({ signal }) => serverApi.importSessionStatus(sessionId, signal),
+    enabled: Boolean(sessionId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status && ['preview_ready', 'failed', 'cancelled'].includes(status) ? false : 750
+    },
   })
 }
 

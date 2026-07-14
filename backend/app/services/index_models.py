@@ -48,6 +48,14 @@ class ImportSessionRecord:
     activity_logs: list[dict[str, str | dict[str, str]]] = field(default_factory=list)
     preview_response: ImportPreviewResponse | None = None
     preview_project_fingerprint: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    expected_file_count: int = 0
+    expected_total_bytes: int = 0
+    received_file_count: int = 0
+    received_total_bytes: int = 0
+    saved_file_count: int = 0
+    seen_path_identities: set[str] = field(default_factory=set)
 
 
 @dataclass

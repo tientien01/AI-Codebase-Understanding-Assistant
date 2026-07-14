@@ -145,13 +145,17 @@ Bootstrap is available only while no initialized operator password verifier exis
 ```text
 POST   /import-sessions/zip
 POST   /import-sessions/folder
+POST   /import-sessions/upload-folder/start
+POST   /import-sessions/{session_id}/upload-folder-batch
+POST   /import-sessions/{session_id}/upload-folder-complete
 POST   /import-sessions/public-git
+GET    /import-sessions/{session_id}/status
 GET    /import-sessions/{session_id}/preview
 POST   /import-sessions/{session_id}/confirm
 DELETE /import-sessions/{session_id}
 ```
 
-Upload/folder paths are multipart with normalized relative paths. Public Git accepts only the production allowlisted URL profile; no raw token/private Git field exists. Preview returns snapshot/policy identity, files/indexable bytes, languages, skips/security warnings, enforced limits and duplicates. Confirmation binds the unchanged session snapshot and returns repository/job/version IDs. Cancellation/expiry cleans staging idempotently.
+Upload/folder paths use normalized relative paths. Browser folder import first submits a bounded manifest, uploads no more than 500 files per multipart batch, and explicitly completes the session; incomplete, duplicate, unsafe or over-quota batches fail with a stable domain error and clean staging. Public Git accepts only the production allowlisted URL profile; no raw token/private Git field exists. Public-Git submission acknowledges an import session before bounded acquisition completes; status exposes controlled stages, safe terminal errors and activity without command output or host paths. Preview returns snapshot/policy identity, files/indexable bytes, languages, skips/security warnings, enforced limits and duplicates. Confirmation binds the unchanged session snapshot and returns repository/job/version IDs. Cancellation/expiry cleans staging idempotently.
 
 ### Repositories, sources and freshness
 

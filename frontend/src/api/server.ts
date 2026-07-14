@@ -15,6 +15,7 @@ import type {
   Repository,
   SearchResult,
   SettingsResponse,
+  ImportSessionStatus,
 } from '../types/api'
 
 export const serverApi = {
@@ -58,9 +59,21 @@ export const serverApi = {
       jsonRequest({ message, options: { max_retrieval_rounds: 2 } }),
     ),
   createGithubImport: (url: string, name?: string) =>
-    requestJson<{ import_session_id: string }>(`${API_V1}/import-sessions/github`, jsonRequest({ url, name })),
+    requestJson<{ import_session_id: string; status: string }>(`${API_V1}/import-sessions/github`, jsonRequest({ url, name })),
+  startFolderImport: (name: string, totalFiles: number, totalBytes: number) =>
+    requestJson<{ import_session_id: string; status: string }>(`${API_V1}/import-sessions/upload-folder/start`, jsonRequest({
+      name,
+      total_files: totalFiles,
+      total_bytes: totalBytes,
+    })),
+  completeFolderImport: (sessionId: string) =>
+    requestJson<{ import_session_id: string; status: string }>(`${API_V1}/import-sessions/${sessionId}/upload-folder-complete`, jsonRequest({})),
+  importSessionStatus: (sessionId: string, signal?: AbortSignal) =>
+    requestJson<ImportSessionStatus>(`${API_V1}/import-sessions/${sessionId}/status`, { signal }),
   importPreview: (sessionId: string, signal?: AbortSignal) =>
     requestJson<ImportPreview>(`${API_V1}/import-sessions/${sessionId}/preview`, { signal }),
+  cancelImport: (sessionId: string) =>
+    requestJson<{ cancelled: boolean }>(`${API_V1}/import-sessions/${sessionId}`, { method: 'DELETE' }),
   confirmImport: (sessionId: string, name: string) =>
     requestJson<{ repository_id: string }>(`${API_V1}/import-sessions/${sessionId}/confirm`, jsonRequest({
       name,
