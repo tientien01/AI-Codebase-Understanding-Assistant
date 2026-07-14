@@ -9,9 +9,11 @@ export {
   useFileContentQuery,
   useFileTreeQuery,
   useGraphQuery,
+  useIgnorePatternsQuery,
   useImportPreviewQuery,
   useIndexStatusQuery,
   useOverviewQuery,
   useRepositoriesQuery,
   useSearchResultsQuery,
+  useSettingsQuery,
 } from './queries'

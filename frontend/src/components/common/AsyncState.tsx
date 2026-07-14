@@ -2,7 +2,7 @@ import type { AsyncViewState } from '../../features/server-state'
 
 export function AsyncStateNotice({ state, onRetry }: { state: AsyncViewState; onRetry?: () => void }) {
   if (['initial', 'success', 'empty'].includes(state.kind)) return null
-  const blocking = ['loading', 'permission_denied', 'error_retryable', 'error_terminal', 'cancelled'].includes(state.kind)
+  const blocking = ['loading', 'unavailable', 'permission_denied', 'error_retryable', 'error_terminal', 'cancelled'].includes(state.kind)
 
   return (
     <div className={`async-state async-state-${state.kind} ${blocking ? 'blocking' : ''}`} role={state.kind.includes('error') ? 'alert' : 'status'}>
@@ -20,9 +20,11 @@ function titleFor(kind: AsyncViewState['kind']) {
     initial: 'Ready',
     loading: 'Loading',
     refreshing: 'Refreshing',
+    limited: 'Limited data',
     success: 'Current',
     empty: 'No data',
     stale: 'Cached data',
+    unavailable: 'Capability unavailable',
     permission_denied: 'Access denied',
     error_retryable: 'Temporary request failure',
     error_terminal: 'Request failed',

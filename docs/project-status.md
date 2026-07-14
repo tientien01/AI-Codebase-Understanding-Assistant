@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 6 has verified UI-001 through UI-004; UI-005, composition and release qualification remain open |
-| Active task | None; UI-004 is completed and verified |
-| Next task candidate | Authorize `UI-005` separately |
+| Active delivery phase | Phase 6 has verified UI-001 through UI-005; composition and release qualification remain open |
+| Active task | None; UI-005 is completed and verified |
+| Next task candidate | Define the next composition or Phase 6 release-qualification task separately |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -55,15 +55,15 @@ This page is the operational front door. It reports verified progress; it does n
 2. The incremental planner, intelligence artifacts and readiness calculator are verified independently, but production pipeline/manifest composition and real parser/resolver/graph/readiness equivalence are not proven.
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
 4. The deterministic retrieval evaluation dataset/runner exists, but real provider, answer/citation, graph, security, performance, resilience and load thresholds lack accepted release evidence.
-5. UI-004 is verified. Historical diff and canonical opaque-version graph POST APIs need separate accepted read models; accepted performance budgets and later UI-005 surfaces remain open.
+5. UI-004 and UI-005 are verified. Evaluation/Settings placeholders are replaced with safe server-backed reads and explicit unavailable states. Public evaluation runs, settings mutations, historical diff, canonical opaque-version graph POST APIs and accepted performance budgets remain open boundaries.
 6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
 
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Review and merge the completed UI-004 qualification pull request.
-2. Authorize `UI-005` separately afterward.
+1. Review and merge the completed UI-005 pull request.
+2. Authorize the next composition or Phase 6 release-qualification task separately.
 
 ## Status update rule
 

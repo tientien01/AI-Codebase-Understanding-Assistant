@@ -195,9 +195,15 @@ textarea {
 }
 
 .async-state-refreshing,
-.async-state-stale {
+.async-state-stale,
+.async-state-limited {
   border-color: #4c5f9f;
   background: #111b38;
+}
+
+.async-state-unavailable {
+  border-color: #725a2b;
+  background: #221b10;
 }
 
 .wide {

@@ -51,6 +51,32 @@ export type IndexStatus = {
   error_message?: string
 }
 
+export type SettingsResponse = {
+  indexing: {
+    default_profile?: string
+    max_file_size_mb?: number
+    max_upload_size_mb?: number
+  }
+  providers: {
+    llm_provider?: string
+    llm_model?: string
+    llm_configured?: boolean
+    embedding_provider?: string
+    embedding_model?: string
+    embedding_configured?: boolean
+    vector_store_provider?: string
+  }
+  security: {
+    secret_scanning_enabled?: boolean
+  }
+}
+
+export type IgnorePatternsResponse = {
+  default_patterns: string[]
+  user_patterns: string[]
+  effective_patterns: string[]
+}
+
 export type Overview = {
   repository_id: string
   name: string

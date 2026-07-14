@@ -2,13 +2,13 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  outputDir: './test-results/ui004',
+  outputDir: './test-results/e2e',
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [
     ['line'],
-    ['json', { outputFile: 'test-results/ui004-results.json' }],
+    ['json', { outputFile: 'test-results/e2e-results.json' }],
   ],
   use: {
     baseURL: 'http://127.0.0.1:4173',
@@ -17,7 +17,7 @@ export default defineConfig({
     video: 'retain-on-failure',
     ...devices['Desktop Chrome'],
   },
-  webServer: process.env.UI004_EXTERNAL_SERVER
+  webServer: process.env.UI_E2E_EXTERNAL_SERVER || process.env.UI004_EXTERNAL_SERVER
     ? undefined
     : {
         command: 'npm run dev -- --host 127.0.0.1 --port 4173',

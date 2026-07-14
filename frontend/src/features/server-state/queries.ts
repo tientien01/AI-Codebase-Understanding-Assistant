@@ -12,6 +12,20 @@ export function useRepositoriesQuery() {
   })
 }
 
+export function useSettingsQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings,
+    queryFn: ({ signal }) => serverApi.settings(signal),
+  })
+}
+
+export function useIgnorePatternsQuery() {
+  return useQuery({
+    queryKey: queryKeys.ignorePatterns,
+    queryFn: ({ signal }) => serverApi.ignorePatterns(signal),
+  })
+}
+
 export function useIndexStatusQuery(repositoryId: string | undefined, polling: boolean) {
   const queryClient = useQueryClient()
   const query = useQuery({
