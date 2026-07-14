@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evidence Viewer</title>
+<link rel="stylesheet" href="../css/shared.css"><link rel="stylesheet" href="../css/evidence.css"></head><body><div class="shell">
+<header class="topbar">
+<div class="brand"><span class="logo"></span><strong>AI Codebase Assistant</strong><span class="beta">Beta</span></div>
+<div class="top-controls"><div class="control">▣ &nbsp; moodfood-backend <span>⌄</span></div><div class="control small">⑂ &nbsp; main <span>⌄</span></div><div class="status">Indexed ●</div></div>
+<div class="top-actions"><label class="searchbox">⌕<input placeholder="Search anything..."><span>⌘K</span></label><button class="icon-btn">?</button><button class="icon-btn">♧</button><span class="avatar"></span></div>
+</header>
+<div class="layout">
+<aside class="sidebar">
+<nav class="nav">
+<a href="overview.html" class=""><span class="ico">⌂</span>Overview</a>
+<a href="code-explorer.html" class="active"><span class="ico">⌘</span>Code Explorer</a>
+<a href="graph-view.html" class=""><span class="ico">⌘</span>Graph View</a>
+<a href="api-explorer.html" class=""><span class="ico">⌘</span>API Explorer</a>
+<a href="impact-analysis.html" class=""><span class="ico">✥</span>Impact Analysis</a>
+<a href="search.html" class=""><span class="ico">⌕</span>Search</a>
+<a href="evaluation.html" class=""><span class="ico">▥</span>Evaluation</a>
+<a href="settings.html" class=""><span class="ico">⚙</span>Settings</a>
+</nav>
+<section class="index-card">
+<div class="row-between"><h3>Index Status</h3><span class="pill green">● Indexed</span></div>
+<div class="index-grid"><span>Last updated</span><b>2 minutes ago</b><span>Files indexed</span><b>1,248</b><span>Chunks</span><b>18,732</b><span>Embed model</span><b>text-embedding-3-large</b></div>
+<div class="progress"><span></span></div><button class="btn full">↻ Re-index Project</button>
+</section><div class="minimize">↤ &nbsp; Minimize</div></aside>
+<main class="main"><div class="page-head"><div><h1>Evidence / Citation Viewer</h1><p>Kiểm chứng câu trả lời của AI bằng file, line range và đoạn code thật.</p></div></div><div class="evidence-layout"><section class="card"><h2>AI Answer</h2><p style="font-size:18px">Luồng đăng nhập bắt đầu từ endpoint POST /api/auth/login. Handler login nhận username/password, gọi AuthService.authenticate_user để xác thực, sau đó tạo access token và refresh token.</p><h2 style="margin-top:30px">Citations</h2><div class="citation">[1] routes.py:42-68</div><div class="citation active">[2] auth_service.py:10-39</div><div class="citation">[3] security.py:21-58</div><div class="use-note">Used for answer section<br><br>“gọi AuthService.authenticate_user để xác thực”</div></section><section class="card codebox"><div class="section-title"><h2>Source: backend/app/services/auth_service.py</h2><button class="btn">Open in Code Explorer</button></div><div class="muted" style="margin-bottom:20px">Lines 10 - 39</div><div class="code-row "><span>10</span><span class="mono">class AuthService:</span></div><div class="code-row "><span>11</span><span class="mono">    @staticmethod</span></div><div class="code-row hl"><span>12</span><span class="mono">    async def authenticate_user(db, username, password):</span></div><div class="code-row hl"><span>13</span><span class="mono">        user = await UserRepository.get_by_email(db, username)</span></div><div class="code-row "><span>14</span><span class="mono">        if not user:</span></div><div class="code-row "><span>15</span><span class="mono">            return None</span></div><div class="code-row hl"><span>16</span><span class="mono">        if not verify_password(password, user.hashed_password):</span></div><div class="code-row "><span>17</span><span class="mono">            return None</span></div><div class="code-row "><span>18</span><span class="mono">        return user</span></div><div class="code-row "><span>19</span><span class="mono"></span></div><div class="code-row "><span>20</span><span class="mono">    @staticmethod</span></div><div class="code-row "><span>21</span><span class="mono">    async def create_refresh_token(db, user_id):</span></div><div class="code-row "><span>22</span><span class="mono">        token = generate_secure_token()</span></div><div class="code-row "><span>23</span><span class="mono">        await RefreshTokenRepository.create(db, user_id, token)</span></div><div class="code-row "><span>24</span><span class="mono">        return token</span></div><h2 style="margin-top:24px">Citation behavior</h2><p class="muted">Khi click citation, viewer phải mở đúng file, đúng dòng và highlight đoạn code được dùng trong câu trả lời.</p></section></div></main></div></div></body></html>

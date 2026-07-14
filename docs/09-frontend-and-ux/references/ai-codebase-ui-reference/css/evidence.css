@@ -1,0 +1,2 @@
+.evidence-layout{display:grid;grid-template-columns:500px minmax(0,1fr);gap:22px}.citation{padding:14px 18px;border:1px solid var(--line);border-radius:9px;margin:12px 0;background:#152033}.citation.active{outline:2px solid var(--blue)}
+.codebox{padding:20px}.code-row{display:grid;grid-template-columns:55px 1fr;min-height:31px}.code-row.hl{background:#263968}.use-note{margin-top:56px;color:var(--muted)}

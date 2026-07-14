@@ -2,15 +2,7 @@ import type { FormEvent } from 'react'
 import { ListRow, PageTitle, Panel, PreviewLine } from '../../components/common/ui'
 import type { ImpactItem, ImpactResult, Overview } from '../../types/api'
 
-export function ImpactPage({
-  overview,
-  targetType,
-  targetRef,
-  result,
-  onTargetType,
-  onTargetRef,
-  onRun,
-}: {
+export function ImpactPage({ overview, targetType, targetRef, result, onTargetType, onTargetRef, onRun }: {
   overview: Overview | null
   targetType: string
   targetRef: string
@@ -21,84 +13,84 @@ export function ImpactPage({
 }) {
   return (
     <div>
-      <PageTitle title="Impact Analysis" subtitle="Understand direct and indirect effects before changing a file, symbol, endpoint, or model." />
+      <PageTitle title="Diff Impact" subtitle="Assess confirmed, inferred, and unknown effects without turning missing graph coverage into a false no-impact result." />
+      <div className="impact-compare-notice" role="status">
+        <div><strong>Current active index</strong><span>Target impact is available.</span></div>
+        <span className="impact-compare-arrow" aria-hidden="true">→</span>
+        <div><strong>Historical comparison</strong><span>Unavailable: the compatibility API does not expose version snapshots.</span></div>
+      </div>
       <div className="impact-grid">
-        <Panel title="Target">
+        <Panel title="Analysis target">
           <form className="impact-form" onSubmit={onRun}>
             <label>
               Target type
               <select value={targetType} onChange={(event) => onTargetType(event.target.value)}>
-                <option value="symbol">symbol</option>
-                <option value="file">file</option>
-                <option value="endpoint">endpoint</option>
-                <option value="model">model</option>
-                <option value="schema">schema</option>
+                <option value="symbol">symbol</option><option value="file">file</option><option value="endpoint">endpoint</option><option value="model">model</option><option value="schema">schema</option>
               </select>
             </label>
             <label>
               Target reference
               <input value={targetRef} onChange={(event) => onTargetRef(event.target.value)} placeholder="login, GET /login, backend/app/main.py" />
             </label>
-            <button className="primary">Run Impact Analysis</button>
+            <button className="primary">Analyze Current Impact</button>
           </form>
           <PreviewLine label="Indexed endpoints" value={String(overview?.endpoints.length ?? 0)} />
         </Panel>
-        <Panel title="Impact Result">
+        <Panel title="Impact summary">
           {result ? (
-            <div className="impact-columns">
-              <PreviewLine label="Risk" value={`${result.risk_level} (${result.risk_score})`} />
-              <PreviewLine label="Target" value={targetLabel(result)} />
-              <PreviewLine label="Direct" value={String(result.direct.length)} />
-              <PreviewLine label="Indirect" value={String(result.indirect.length)} />
-              <PreviewLine label="Files" value={String(result.affected_files.length)} />
-              <PreviewLine label="Endpoints" value={String(result.affected_endpoints.length)} />
-              <PreviewLine label="Tests" value={String(result.affected_tests.length)} />
-            </div>
-          ) : (
-            <p>Choose a file, symbol, endpoint, model, or schema target and run analysis.</p>
-          )}
+            <>
+              <div className="impact-target"><span>Resolved target</span><strong>{targetLabel(result)}</strong></div>
+              <div className="impact-summary-cards">
+                <ImpactCount tone="direct" label="Direct" value={result.direct.length} />
+                <ImpactCount tone="inferred" label="Inferred" value={result.indirect.length} />
+                <ImpactCount tone="unknown" label="Unknown" value={result.missing_relations.length} />
+              </div>
+              <p className="impact-classification">Server classification: {readableLabel(result.risk_level)}. Inspect relation reasons rather than treating this label as a calibrated probability.</p>
+            </>
+          ) : <p>Choose a target and run analysis. Zero displayed results will not be described as zero impact.</p>}
         </Panel>
       </div>
       {result && (
-        <div className="impact-grid">
-          <ImpactList title="Direct Impact" items={result.direct} />
-          <ImpactList title="Affected Endpoints" items={result.affected_endpoints} />
-          <ImpactList title="Affected Tests" items={result.affected_tests} />
-          <ImpactList title="Suggested Checks" items={result.suggested_checks.map((item, index) => ({ node_id: `check-${index}`, node_type: 'check', label: item, depth: 0, confidence: 1, reason: item }))} />
-          {result.missing_relations.length ? (
-            <Panel title="Known Gaps">
-              {result.missing_relations.map((item) => <ListRow key={item} title="Missing relation" detail={item} />)}
+        <>
+          <div className="impact-result-groups">
+            <ImpactList title="Direct" description="Current graph relations with non-inferred support." items={result.direct} />
+            <ImpactList title="Inferred" description="Possible effects that require verification." items={result.indirect} />
+            <Panel title="Unknown">
+              {result.missing_relations.length ? result.missing_relations.map((item) => <ListRow key={item} title="Coverage gap" detail={item} />) : <p>No unresolved relation was reported. This does not prove complete repository coverage.</p>}
             </Panel>
-          ) : null}
-          <ImpactList title="Affected Files" items={result.affected_files} />
-        </div>
+          </div>
+          <div className="impact-grid">
+            <ImpactList title="Affected Endpoints" description="Endpoint relations reported for this target." items={result.affected_endpoints} />
+            <ImpactList title="Affected Tests" description="Tests to inspect before accepting the change." items={result.affected_tests} />
+            <ImpactList title="Affected Files" description="Files reached by the current bounded analysis." items={result.affected_files} />
+            <Panel title="Verification checklist">
+              {result.suggested_checks.length ? result.suggested_checks.map((item) => <label className="verification-check" key={item}><input type="checkbox" />{item}</label>) : <p>No deterministic check was suggested.</p>}
+            </Panel>
+          </div>
+        </>
       )}
     </div>
   )
 }
 
-function ImpactList({ title, items }: { title: string; items: ImpactItem[] }) {
+function ImpactCount({ tone, label, value }: { tone: string; label: string; value: number }) {
+  return <div className={`impact-count tone-${tone}`}><strong>{value}</strong><span>{label}</span></div>
+}
+
+function ImpactList({ title, description, items }: { title: string; description: string; items: ImpactItem[] }) {
   return (
     <Panel title={title}>
-      {items.length ? (
-        items.slice(0, 8).map((item) => (
-          <ListRow
-            key={`${title}-${item.node_id}-${item.depth}`}
-            title={item.label}
-            detail={item.file_path ? `${item.file_path} - ${item.reason}` : item.reason}
-            meta={`${readableLabel(item.node_type)} d${item.depth} ${Math.round(item.confidence * 100)}%`}
-          />
-        ))
-      ) : (
-        <p>No related items found in the current graph.</p>
-      )}
+      <p>{description}</p>
+      {items.length ? items.slice(0, 12).map((item) => (
+        <ListRow key={`${title}-${item.node_id}-${item.depth}`} title={item.label} detail={item.file_path ? `${item.file_path} — ${item.reason}` : item.reason} meta={`${readableLabel(item.node_type)} · depth ${item.depth}${item.via_edge ? ` · ${readableLabel(item.via_edge)}` : ''}`} />
+      )) : <p>No item was returned in this group; inspect Unknown and coverage before concluding no impact.</p>}
     </Panel>
   )
 }
 
 function targetLabel(result: ImpactResult) {
   if (!result.target) return 'not resolved'
-  const path = result.target.file_path ? ` - ${result.target.file_path}` : ''
+  const path = result.target.file_path ? ` — ${result.target.file_path}` : ''
   const lines = result.target.line_range ? `:${result.target.line_range}` : ''
   return `${result.target.label}${path}${lines}`
 }

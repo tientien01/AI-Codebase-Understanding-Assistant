@@ -12,7 +12,6 @@ import {
   EvaluationPage,
   EvidencePage,
   EvidenceSummary,
-  GraphDetails,
   GraphPage,
   ImpactPage,
   OverviewPage,
@@ -94,6 +93,7 @@ type AppRoutesProps = {
   openEvidence: (citation: Citation) => void
   runSearch: (event?: FormEvent) => void
   runImpactAnalysis: (event?: FormEvent) => void
+  openImpact: (targetType: string, targetRef: string) => void
   analyzeGraphArea: (scopePath: string) => void
   changeGraphView: (view: GraphView) => void
   changeGraphProjection: (patch: Partial<GraphProjectionInput>) => void
@@ -211,7 +211,19 @@ export function AppRoutes(props: AppRoutesProps) {
     )
   }
   if (page === 'overview') {
-    return <AssistantWorkspace main={<OverviewPage overview={overview} onQuestion={props.setChatInput} />} {...props} />
+    return (
+      <AssistantWorkspace
+        main={
+          <OverviewPage
+            overview={overview}
+            onQuestion={props.setChatInput}
+            onExploreArchitecture={() => props.changeGraphView('project-map')}
+            onOpenFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)}
+          />
+        }
+        {...props}
+      />
+    )
   }
   if (page === 'code') {
     return (
@@ -221,7 +233,21 @@ export function AppRoutes(props: AppRoutesProps) {
       />
     )
   }
-  if (page === 'graph') return <WorkspacePage main={<GraphPage graph={graph} graphView={graphView} projection={graphProjection} overview={overview} onGraphView={props.changeGraphView} onProjection={props.changeGraphProjection} onAnalyzeArea={props.analyzeGraphArea} />} side={<GraphDetails graph={graph} />} />
+  if (page === 'graph') {
+    return (
+      <GraphPage
+        graph={graph}
+        graphView={graphView}
+        projection={graphProjection}
+        overview={overview}
+        onGraphView={props.changeGraphView}
+        onProjection={props.changeGraphProjection}
+        onAnalyzeArea={props.analyzeGraphArea}
+        onOpenSource={(node) => node.file_path && selectedRepository && props.loadFileContent(selectedRepository.id, node.file_path)}
+        onOpenImpact={(node) => props.openImpact(impactTargetTypeFor(node.type), node.id)}
+      />
+    )
+  }
   if (page === 'api') return <WorkspacePage main={<ApiExplorerPage overview={overview} />} side={<ApiDetails overview={overview} />} />
   if (page === 'assistant') {
     return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />
@@ -248,6 +274,11 @@ export function AppRoutes(props: AppRoutesProps) {
   if (page === 'evidence') return <WorkspacePage main={<EvidencePage evidence={selectedEvidence} />} side={<EvidenceSummary />} />
   if (page === 'evaluation') return <WorkspacePage main={<EvaluationPage />} side={<EvidenceSummary />} />
   return <SettingsPage isWorkspace={isWorkspacePage} />
+}
+
+function impactTargetTypeFor(nodeType: string) {
+  if (['file', 'endpoint', 'model', 'schema'].includes(nodeType)) return nodeType
+  return 'symbol'
 }
 
 function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, setChatInput, sendChatMessage, openEvidence }: AppRoutesProps & { main: ReactNode }) {

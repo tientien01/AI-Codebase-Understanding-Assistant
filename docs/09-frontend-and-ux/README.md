@@ -17,6 +17,8 @@ The existing main surfaces remain: Projects, Import, Index Jobs, Overview, Code 
 
 Learn from Understand-Anything without replacing the designed workspace: use architecture layers, guided tours, evidence on nodes/edges, expand-on-demand, diff impact overlay, explicit coverage/truncation, and worker-based layout for large projections. Start with XYFlow + Dagre; adopt heavier layout/algorithm libraries only after benchmark.
 
+The static reconstruction under `references/ai-codebase-ui-reference/` records the supplied visual direction for workspace density, hierarchy, dark-theme tokens and page composition. Its screenshots are visual references and its HTML/CSS are structural examples only; accepted interaction/page contracts and current typed React boundaries remain authoritative. `assets/concepts/ui-004-graph-explorer.png` captures the UI-004 graph direction.
+
 ## Quality
 
 Keyboard navigation, color contrast, focus management, accessible status messages, virtualization for large lists/code, performance budgets, error boundaries, and critical Playwright flows are release requirements.

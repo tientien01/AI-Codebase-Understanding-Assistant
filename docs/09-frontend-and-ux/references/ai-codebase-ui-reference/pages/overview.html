@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Overview</title>
+<link rel="stylesheet" href="../css/shared.css"><link rel="stylesheet" href="../css/overview.css"></head><body><div class="shell">
+<header class="topbar">
+<div class="brand"><span class="logo"></span><strong>AI Codebase Assistant</strong><span class="beta">Beta</span></div>
+<div class="top-controls"><div class="control">▣ &nbsp; moodfood-backend <span>⌄</span></div><div class="control small">⑂ &nbsp; main <span>⌄</span></div><div class="status">Indexed ●</div></div>
+<div class="top-actions"><label class="searchbox">⌕<input placeholder="Search anything..."><span>⌘K</span></label><button class="icon-btn">?</button><button class="icon-btn">♧</button><span class="avatar"></span></div>
+</header>
+<div class="layout with-assistant">
+<aside class="sidebar">
+<nav class="nav">
+<a href="overview.html" class="active"><span class="ico">⌂</span>Overview</a>
+<a href="code-explorer.html" class=""><span class="ico">⌘</span>Code Explorer</a>
+<a href="graph-view.html" class=""><span class="ico">⌘</span>Graph View</a>
+<a href="api-explorer.html" class=""><span class="ico">⌘</span>API Explorer</a>
+<a href="impact-analysis.html" class=""><span class="ico">✥</span>Impact Analysis</a>
+<a href="search.html" class=""><span class="ico">⌕</span>Search</a>
+<a href="evaluation.html" class=""><span class="ico">▥</span>Evaluation</a>
+<a href="settings.html" class=""><span class="ico">⚙</span>Settings</a>
+</nav>
+<section class="index-card">
+<div class="row-between"><h3>Index Status</h3><span class="pill green">● Indexed</span></div>
+<div class="index-grid"><span>Last updated</span><b>2 minutes ago</b><span>Files indexed</span><b>1,248</b><span>Chunks</span><b>18,732</b><span>Embed model</span><b>text-embedding-3-large</b></div>
+<div class="progress"><span></span></div><button class="btn full">↻ Re-index Project</button>
+</section><div class="minimize">↤ &nbsp; Minimize</div></aside>
+
+<main class="main">
+<section class="overview-head"><div><h1>moodfood-backend ☆</h1><div class="tags"><span class="pill">FastAPI + React</span><span class="pill green">● Indexed</span><span class="pill">Python 3.11</span></div><p class="muted">AI-powered code understanding for faster navigation, smarter refactoring, and confident changes.</p></div><button class="btn">Project Actions⌄</button></section>
+<section class="metrics">
+<article class="card metric-card"><span class="muted">Files</span><strong>1,248</strong><small>Python, TS, YAML, MD</small></article><article class="card metric-card"><span class="muted">Functions</span><strong>4,321</strong><small>+132 this week</small></article><article class="card metric-card"><span class="muted">Classes</span><strong>682</strong><small>+18 this week</small></article><article class="card metric-card"><span class="muted">API Endpoints</span><strong>214</strong><small>REST · 54 Routers</small></article><article class="card metric-card"><span class="muted">Graph Nodes</span><strong>9,736</strong><small>Services · Models · APIs</small></article><article class="card metric-card"><span class="muted">Indexed Chunks</span><strong>18,732</strong><small>Vector embeddings</small></article>
+</section><section class="dashboard"><div class="stack">
+<article class="card arch"><div class="section-title"><div><h2>Architecture Summary</h2><div class="muted small">A high-level view of the system's architecture and key components.</div></div></div>
+<div class="diagram"><div class="node purple">Client (Web / Mobile)</div><div>↓</div><div class="node">API Gateway<br><span class="small muted">FastAPI</span></div>
+<div class="diagram-row"><div class="node green">Auth Service<br><span class="small">JWT / OAuth2</span></div><div class="node purple">User Service<br><span class="small">Users · Profiles</span></div><div class="node amber">Restaurant Service<br><span class="small">Recommendations</span></div></div>
+<div class="diagram-row"><div class="node amber">PostgreSQL<br><span class="small">Primary DB</span></div><div class="node">Redis<br><span class="small">Cache</span></div><div class="node green">S3 / MinIO<br><span class="small">Storage</span></div></div><button class="btn">Open Graph View</button></div></article>
+<article class="card questions"><div class="section-title"><h2>Suggested Questions</h2><span class="muted">↻ Refresh</span></div><button>How does the login flow work? →</button><button>Which files are related to restaurant recommendation? →</button><button>Where is JWT validation implemented? →</button><button>Show me the database models for User and Restaurant. →</button></article>
+</div><div class="stack"><article class="card"><div class="section-title"><h2>Recent Activity</h2><a class="muted">View all</a></div><ul class="list"><li><span>● Indexed 23 new files</span><span class="muted">2 minutes ago</span></li><li><span>● Updated API schema</span><span class="muted">15 minutes ago</span></li><li><span>● Code changes detected</span><span class="muted">1 hour ago</span></li><li><span>● Re-index completed</span><span class="muted">3 hours ago</span></li></ul></article>
+<article class="card"><div class="section-title"><h2>Key Modules</h2><a class="muted">View all</a></div><ul class="list"><li><span>▣ Auth Module<br><small class="muted">backend/app/api/auth</small></span><span class="pill">124</span></li><li><span>♜ Restaurant Module<br><small class="muted">backend/app/api/restaurants</small></span><span class="pill">198</span></li><li><span>◈ Recommendation Engine<br><small class="muted">backend/app/services/recommendation</small></span><span class="pill">87</span></li><li><span>♙ User Management<br><small class="muted">backend/app/api/users</small></span><span class="pill">156</span></li></ul></article></div></section></main>
+<aside class="assistant"><div class="assistant-head"><strong>✣ AI Assistant</strong><button class="btn">＋ New Chat</button></div><div class="chat"><div class="msg user"><small>You &nbsp; 10:24 AM</small><p>Luồng đăng nhập hoạt động thế nào?</p></div><div class="msg bot"><small>✣ Assistant &nbsp; 10:24 AM</small><p>Luồng đăng nhập sử dụng JWT. Người dùng gửi email và mật khẩu đến <b>/api/auth/login</b>. Hệ thống xác thực thông tin, tạo access token và refresh token.</p><div class="details"><h4>Evidence &nbsp; <span class="pill">5</span></h4><div class="content small">▱ backend/app/api/auth/routes.py &nbsp; 42–68<br>▱ backend/app/core/security.py &nbsp; 21–58<br>▱ backend/app/core/auth.py &nbsp; 10–39<br>▱ backend/app/schemas/auth.py &nbsp; 12–25<br>▱ backend/app/models/user.py &nbsp; 34–61</div></div><div class="details"><h4>Graph Trace &nbsp; <span class="pill">7</span></h4><div class="content chip-row"><span class="pill">POST /api/auth/login</span><span>→</span><span class="pill">AuthRouter.login</span><span>→</span><span class="pill">AuthService.authenticate</span></div></div></div></div><div class="composer"><textarea placeholder="Ask anything about your codebase..."></textarea><div class="row-between"><span>@ &nbsp; ⌕</span><button class="btn primary">➤</button></div></div></aside>
+</div></div></body></html>

@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>API Explorer</title>
+<link rel="stylesheet" href="../css/shared.css"><link rel="stylesheet" href="../css/graph.css"></head><body><div class="shell">
+<header class="topbar">
+<div class="brand"><span class="logo"></span><strong>AI Codebase Assistant</strong><span class="beta">Beta</span></div>
+<div class="top-controls"><div class="control">▣ &nbsp; moodfood-backend <span>⌄</span></div><div class="control small">⑂ &nbsp; main <span>⌄</span></div><div class="status">Indexed ●</div></div>
+<div class="top-actions"><label class="searchbox">⌕<input placeholder="Search anything..."><span>⌘K</span></label><button class="icon-btn">?</button><button class="icon-btn">♧</button><span class="avatar"></span></div>
+</header>
+<div class="layout">
+<aside class="sidebar">
+<nav class="nav">
+<a href="overview.html" class=""><span class="ico">⌂</span>Overview</a>
+<a href="code-explorer.html" class=""><span class="ico">⌘</span>Code Explorer</a>
+<a href="graph-view.html" class=""><span class="ico">⌘</span>Graph View</a>
+<a href="api-explorer.html" class="active"><span class="ico">⌘</span>API Explorer</a>
+<a href="impact-analysis.html" class=""><span class="ico">✥</span>Impact Analysis</a>
+<a href="search.html" class=""><span class="ico">⌕</span>Search</a>
+<a href="evaluation.html" class=""><span class="ico">▥</span>Evaluation</a>
+<a href="settings.html" class=""><span class="ico">⚙</span>Settings</a>
+</nav>
+<section class="index-card">
+<div class="row-between"><h3>Index Status</h3><span class="pill green">● Indexed</span></div>
+<div class="index-grid"><span>Last updated</span><b>2 minutes ago</b><span>Files indexed</span><b>1,248</b><span>Chunks</span><b>18,732</b><span>Embed model</span><b>text-embedding-3-large</b></div>
+<div class="progress"><span></span></div><button class="btn full">↻ Re-index Project</button>
+</section><div class="minimize">↤ &nbsp; Minimize</div></aside>
+<main class="main"><div class="page-head"><div><h1>API Explorer</h1><p>Browse detected endpoints, routes, authorization and source modules.</p></div></div><section class="card"><div class="section-title"><h2>API Explorer <span class="pill">18 Endpoints</span></h2><a class="muted">View All</a></div><div class="row-between"><label class="searchbox" style="width:82%">⌕<input placeholder="Search endpoints..."></label><button class="btn">All Methods⌄</button></div><table class="table compact"><thead><tr><th>Method</th><th>Path</th><th>Router</th><th>Auth</th><th>Module</th></tr></thead><tbody>
+<tr><td><span class="badge post">POST</span></td><td>/api/auth/login</td><td>Auth Router</td><td>♙</td><td>routes/auth.py</td></tr>
+<tr><td><span class="badge post">POST</span></td><td>/api/auth/logout</td><td>Auth Router</td><td>♙</td><td>routes/auth.py</td></tr>
+<tr><td><span class="badge get">GET</span></td><td>/api/auth/me</td><td>Auth Router</td><td>♙</td><td>routes/auth.py</td></tr>
+<tr><td><span class="badge post">POST</span></td><td>/api/auth/refresh</td><td>Auth Router</td><td>♙</td><td>routes/auth.py</td></tr>
+<tr><td><span class="badge get">GET</span></td><td>/api/restaurants</td><td>Restaurant Router</td><td>♙</td><td>routes/restaurant.py</td></tr>
+<tr><td><span class="badge post">POST</span></td><td>/api/restaurants</td><td>Restaurant Router</td><td>♙</td><td>routes/restaurant.py</td></tr>
+<tr><td><span class="badge get">GET</span></td><td>/api/restaurants/{id}</td><td>Restaurant Router</td><td>♙</td><td>routes/restaurant.py</td></tr>
+<tr><td><span class="badge put">PUT</span></td><td>/api/restaurants/{id}</td><td>Restaurant Router</td><td>♙</td><td>routes/restaurant.py</td></tr></tbody></table><div style="text-align:center;margin-top:16px">‹ &nbsp; <span class="pill">1</span> &nbsp; 2 &nbsp; 3 &nbsp; ›</div></section></main></div></div></body></html>
