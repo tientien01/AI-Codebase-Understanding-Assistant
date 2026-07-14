@@ -13,7 +13,7 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 5 bounded assistant and Phase 4 deterministic evaluation foundations are verified; composition and release qualification remain open |
-| Active task | `EVA-002` deterministic AI/graph/incremental CI smoke gate is locally verified; stacked draft PR and remote check remain pending |
+| Active task | None; `EVA-002` deterministic AI/graph/incremental CI smoke gate is verified pending review/merge of stacked PR #27 |
 | Next task candidate | None until EVA-001/EVA-002 review and merge establish the next authorized phase task |
 | Production readiness | Not ready |
 
@@ -43,7 +43,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Assistant sufficiency now requires question-specific strong support/source/endpoint/graph coverage, permits only one controlled budgeted repair, validates claims against selected current citation IDs/scope and rejects optional provider output without valid declarations. The AGT-002 positive/refusal/repair/citation matrix passes.
 - Completed assistant turns now persist atomically as redacted conversation messages, claims, citations, budget summaries and controlled ordered trace events. Local SQLite replay enforces repository ownership, production mapping targets the accepted PostgreSQL schema, and persistence failure prevents a successful response. The AGT-003 privacy/rollback/replay matrix passes.
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
-- A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate passes and remains explicitly non-release; GitHub-hosted check evidence is pending the stacked PR.
+- A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 
 ## Blocking gaps
 
@@ -59,7 +59,7 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 ## Immediate sequence
 
 1. Review and merge the `EVA-001` versioned dataset, baseline runner and evidence in PR #26.
-2. Open the stacked `EVA-002` draft PR, verify its named GitHub check, then review/merge it after EVA-001.
+2. Review and merge stacked EVA-002 PR #27 after EVA-001; select and authorize the next phase task separately.
 
 ## Status update rule
 

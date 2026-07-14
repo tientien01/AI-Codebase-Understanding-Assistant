@@ -1,7 +1,7 @@
 ---
 id: EVA-002
 title: Add deterministic CI evaluation, graph, incremental, and assistant regression gates
-status: in_progress
+status: completed
 priority: P0
 phase: 5
 owner: project maintainer

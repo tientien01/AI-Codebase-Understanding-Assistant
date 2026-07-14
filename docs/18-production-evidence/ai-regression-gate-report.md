@@ -1,6 +1,6 @@
 # EVA-002 AI, Graph, and Incremental Regression Gate Report
 
-Status: Local clean-environment verification passed; remote draft-PR check pending
+Status: Verified local clean-environment and GitHub-hosted named smoke gate
 
 Task: `EVA-002`
 
@@ -56,7 +56,14 @@ The 29 skips are the existing PostgreSQL/Redis integration profile. EVA-002 chan
 
 ## Remote CI status
 
-Pending creation of the stacked draft PR. Do not interpret local workflow parsing or local commands as a passed GitHub-hosted check.
+Stacked draft PR: [#27](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/pull/27), targeting `agent/eva-001-evaluation-runner` while EVA-001 PR #26 remains open.
+
+The named `AI, graph, and incremental regression` job passed for commit `2aba763` in both observed triggers:
+
+- [push-triggered job](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29305775100/job/86998678090): passed in 17 seconds.
+- [pull-request-triggered job](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29305796035/job/86998735645): passed in 13 seconds.
+
+Frontend checks and the first backend run also passed at the observation time; the duplicate pull-request backend job was still running and is not claimed as complete evidence here. EVA-002 acceptance is owned by the named smoke job plus the clean local full regression above.
 
 ## Limitations
 

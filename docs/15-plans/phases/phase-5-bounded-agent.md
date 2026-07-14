@@ -1,6 +1,6 @@
 # Phase 5 — Bounded Assistant Workflow
 
-Status: Approved; AGT-001 through AGT-003 and the deterministic EVA-002 assistant/evaluation CI smoke gate are locally verified, while Phase 5 exit/release qualification remains blocked by accepted evaluation thresholds and later security/auth retention policy delivery
+Status: Approved; AGT-001 through AGT-003 and the deterministic EVA-002 assistant/evaluation CI smoke gate are verified, while Phase 5 exit/release qualification remains blocked by accepted evaluation thresholds and later security/auth retention policy delivery
 
 ## Outcome
 

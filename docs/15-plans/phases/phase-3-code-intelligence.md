@@ -1,6 +1,6 @@
 # Phase 3 — Canonical Code Intelligence
 
-Status: Approved; INT-001 through INT-004 and a named deterministic graph/incremental CI smoke gate are locally verified, while production composition and real pipeline equivalence evidence remain open
+Status: Approved; INT-001 through INT-004 and a named deterministic graph/incremental CI smoke gate are verified, while production composition and real pipeline equivalence evidence remain open
 
 ## Outcome
 
