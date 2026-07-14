@@ -1,6 +1,6 @@
 # Phase 4 — Retrieval and Evidence
 
-Status: Approved; RET-003 evidence/context boundary verified, AGT-001 is the next candidate, and evaluation/release evidence remains incomplete
+Status: Approved; RET-001 through RET-003 and the EVA-001 deterministic evaluation foundation are verified, while accepted thresholds, provider/load qualification and release evidence remain incomplete
 
 ## Outcome
 
@@ -32,3 +32,5 @@ Reproducible evaluation run, ranking regression, evidence validation suite, cont
 `RET-002` adds content-addressed rank-only weighted RRF, explicit retriever/filter/limit/dedup/tie policy and deterministic ranking regression. It does not satisfy evidence selection/context budgeting, evaluation dataset, learned-ranker adoption, accepted threshold or load gates.
 
 `RET-003` validates current owned source/hash/range/security/support before promotion, creates content-bound deterministic evidence IDs, selects diverse whole spans within an inspectable token budget, and preserves explicit limited/insufficient outcomes. It does not satisfy claim-level support validation, versioned evaluation datasets, accepted quality/latency thresholds or load gates.
+
+`EVA-001` adds a content-addressed six-case retrieval dataset, reviewed exact/keyword, deterministic semantic-fixture and hybrid baselines, metric formulas, negative/ambiguous coverage and a reproducible checksummed runner. It does not claim real embedding/provider quality, answer correctness, production latency/load, accepted numeric thresholds or CI release blocking; those remain later evaluation/release work.

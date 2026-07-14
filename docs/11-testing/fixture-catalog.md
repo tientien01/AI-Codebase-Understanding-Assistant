@@ -34,9 +34,16 @@ Expected relationships include frontend component → API client, API client →
 | `multi_framework_endpoints` | FastAPI, Flask and explicitly unsupported/dynamic routing | endpoint accuracy report |
 | `incremental_change_matrix` | edit/add/delete/move/rename/signature changes | `IDX-004` equivalence gate |
 | `evidence_security_cases` | stale, missing, out-of-range, secret-like and cross-repository evidence | `RET-003` |
-| `retrieval_benchmark_repo` | exact, lexical, semantic, graph, negative and ambiguous questions | `EVA-001` |
 | `large_projection_synthetic` | bounded graph/coverage/performance behavior | `UI-003` |
 | `unsafe_import_archives` | traversal, duplicate, symlink, nested, bomb-ratio, depth and quota cases | `SEC-001` |
+
+## `retrieval_benchmark_repo`
+
+Path: `tests/fixtures/retrieval_benchmark_repo/`; cases: `evaluation/datasets/retrieval-v1/`
+
+Purpose: provide one content-addressed, secret-free synthetic repository and six reviewed `evaluation-case/v1` records covering exact endpoint, lexical service, deterministic semantic-candidate, graph-path, nonexistent, and ambiguous questions. The manifest binds every source file and case span to SHA-256 identities. EVA-001 runs exact/keyword, naive semantic top-k, and deterministic hybrid methods over the same candidate observations without executing fixture content or calling a provider.
+
+The semantic observations are deterministic regression inputs, not evidence of real embedding quality. The fixture is intentionally small and does not establish production latency, load, answer-quality, provider, or release thresholds.
 
 ## `python_parser_golden`
 
