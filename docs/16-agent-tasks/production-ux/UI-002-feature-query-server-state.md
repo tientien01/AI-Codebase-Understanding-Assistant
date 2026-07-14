@@ -1,7 +1,7 @@
 ---
 id: UI-002
 title: Move frontend server state to feature queries and scoped mutations
-status: in_progress
+status: completed
 priority: P0
 phase: 6
 owner: project-maintainer
@@ -169,3 +169,7 @@ Remove the provider, feature queries/mutations/state projection and TanStack Que
 ## Documentation and evidence updates
 
 Update the source map, frontend test inventory, Phase 6 plan, project status, this task and `docs/18-production-evidence/frontend-server-state-report.md` with observed results and remaining UI-003 through UI-005/release gaps.
+
+## Completion evidence
+
+Completed locally on 2026-07-14. The exact dependency and lock are stable after `npm ci`; 22 targeted tests and all 38 frontend tests pass, with lint and TypeScript clean. A production build from detached commit `3c2987f` in an environment-free worktree passes with 131 transformed modules. Detailed ownership, invalidation, cancellation, retry, polling and bundle evidence is recorded in `docs/18-production-evidence/frontend-server-state-report.md`.
