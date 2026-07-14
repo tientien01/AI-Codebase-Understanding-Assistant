@@ -29,7 +29,7 @@ The source now includes a tested internal calculator for the target runtime stat
 | Impact analysis | Implemented MVP | Files/endpoints/tests and unresolved-target behavior tested; completeness/confidence benchmark absent |
 | Code/file/API/search UI | Implemented MVP | Pages call current APIs through the main controller; deep-link/router/query architecture absent |
 | Graph UI | Partial | Multiple projections render, but client silently slices to 18 nodes and 8 edges |
-| Evaluation UI/backend | Partial internal backend | Deterministic internal runner validates `evaluation-case/v1`, computes retrieval/insufficient-evidence metrics and exports checksummed JSON; API/UI, answer judging, provider runs, thresholds and load evidence remain absent |
+| Evaluation UI/backend | Partial internal backend with CI smoke policy | Deterministic runner validates `evaluation-case/v1`, exports checksummed metrics, and a named CI job applies a content-addressed non-release smoke gate alongside graph/incremental/assistant suites; API/UI, answer judging, provider runs, accepted thresholds and load evidence remain absent |
 | Settings UI | Placeholder/partial | Static values; backend exposes read-only safe settings/ignore patterns |
 | Authentication/access | Production-blocked | Optional shared token only; blank token bypasses auth; no identity/ownership/audit model |
 | Observability/operations | Production-blocked | No complete structured telemetry, readiness dependencies, CI/deploy, backup/restore or exercised runbooks |

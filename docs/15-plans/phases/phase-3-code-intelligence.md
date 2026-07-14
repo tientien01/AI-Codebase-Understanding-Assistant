@@ -1,6 +1,6 @@
 # Phase 3 — Canonical Code Intelligence
 
-Status: Approved; INT-001 through INT-004 complete, production composition/equivalence evidence open
+Status: Approved; INT-001 through INT-004 and a named deterministic graph/incremental CI smoke gate are verified, while production composition and real pipeline equivalence evidence remain open
 
 ## Outcome
 
@@ -26,3 +26,5 @@ Typed phase artifacts and atomic publish exist; representative multilingual fixt
 ## Evidence
 
 Golden parser suite, resolver accuracy report, graph validation report, capability report, and equivalence benchmark.
+
+EVA-002 groups the existing graph-candidate/readiness and incremental-planner/equivalence suites into one named CI regression job. It changes no intelligence behavior and does not prove production parser/resolver/graph composition or full-versus-incremental equivalence on the real pipeline.

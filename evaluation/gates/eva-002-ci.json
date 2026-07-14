@@ -1,0 +1,68 @@
+{
+  "classification": "ci_regression_only",
+  "rules": [
+    {
+      "bound": 0.666666666667,
+      "comparison": "gte",
+      "k": 3,
+      "method": "exact_keyword",
+      "metric": "recall_at_k",
+      "rule_id": "exact-keyword-recall-at-3"
+    },
+    {
+      "bound": 0.4,
+      "comparison": "gte",
+      "k": 3,
+      "method": "naive_semantic",
+      "metric": "recall_at_k",
+      "rule_id": "naive-semantic-recall-at-3"
+    },
+    {
+      "bound": 1.0,
+      "comparison": "gte",
+      "k": 3,
+      "method": "naive_semantic",
+      "metric": "insufficient_evidence_correct",
+      "rule_id": "naive-semantic-insufficient-at-3"
+    },
+    {
+      "bound": 1.0,
+      "comparison": "gte",
+      "k": 3,
+      "method": "deterministic_hybrid",
+      "metric": "recall_at_k",
+      "rule_id": "hybrid-recall-at-3"
+    },
+    {
+      "bound": 0.926185950714,
+      "comparison": "gte",
+      "k": 3,
+      "method": "deterministic_hybrid",
+      "metric": "ndcg_at_k",
+      "rule_id": "hybrid-ndcg-at-3"
+    },
+    {
+      "bound": 0.0,
+      "comparison": "lte",
+      "k": 3,
+      "method": "deterministic_hybrid",
+      "metric": "duplicate_rate",
+      "rule_id": "hybrid-duplicate-rate-at-3"
+    }
+  ],
+  "run_identity": {
+    "capacity_profile": "synthetic-small",
+    "dataset_id": "retrieval-v1",
+    "dataset_revision": "sha256:734b850ed37fcc2a7fa5aaf6f6903c2c1cbc3a5b85db68ecfa1cc024546ecc49",
+    "fixture_id": "retrieval_benchmark_repo",
+    "fixture_revision": "sha256:535617ad5e9d94d55d1f4a627498e84f72a8caa0a9f87934962884a55e6b03c9",
+    "method_config_ids": {
+      "deterministic_hybrid": "rankcfg_277eb94cb50ff8583271fba2",
+      "exact_keyword": "rankcfg_d7249196cbee0a6a0b130538",
+      "naive_semantic": "evalcfg_bb8f81775800d8edd8d954d5"
+    },
+    "provider": "deterministic-candidate-fixture",
+    "raw_results_checksum": "sha256:b409aa0645512ee22af4248f955b2eb3428aa898509f613d723872a178cd57c4"
+  },
+  "schema_version": "evaluation-gate/v1"
+}

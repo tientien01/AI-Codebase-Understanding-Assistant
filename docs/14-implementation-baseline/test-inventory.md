@@ -7,7 +7,7 @@ Verified: 2026-07-14
 
 ## Backend suite
 
-The repository contains 276 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, 12 bounded workflow/tool tests, 10 sufficiency/citation tests, 6 trace privacy/persistence tests, and 19 versioned evaluation dataset/metric/runner tests. The canonical verified commands are:
+The repository contains 289 pytest tests: 60 existing behavior tests, 33 PostgreSQL migration, repository, job-state/resilience, and Redis queue tests, 19 immutable artifact/configuration tests, 9 typed phase/checkpoint tests, 11 validation/atomic-activation tests, 18 incremental-planning/equivalence tests, 11 canonical parser golden tests, 5 canonical resolver accuracy tests, 4 graph-candidate normalization tests, 11 capability-readiness invariant tests, 16 typed retrieval/classification tests, 18 ranking regression tests, 14 evidence/context tests, 12 bounded workflow/tool tests, 10 sufficiency/citation tests, 6 trace privacy/persistence tests, and 32 versioned evaluation dataset/metric/runner/gate tests. The canonical verified commands are:
 
 ```powershell
 backend\.venv-clean\Scripts\python.exe -m pytest tests -q
@@ -42,6 +42,8 @@ The AGT-003 trace-persistence gate passed **6 tests**, its assistant/evidence/re
 
 The EVA-001 clean-environment gate passed **19 targeted tests**, its evaluation/retrieval/evidence/assistant compatibility regression passed **95 tests**, and the local-profile full suite passed **247 tests with 29 integration-profile tests skipped**. The matrix validates content-addressed dataset/fixture identities, bounded dataset/candidate/file inputs, exact/lexical/semantic/graph/negative/ambiguous cases, source hash/range/path safety, three same-input baselines, hand-computed metric formulas, input-order invariance, frozen run identities, reviewed aggregate regressions, checksums and CLI export. Deterministic semantic observations do not establish real provider quality, production latency/load, answer quality or accepted release thresholds.
 
+The EVA-002 clean-environment gate passed **13 targeted policy tests**, its combined evaluation/graph/readiness/incremental/equivalence/assistant suite passed **93 tests**, and the local-profile full suite passed **260 tests with 29 integration-profile tests skipped**. The matrix verifies content-addressed smoke configuration, identity/integrity binding, controlled finite unique rules, order invariance, completed-case enforcement, missing/errored/non-finite/below-floor failures, deterministic decision checksum and CLI exit behavior. The named GitHub Actions smoke job passed for commit `2aba763` in both push and pull-request triggers; this does not establish production thresholds.
+
 | Module | Tests | Main coverage |
 | --- | ---: | --- |
 | `test_codebase_service.py` | 23 | import preview/confirm/cancel, ZIP security, indexing, incremental behavior, stale/selected evidence, deletion |
@@ -56,7 +58,7 @@ The EVA-001 clean-environment gate passed **19 targeted tests**, its evaluation/
 | `assistant/test_bounded_workflow_tools.py` | 12 | canonical workflow configuration, typed tool interchange, immutable allowlist identity, ownership/version rejection, exact/hybrid routing, budgets, cancellation, deduplication, safe failures and prompt-like input isolation |
 | `assistant/test_sufficiency_citation_repair.py` | 10 | question-specific sufficiency, controlled repair decisions, heuristic refusal, current/selected claim-citation binding, duplicate/scope/stale/cross-owner rejection and provider fail-closed behavior |
 | `assistant/test_trace_persistence.py` | 6 | atomic local persistence/rollback, redaction, allowlist rejection, ordered owned replay, ChatService fail-closed behavior and accepted production trace schema mapping |
-| `evaluation/` | 19 | versioned bounded dataset/fixture validation, path/hash/range/rank failures, hand-computed retrieval metrics, exact/keyword-naive-semantic-hybrid comparison, input-order invariance, reproducible checksums, reviewed aggregates and CLI export |
+| `evaluation/` | 32 | versioned bounded dataset/fixture validation, hand-computed retrieval metrics, three baseline methods, reproducible checksums, content-addressed CI smoke policy, identity/integrity rules, deterministic diagnostics and CLI pass/fail export |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_api_contract.py` | 5 | OpenAPI drift, route/auth inventory, operation IDs, schema compatibility exports, route ownership |
@@ -95,7 +97,7 @@ The EVA-001 clean-environment gate passed **19 targeted tests**, its evaluation/
 
 ## Collection boundary
 
-Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The EVA-001 clean local-profile run collected 276 project tests, passed 247 and skipped 29 existing integration-profile tests; no imported repository test participated.
+Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The EVA-002 clean local-profile run collected 289 project tests, passed 260 and skipped 29 existing integration-profile tests; no imported repository test participated.
 
 ## Frontend gates
 

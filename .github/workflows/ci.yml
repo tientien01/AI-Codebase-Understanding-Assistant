@@ -70,6 +70,59 @@ jobs:
           uv pip compile backend/requirements.txt --python-version 3.11 --universal --generate-hashes --output-file backend/requirements-lock.txt
           git diff --exit-code -- backend/requirements-lock.txt
 
+  ai-regression:
+    name: AI, graph, and incremental regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.28"
+          python-version: "3.11"
+          enable-cache: false
+      - name: Create clean backend environment
+        run: uv venv .venv --python 3.11
+      - name: Install locked backend dependencies
+        run: uv pip sync --python .venv/bin/python backend/requirements-lock.txt
+      - name: Validate backend dependencies
+        run: uv pip check --python .venv/bin/python
+      - name: Run owned AI, graph, and incremental suites
+        env:
+          PYTHONPATH: backend
+        run: >-
+          .venv/bin/python -m pytest
+          tests/evaluation
+          tests/intelligence/test_graph_candidates.py
+          tests/intelligence/test_capability_readiness.py
+          tests/indexing/test_incremental_planner.py
+          tests/indexing/test_equivalence_service.py
+          tests/assistant
+          -q
+      - name: Produce frozen deterministic evaluation run
+        env:
+          PYTHONPATH: backend
+        run: >-
+          .venv/bin/python -m app.services.evaluation.runner
+          --dataset evaluation/datasets/retrieval-v1
+          --output .tmp/eva-002-run.json
+          --code-revision EVA-002-ci-smoke
+          --index-version idx_eva_002_ci
+          --started-at 2026-07-14T00:00:00Z
+          --completed-at 2026-07-14T00:00:00Z
+      - name: Enforce deterministic smoke regression policy
+        env:
+          PYTHONPATH: backend
+        run: >-
+          .venv/bin/python -m app.services.evaluation.gates
+          --config evaluation/gates/eva-002-ci.json
+          --run .tmp/eva-002-run.json
+          --output .tmp/eva-002-gate.json
+
   frontend:
     name: Frontend quality gates
     runs-on: ubuntu-latest
