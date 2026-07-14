@@ -1,7 +1,7 @@
 ---
 id: SEC-001
 title: Enforce quota-bound archive, folder, and public Git acquisition
-status: in_progress
+status: completed
 priority: P0
 phase: 7
 owner: project-maintainer
@@ -140,4 +140,4 @@ On completion, update the source map, test inventory, capability baseline, Phase
 
 ## Current verification state
 
-Implementation and documentation are present. The focused gate passes 49 tests and the backend suite excluding dataset-owned evaluation tests passes 262 with 29 integration skips. The required full backend attempt passes 276 and skips 29 but has 18 evaluation failures at the benchmark fixture content-hash check before scoring. Per the task and project gates, status remains `in_progress`; the dataset was not opened, changed, regenerated, or bypassed.
+Implementation, documentation, and mandatory verification are complete. The focused gate passes 49 tests, the full backend suite passes 294 tests with 29 integration-profile skips, and `git diff --check` passes. The synthetic evaluation fixture was restored from checkout CRLF to its Git-index LF bytes so its declared content hashes validate; no dataset record, manifest, threshold, or gate was changed or bypassed.

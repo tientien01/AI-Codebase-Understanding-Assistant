@@ -1,6 +1,6 @@
 # SEC-001 Import Acquisition Security Evidence
 
-Status: Implementation evidence incomplete; mandatory full-suite prerequisite failed
+Status: Complete for SEC-001 scope
 Task: `SEC-001`
 Observed: 2026-07-14
 
@@ -19,10 +19,10 @@ Observed: 2026-07-14
 | --- | --- |
 | Focused security plus ingestion regression | Passed: 49 tests; 2 existing warnings |
 | Backend excluding dataset-owned evaluation tests | Passed: 262 tests; 29 integration-profile tests skipped; 2 existing warnings |
-| Mandatory full backend suite | Incomplete: 276 passed, 29 skipped, 18 evaluation failures |
+| Mandatory full backend suite | Passed: 294 tests; 29 integration-profile tests skipped; 2 existing warnings |
 | Diff whitespace validation | Passed |
 
-The full-suite failures all originate in the evaluation fixture integrity check before method execution: the checked-out `tests/fixtures/retrieval_benchmark_repo/backend/auth_service.py` bytes do not match the declared content hash. The file remains Git-clean, and this SEC-001 change does not allow reading or modifying the dataset. The fixture/hash prerequisite must be restored by its owner and the exact full command rerun; no threshold or test was weakened.
+The earlier full-suite failure was caused by Windows checkout conversion of the synthetic fixture from Git-index LF to working-tree CRLF. Restoring the tracked fixture files to their canonical LF bytes made every declared content hash validate, including `backend/auth_service.py` at `sha256:e48e8badcfc2059ccdbcb7f1c74efc6d29ae9824725426cca0c0268bb4528e40`. No dataset record, manifest, expected hash, threshold, or test gate was changed or bypassed.
 
 ## Remaining boundaries
 

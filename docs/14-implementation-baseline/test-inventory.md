@@ -102,7 +102,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 
 Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The EVA-002 clean local-profile run collected 289 project tests, passed 260 and skipped 29 existing integration-profile tests; no imported repository test participated.
 
-The current SEC-001 focused gate passes **49 tests** (26 adversarial acquisition tests plus 23 ingestion/service regressions). The non-evaluation backend regression passes **262 tests with 29 integration-profile tests skipped**. The mandatory all-tests attempt passed 276 and skipped 29 but failed 18 evaluation tests before scoring because the checked-out benchmark fixture reported a content-hash mismatch for `backend/auth_service.py`; the dataset was not opened or modified. SEC-001 therefore remains `in_progress` until the clean full-suite prerequisite is restored and rerun.
+The completed SEC-001 focused gate passes **49 tests** (26 adversarial acquisition tests plus 23 ingestion/service regressions), and the mandatory full backend suite passes **294 tests with 29 integration-profile tests skipped**. The previously observed evaluation failures were caused by Windows CRLF checkout conversion of the synthetic fixture; restoring its Git-index LF bytes made the declared hashes validate without changing dataset records, manifests, thresholds, or gates.
 
 ## Frontend gates
 

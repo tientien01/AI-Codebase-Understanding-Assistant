@@ -1,6 +1,6 @@
 # Phase 7 — Security and Operations
 
-Status: Approved; SEC-001 import-acquisition hardening is in progress
+Status: Approved; SEC-001 import-acquisition hardening is complete
 
 ## Outcome
 
@@ -26,4 +26,4 @@ Production persistence/job topology is known; threat model, capacity classes, se
 
 Adversarial security suite, authorization report, SBOM/vulnerability scan, telemetry/readiness tests, deployment smoke, restore and recovery drills.
 
-`SEC-001` now has a network-free adversarial implementation for archive/folder/public-Git path, quota, subprocess-hardening and cleanup controls. Its focused and non-evaluation backend suites pass. The mandatory full suite is not yet clean because the checked-out retrieval benchmark fixture fails its pre-existing content-hash gate, so SEC-001 remains in progress and no Phase 7 exit claim is made.
+`SEC-001` now has a network-free adversarial implementation for archive/folder/public-Git path, quota, subprocess-hardening and cleanup controls. Its 49-test focused gate and mandatory full backend suite with 294 passed and 29 integration-profile skips are clean. SEC-001 is complete; no Phase 7 exit claim is made because the remaining security and operations tasks and evidence are still open.
