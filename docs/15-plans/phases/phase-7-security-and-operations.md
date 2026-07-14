@@ -1,6 +1,6 @@
 # Phase 7 — Security and Operations
 
-Status: Approved; SEC-001 import-acquisition hardening is complete
+Status: Approved; SEC-001 and SEC-002 security boundaries are complete; operations tasks remain open
 
 ## Outcome
 
@@ -27,3 +27,5 @@ Production persistence/job topology is known; threat model, capacity classes, se
 Adversarial security suite, authorization report, SBOM/vulnerability scan, telemetry/readiness tests, deployment smoke, restore and recovery drills.
 
 `SEC-001` now has a network-free adversarial implementation for archive/folder/public-Git path, quota, subprocess-hardening and cleanup controls. Its 49-test focused gate and mandatory full backend suite with 294 passed and 29 integration-profile skips are clean. SEC-001 is complete; no Phase 7 exit claim is made because the remaining security and operations tasks and evidence are still open.
+
+`SEC-002` adds the production single-operator bootstrap/session/token boundary, strict browser Origin/CSRF checks, repository-owner denial, safe append-only audit and trusted-host recovery. Its targeted, full backend, PostgreSQL migration/integration and zero-drift gates pass. Phase 7 remains open for telemetry, deployment/TLS, backup/restore, broader secret/parser/rate controls and release evidence.

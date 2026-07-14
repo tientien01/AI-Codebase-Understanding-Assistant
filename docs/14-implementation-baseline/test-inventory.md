@@ -104,6 +104,8 @@ Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, vir
 
 The completed SEC-001 focused gate passes **49 tests** (26 adversarial acquisition tests plus 23 ingestion/service regressions), and the mandatory full backend suite passes **294 tests with 29 integration-profile tests skipped**. The previously observed evaluation failures were caused by Windows CRLF checkout conversion of the synthetic fixture; restoring its Git-index LF bytes made the declared hashes validate without changing dataset records, manifests, thresholds, or gates.
 
+The SEC-002 focused auth/API gate passes **14 tests with one PostgreSQL-profile skip**. With PostgreSQL 18.4 enabled, the combined migration and auth integration gate passes **17 tests**, including fresh/supported migration, append-only audit, zero schema drift and raw-credential exclusion. The mandatory local-profile full backend suite passes **302 tests with 31 integration-profile skips**. The matrix covers one-time bootstrap, fixed scrypt parameters, session absolute/idle/revocation behavior, Origin/CSRF enforcement, named token one-time disclosure/expiry/revocation, non-disclosing repository denial, safe audits, recovery rotation and production fail-closed configuration.
+
 ## Frontend gates
 
 | Command | Result |

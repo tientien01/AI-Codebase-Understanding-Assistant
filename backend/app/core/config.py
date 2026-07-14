@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     enable_agent_trace: bool = True
     enable_cfg_dfg: bool = True
     api_auth_token: str = ""
+    operator_bootstrap_credential: SecretStr = SecretStr("")
+    session_absolute_seconds: int = 43_200
+    session_idle_seconds: int = 1_800
+    api_token_max_seconds: int = 7_776_000
+    audit_retention_seconds: int = 31_536_000
     vite_api_base_url: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=SETTINGS_ENV_FILE, env_file_encoding="utf-8")
@@ -89,6 +94,28 @@ class Settings(BaseSettings):
             )
         if self.app_env == "production" and "artifact_root" not in self.model_fields_set:
             raise ValueError("Production profile requires an explicit ARTIFACT_ROOT")
+        if min(
+            self.session_absolute_seconds,
+            self.session_idle_seconds,
+            self.api_token_max_seconds,
+            self.audit_retention_seconds,
+        ) <= 0:
+            raise ValueError("Operator access and audit lifetimes must be positive")
+        if self.session_idle_seconds > self.session_absolute_seconds:
+            raise ValueError("SESSION_IDLE_SECONDS cannot exceed SESSION_ABSOLUTE_SECONDS")
+        if self.app_env == "production" and self.api_auth_token.strip():
+            raise ValueError("Production profile forbids the shared API_AUTH_TOKEN")
+        required_access_settings = {
+            "operator_bootstrap_credential",
+            "session_absolute_seconds",
+            "session_idle_seconds",
+            "api_token_max_seconds",
+            "audit_retention_seconds",
+        }
+        if self.app_env == "production" and not required_access_settings.issubset(self.model_fields_set):
+            raise ValueError("Production profile requires explicit operator access settings")
+        if self.app_env == "production" and not self.operator_bootstrap_credential.get_secret_value():
+            raise ValueError("Production profile requires an operator bootstrap credential")
         return self
 
 

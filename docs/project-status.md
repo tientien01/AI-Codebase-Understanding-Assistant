@@ -12,9 +12,9 @@ This page is the operational front door. It reports verified progress; it does n
 | --- | --- |
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
-| Active delivery phase | Phase 6 has verified UI-001 through UI-005; composition and release qualification remain open |
-| Active task | None; SEC-001 is complete and awaiting PR review/merge |
-| Next task candidate | Select and authorize production pipeline composition or Phase 6 release qualification as a separate task |
+| Active delivery phase | Phase 7 has verified SEC-001 and SEC-002; operations delivery remains open |
+| Active task | SEC-002 is complete locally and awaiting PR review/merge |
+| Next task candidate | Authorize OPS-001 structured telemetry and readiness after SEC-002 merge |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -49,6 +49,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Graph GET views now enforce deterministic server-side filters, depth and 220-node/520-edge maxima, disclose counts/coverage/truncation/unresolved roots/provenance, and reject stale compatibility versions. The UI renders the complete returned projection with limited-state, bounded expansion and accessible relation-list alternatives; UI-003 clean backend/frontend gates pass.
 - UI-004 renders the complete bounded projection as a connected architecture-layer Graph Explorer with focus, zoom, minimap and contextual support/impact inspection. Overview supplies deterministic signal-backed reading tours, and Impact separates direct, inferred and unknown while declaring historical comparison unavailable. In addition to 45 Vitest tests, six deterministic Chromium tests pass locally with axe serious/critical = 0, reduced-motion coverage and complete 12/80/220-node observations; the named GitHub Actions gate passes.
 - SEC-001 now applies one normalized path/tree quota boundary to ZIP, folder and public-Git acquisition; rejects link/special/collision/quota cases; hardens Git URL/ref/configuration/redirect/prompt/hook/submodule/LFS behavior; validates cloned trees; and cleans failed staging. Its 49-test focused gate and full backend regression with 294 passed and 29 integration-profile skips pass without network access.
+- SEC-002 now replaces production shared-token compatibility with one-time operator bootstrap, scrypt password verification, strict browser sessions, named Bearer tokens, repository-owner denial, privacy-safe append-only audit and trusted-host recovery. Its focused, full backend, PostgreSQL migration/integration and schema-drift gates pass.
 
 ## Blocking gaps
 
@@ -57,13 +58,13 @@ This page is the operational front door. It reports verified progress; it does n
 3. Cross-file symbol/inheritance/dynamic resolution, CFG/DFG/non-Python candidates and global canonical graph composition are not proven.
 4. The deterministic retrieval evaluation dataset/runner exists, but real provider, answer/citation, graph, security, performance, resilience and load thresholds lack accepted release evidence.
 5. UI-004 and UI-005 are verified. Evaluation/Settings placeholders are replaced with safe server-backed reads and explicit unavailable states. Public evaluation runs, settings mutations, historical diff, canonical opaque-version graph POST APIs and accepted performance budgets remain open boundaries.
-6. Authentication, observability, backup/restore, deployment, and runbooks are not production complete.
+6. Frontend login UX, rate limiting, automated audit retention, observability, backup/restore and deployment/TLS are not production complete.
 The detailed and source-verified account is maintained in `14-implementation-baseline/`. Do not update this page from assumptions.
 
 ## Immediate sequence
 
-1. Review and merge the completed SEC-001 pull request without inferring Phase 7 or L3 completion.
-2. Select and authorize production pipeline composition or Phase 6 release qualification under a separate `ready` task.
+1. Review and merge the completed SEC-002 pull request without inferring Phase 7 or L3 completion.
+2. Select and authorize OPS-001 or another dependency-valid candidate under a separate `ready` task.
 
 ## Status update rule
 

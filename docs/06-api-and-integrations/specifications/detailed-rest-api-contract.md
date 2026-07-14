@@ -57,6 +57,12 @@ Until generated OpenAPI is checked and drift-tested, implementations use these m
 | `SourceRange` | `file_key`, `start_line: integer|null`, `end_line: integer|null`, `content_hash`; both lines are present together and inclusive |
 | `AsyncRef` | `operation_id`, `status_url`, `state`, related `repository_id/job_id/index_version_id` when applicable |
 
+### Operator access schemas
+
+`BootstrapRequest` contains `display_name` and `password`; the one-time bootstrap credential is supplied only in `X-Bootstrap-Credential`. `LoginRequest` contains only `password`. Successful bootstrap/login returns principal identity, absolute expiry and a one-time CSRF token while setting the opaque `aica_session` cookie as `HttpOnly`, `Secure`, `SameSite=Strict` in production.
+
+`ApiTokenCreateRequest` contains a bounded name and `expires_in_seconds`. Creation returns `token_id`, name, expiry and the raw `token` exactly once. Session/API-token/password verifier values and audit responses never expose stored hashes.
+
 ### Import schemas
 
 `POST /import-sessions/zip` accepts multipart `file` and optional `display_name`. `POST /import-sessions/folder` accepts repeated `files` plus equal-length normalized `relative_paths` and optional `display_name`. Public Git accepts JSON `{url, ref|null, display_name|null}`; credentials, custom hosts, ports and schemes are invalid.
@@ -120,6 +126,19 @@ Assistant request is `{index_version_id|null, conversation_id|null, question, co
 ## Resource surface
 
 Exact request/response schemas are generated into OpenAPI. These operations and semantics are mandatory:
+
+### Authentication and operator access
+
+```text
+POST   /auth/bootstrap
+POST   /auth/login
+POST   /auth/logout
+GET    /auth/session
+POST   /auth/tokens
+DELETE /auth/tokens/{token_id}
+```
+
+Bootstrap is available only while no initialized operator password verifier exists. Browser-session mutations require an exact configured Origin and the session-bound `X-CSRF-Token`; safe reads do not require CSRF. Named API tokens use only `Authorization: Bearer <token>` and are individually expirable/revocable. Production rejects `X-API-Key`, blank authentication and the development shared token. Repository path requests authorize the authenticated principal against `owner_principal_id`; missing and foreign repositories share `404 RESOURCE_NOT_FOUND`, and denials append privacy-safe audit events.
 
 ### Import sessions
 

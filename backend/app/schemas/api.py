@@ -14,6 +14,15 @@ from app.schemas.assistant import (
     EvidenceValidationResponse,
     SearchAskWithEvidenceRequest,
 )
+from app.schemas.auth import (
+    AccessOperationResponse,
+    ApiTokenCreateRequest,
+    ApiTokenIssuedResponse,
+    BootstrapRequest,
+    LoginRequest,
+    SessionIssuedResponse,
+    SessionResponse,
+)
 from app.schemas.exploration import (
     EndpointDTO,
     EndpointListResponse,
@@ -78,6 +87,10 @@ from app.schemas.settings import IgnorePatternsResponse, SettingsResponse
 
 
 __all__ = [
+    "AccessOperationResponse",
+    "ApiTokenCreateRequest",
+    "ApiTokenIssuedResponse",
+    "BootstrapRequest",
     "ChatRequest",
     "ChatResponse",
     "CitationDTO",
@@ -114,6 +127,7 @@ __all__ = [
     "ImportProjectSummaryDTO",
     "ImportSecurityWarningDTO",
     "ImportSessionCreateResponse",
+    "LoginRequest",
     "IndexJobControlResponse",
     "IndexJobListResponse",
     "IndexJobSummaryDTO",
@@ -135,6 +149,8 @@ __all__ = [
     "SearchAskWithEvidenceRequest",
     "SearchResponse",
     "SearchResultDTO",
+    "SessionIssuedResponse",
+    "SessionResponse",
     "SettingsResponse",
     "SkippedFileDTO",
     "SkippedFilesResponse",

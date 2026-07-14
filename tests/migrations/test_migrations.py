@@ -25,7 +25,9 @@ def test_fresh_upgrade_has_expected_tables_revision_indexes_and_triggers(product
     inspector = inspect(engine)
     assert set(inspector.get_table_names()) == EXPECTED_TABLES | {"alembic_version"}
     with engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0001_production_baseline"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0002_operator_authentication"
+        principal_columns = {column["name"] for column in inspect(engine).get_columns("operator_principals")}
+        assert "password_hash" in principal_columns
         indexes = set(connection.scalars(text("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")))
         assert {"ix_files_path", "ix_graph_edges_forward", "uq_index_jobs_one_active"} <= indexes
         triggers = set(connection.scalars(text("SELECT tgname FROM pg_trigger WHERE NOT tgisinternal")))
@@ -56,6 +58,27 @@ def test_empty_downgrade_and_forward_recovery(production_database) -> None:
     assert inspect(engine).get_table_names() == ["alembic_version"]
     command.upgrade(config, "head")
     assert set(inspect(engine).get_table_names()) == EXPECTED_TABLES | {"alembic_version"}
+
+
+def test_0001_operator_upgrade_preserves_uninitialized_principal(production_database) -> None:
+    config, engine = production_database
+    command.downgrade(config, "0001_production_baseline")
+    with engine.begin() as connection:
+        connection.execute(
+            text("INSERT INTO operator_principals (id, display_name) VALUES ('principal_existing', 'Existing')")
+        )
+
+    command.upgrade(config, "head")
+
+    with engine.connect() as connection:
+        row = connection.execute(
+            text("SELECT id, display_name, password_hash FROM operator_principals")
+        ).mappings().one()
+    assert row == {
+        "id": "principal_existing",
+        "display_name": "Existing",
+        "password_hash": None,
+    }
 
 
 def test_supported_legacy_upgrade_is_atomic(production_database, tmp_path: Path) -> None:

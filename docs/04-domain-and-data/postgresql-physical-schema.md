@@ -57,8 +57,11 @@ Column lists below use `!` for `NOT NULL`, `?` for nullable, and `=` for a datab
 | --- | --- |
 | `id` | `text!`, PK, prefix `principal_` |
 | `display_name` | `text!` |
+| `password_hash` | `text?`; versioned one-way verifier, null only before bootstrap |
 | `status` | `text! = 'active'`, check `active|disabled` |
 | `created_at`, `updated_at` | shared mutable timestamps |
+
+`SEC-002` adds `password_hash` through migration `0002_operator_authentication`. The verifier uses the accepted `scrypt/v1` parameters and never stores the password or bootstrap credential. A migrated null verifier is deliberately unauthenticated until one-time bootstrap or trusted-host recovery initializes it.
 
 ### `operator_sessions`
 
