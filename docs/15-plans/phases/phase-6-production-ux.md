@@ -1,6 +1,6 @@
 # Phase 6 — Production Workspace UX
 
-Status: Approved; may begin after required API/read-model dependencies
+Status: Approved; UI-001 canonical routing/deep-link foundation is verified, while UI-002 through UI-005 and Phase 6 release evidence remain open
 
 ## Outcome
 
@@ -25,3 +25,5 @@ Versioned API contract and representative read models exist; each page has defin
 ## Evidence
 
 Frontend CI reports, navigation/state E2E, accessibility report, performance budget, and large-projection UX test.
+
+`UI-001` establishes React Router browser/history ownership, the accepted canonical route set, reloadable source/line and evidence links, URL-owned search/graph/impact identities, and fail-closed route/repository recovery. Symbol and conversation identities remain explicit unavailable states until their public read models exist. Server-state ownership, the complete async-state matrix, bounded graph UX, later feature surfaces, accessibility automation, critical Playwright flows and accepted performance budgets remain outside this task.

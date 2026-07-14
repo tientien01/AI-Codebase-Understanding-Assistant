@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { FileTree } from '../../components/code/FileTree'
 import { InDevelopmentInline, ListRow, PageTitle, Panel } from '../../components/common/ui'
 import type { FileContent, FileTreeNode, Overview } from '../../types/api'
@@ -5,16 +6,24 @@ import type { FileContent, FileTreeNode, Overview } from '../../types/api'
 export function CodeExplorerPage({
   fileTree,
   selectedFilePath,
+  selectedLine,
   fileContent,
   overview,
   onSelectFile,
 }: {
   fileTree: FileTreeNode[]
   selectedFilePath: string
+  selectedLine?: number
   fileContent: FileContent | null
   overview: Overview | null
   onSelectFile: (filePath: string) => void
 }) {
+  useEffect(() => {
+    if (!selectedLine) return
+    const target = document.getElementById(`source-line-${selectedLine}`)
+    target?.scrollIntoView?.({ block: 'center' })
+  }, [fileContent, selectedLine])
+
   return (
     <div>
       <PageTitle title="Code Explorer" subtitle="Browse source files with parsed symbols, endpoints, imports, and citation-ready line ranges." />
@@ -28,7 +37,18 @@ export function CodeExplorerPage({
             <span>{fileContent?.file_path ?? 'empty'}</span>
           </div>
           <pre className="code-block">
-            {fileContent ? fileContent.lines.map((line, index) => `${String(index + 1).padStart(4, ' ')}  ${line}`).join('\n') : 'Import and index a repository to inspect code.'}
+            {fileContent ? fileContent.lines.map((line, index) => {
+              const lineNumber = index + 1
+              return (
+                <span
+                  className={lineNumber === selectedLine ? 'code-line selected' : 'code-line'}
+                  id={`source-line-${lineNumber}`}
+                  key={lineNumber}
+                >
+                  {`${String(lineNumber).padStart(4, ' ')}  ${line}\n`}
+                </span>
+              )
+            }) : 'Import and index a repository to inspect code.'}
           </pre>
         </Panel>
         <Panel title="Detected Intelligence">

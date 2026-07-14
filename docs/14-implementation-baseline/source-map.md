@@ -34,6 +34,7 @@
 | Job queue, fenced delivery, heartbeat, retry, cancellation, and recovery | `backend/app/services/indexing/job_queue.py`, `job_delivery_service.py` |
 | Dedicated indexing worker | `backend/app/workers/indexing_worker.py` |
 | Frontend API/state | `frontend/src/api/`, `frontend/src/hooks/` |
+| Frontend canonical routing and recovery | `frontend/src/routing/routes.ts`, `frontend/src/App.tsx`, `frontend/src/pages/routing/` |
 | Frontend surfaces | `frontend/src/pages/`, `frontend/src/components/` |
 | Tests/fixture | `tests/` |
 
@@ -62,3 +63,5 @@ The compatibility assistant now routes through immutable `assistant-config/v1`, 
 Question-specific sufficiency now evaluates strong selected support, source diversity and endpoint/graph coverage. Repairable multi-step/architecture undercoverage gets at most one controlled hybrid repair inside the same owner/version and AGT-001 budgets; direct missing questions do not broaden. Deterministic and optional-provider answers must declare selected current citation IDs whose persisted scope validates exactly. Semantic entailment and evaluation thresholds remain later boundaries.
 
 Completed assistant turns now cross one immutable privacy-safe aggregate into atomic local SQLite or production PostgreSQL persistence. Conversation messages, claims, citations, trace summaries and controlled ordered events retain repository/index ownership; replay is repository-scoped and credentials are redacted before storage. Public history endpoints, automated retention execution, authenticated-principal delivery and agent evaluation thresholds remain later boundaries.
+
+The frontend now derives management/workspace identity from one React Router boundary rather than transient page state. Canonical builders preserve encoded repository, file/line, symbol, endpoint, graph, impact, search, conversation and evidence context; direct source/evidence routes restore current owned data, and invalid/missing/unusable contexts render deterministic recovery. Symbol and conversation detail read models, server-state ownership, bounded graph projections and later Phase 6 surfaces remain outside UI-001.

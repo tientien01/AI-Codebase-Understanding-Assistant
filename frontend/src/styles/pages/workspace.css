@@ -118,6 +118,18 @@
   min-height: 360px;
 }
 
+.code-line {
+  display: block;
+  min-width: max-content;
+}
+
+.code-line.selected {
+  margin-inline: -8px;
+  border-left: 3px solid #6f83ff;
+  padding-inline: 5px 8px;
+  background: rgba(82, 107, 255, 0.18);
+}
+
 .graph-toolbar {
   margin-bottom: 16px;
 }
