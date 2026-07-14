@@ -1,6 +1,6 @@
 # UI-004 Architecture, Tour, Graph, and Impact Evidence
 
-Status: Local implementation and browser qualification verified; named CI gate pending
+Status: Verified
 
 Task: `UI-004`
 
@@ -33,6 +33,7 @@ No API, database, graph fact, indexing, retrieval, storage or historical-version
 | Accessibility | axe WCAG 2 A/AA and 2.1 A/AA: zero serious or critical violations on Architecture/Code, Graph and Impact journeys |
 | Lock review | Intentional exact additions only: Playwright 1.61.1 and axe-playwright 4.12.1 |
 | Diff hygiene | `git diff --check -- frontend docs` passed locally |
+| Named CI gate | `Frontend UI-004 E2E and accessibility` passed in 44 seconds for commit `5ef247d` ([GitHub Actions evidence](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/actions/runs/29324767805/job/87058335963)) |
 
 ## Graph and bundle observations
 
@@ -54,8 +55,6 @@ The deterministic Chromium observations after a clean install were:
 
 Every returned node and edge was present before the observation completed. These are repeatable qualification observations, not an accepted product latency or memory budget. No accepted Phase 6 bundle/browser threshold exists, so no release pass/fail is inferred from these values.
 
-## Remaining qualification step
+## Remaining product boundaries
 
-- The named `Frontend UI-004 E2E and accessibility` GitHub Actions job must pass on the follow-up pull request before UI-004 is marked completed.
-
-Historical version diff, opaque-version graph POST APIs and validated evidence IDs for architecture/tour steps still need separately accepted API/read models; they are disclosed product limits, not fabricated by UI-004. Phase 6 release qualification and UI-005 also remain separate work.
+Historical version diff, opaque-version graph POST APIs and validated evidence IDs for architecture/tour steps still need separately accepted API/read models; they are disclosed product limits, not fabricated by UI-004. Phase 6 release qualification and UI-005 remain separate work. They do not block the completed UI-004 scope.

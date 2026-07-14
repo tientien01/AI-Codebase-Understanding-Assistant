@@ -1,7 +1,7 @@
 ---
 id: UI-004
 title: Add evidence-backed architecture, guided tour, and diff-impact workspace UX
-status: in_progress
+status: completed
 priority: P0
 phase: 6
 owner: project-maintainer
@@ -176,4 +176,4 @@ Update the frontend UX README, Phase 6 status, implementation source/test invent
 
 ## Current verification state
 
-Implemented and locally qualified on 2026-07-14. Clean install, 14 targeted tests, all 45 frontend tests, lint with zero warnings, TypeScript, production build and six Chromium Playwright tests pass. The deterministic browser suite records complete 12/80/220-node projections, reduced-motion behavior and zero serious/critical axe findings across Architecture/Code, Graph and Impact journeys. The exact Playwright/axe lock additions were reviewed. The task remains `in_progress` until the named GitHub Actions job passes; exact observations and bundle deltas are recorded in `docs/18-production-evidence/frontend-architecture-tour-impact-report.md`.
+Completed and verified on 2026-07-14. Clean install, 14 targeted tests, all 45 frontend tests, lint with zero warnings, TypeScript, production build and six Chromium Playwright tests pass. The deterministic browser suite records complete 12/80/220-node projections, reduced-motion behavior and zero serious/critical axe findings across Architecture/Code, Graph and Impact journeys. The exact Playwright/axe lock additions were reviewed. The named `Frontend UI-004 E2E and accessibility` GitHub Actions job passed for commit `5ef247d`; exact observations, bundle deltas and CI evidence are recorded in `docs/18-production-evidence/frontend-architecture-tour-impact-report.md`.
