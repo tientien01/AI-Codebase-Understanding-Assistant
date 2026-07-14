@@ -8,15 +8,19 @@ import type {
   GraphProjectionInput,
   GraphView,
   ImpactResult,
+  IgnorePatternsResponse,
   ImportPreview,
   IndexStatus,
   Overview,
   Repository,
   SearchResult,
+  SettingsResponse,
 } from '../types/api'
 
 export const serverApi = {
   repositories: (signal?: AbortSignal) => requestJson<Repository[]>(`${API_V1}/repositories`, { signal }),
+  settings: (signal?: AbortSignal) => requestJson<SettingsResponse>(`${API_V1}/settings`, { signal }),
+  ignorePatterns: (signal?: AbortSignal) => requestJson<IgnorePatternsResponse>(`${API_V1}/settings/ignore-patterns`, { signal }),
   overview: (repositoryId: string, signal?: AbortSignal) =>
     requestJson<Overview>(`${API_V1}/repositories/${repositoryId}/overview`, { signal }),
   indexStatus: (repositoryId: string, signal?: AbortSignal) =>

@@ -2,6 +2,8 @@ export type IndexVersionIdentity = number | 'active'
 
 export const queryKeys = {
   repositories: ['repositories'] as const,
+  settings: ['settings'] as const,
+  ignorePatterns: ['settings', 'ignore-patterns'] as const,
   repository: (repositoryId: string) => ['repository', repositoryId] as const,
   status: (repositoryId: string) => ['repository', repositoryId, 'status'] as const,
   version: (repositoryId: string, indexVersion?: number) =>

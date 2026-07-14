@@ -1,7 +1,7 @@
 ---
 id: UI-005
 title: Replace evaluation and settings placeholders with truthful readiness UX
-status: ready
+status: completed
 priority: P0
 phase: 6
 owner: project-maintainer
@@ -27,12 +27,14 @@ allowed_paths:
   - frontend/package.json
   - frontend/playwright.config.ts
   - frontend/src/AppRoutes.tsx
+  - frontend/src/App.test.tsx
   - frontend/src/api/server.ts
   - frontend/src/components/common/AsyncState.tsx
   - frontend/src/features/server-state/asyncState.ts
   - frontend/src/features/server-state/index.ts
   - frontend/src/features/server-state/keys.ts
   - frontend/src/features/server-state/queries.ts
+  - frontend/src/features/server-state/serverState.test.tsx
   - frontend/src/pages/workspace/EvaluationPage.tsx
   - frontend/src/pages/workspace/SettingsPage.tsx
   - frontend/src/pages/workspace/UI005Workspace.test.tsx
@@ -156,4 +158,4 @@ Update the frontend UX README, implementation source/test inventories, Phase 6 p
 
 ## Current verification state
 
-Ready on 2026-07-14. Dependencies UI-002, UI-004 and EVA-002 are verified. Existing source and OpenAPI inspection confirms that safe Settings reads and repository/index status are available, while public evaluation runs and settings mutations are not. No implementation claim is made until all acceptance criteria and the named CI gate pass.
+Completed and verified on 2026-07-14. Clean install, 22 focused tests, all 51 frontend tests, lint, TypeScript, production build, four UI-005 Chromium journeys and all six UI-004 regression journeys pass. Settings success/permission/retry recovery, Evaluation repository/index context, keyboard reachability and zero serious/critical axe findings are verified; the package lock is unchanged. The named `Frontend UI-005 E2E and accessibility` GitHub Actions job passed for commit `2f22d77`. Exact observations, CI evidence and remaining API boundaries are recorded in `docs/18-production-evidence/frontend-evaluation-settings-status-report.md`.

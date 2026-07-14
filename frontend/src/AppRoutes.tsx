@@ -4,6 +4,7 @@ import { ImportPage, IndexingPage, ProjectsPage } from './pages/management'
 import { RouteRecoveryPage } from './pages/routing'
 import { pathForPage } from './routing/routes'
 import type { ValidAppRoute } from './routing/routes'
+import { toAsyncViewState, useIgnorePatternsQuery, useIndexStatusQuery, useSettingsQuery } from './features/server-state'
 import {
   ApiDetails,
   ApiExplorerPage,
@@ -272,13 +273,54 @@ export function AppRoutes(props: AppRoutesProps) {
   }
   if (page === 'search') return <WorkspacePage main={<SearchPage query={searchQuery} results={searchResults} onQuery={props.setSearchQuery} onSearch={props.runSearch} onEvidence={props.openEvidence} />} side={<SearchFilters />} />
   if (page === 'evidence') return <WorkspacePage main={<EvidencePage evidence={selectedEvidence} />} side={<EvidenceSummary />} />
-  if (page === 'evaluation') return <WorkspacePage main={<EvaluationPage />} side={<EvidenceSummary />} />
-  return <SettingsPage isWorkspace={isWorkspacePage} />
+  if (page === 'evaluation') {
+    return <EvaluationRoute repository={selectedRepository} />
+  }
+  return <SettingsRoute isWorkspace={isWorkspacePage} />
 }
 
 function impactTargetTypeFor(nodeType: string) {
   if (['file', 'endpoint', 'model', 'schema'].includes(nodeType)) return nodeType
   return 'symbol'
+}
+
+function SettingsRoute({ isWorkspace }: { isWorkspace: boolean }) {
+  const settingsQuery = useSettingsQuery()
+  const ignorePatternsQuery = useIgnorePatternsQuery()
+  return (
+    <SettingsPage
+      isWorkspace={isWorkspace}
+      settings={settingsQuery.data}
+      ignorePatterns={ignorePatternsQuery.data}
+      settingsState={toAsyncViewState(settingsQuery)}
+      ignorePatternsState={toAsyncViewState(ignorePatternsQuery, {
+        enabled: true,
+        empty: (data) => Boolean(data && typeof data === 'object' && 'effective_patterns' in data
+          && Array.isArray(data.effective_patterns) && data.effective_patterns.length === 0),
+      })}
+      onRetry={() => {
+        void settingsQuery.refetch()
+        void ignorePatternsQuery.refetch()
+      }}
+    />
+  )
+}
+
+function EvaluationRoute({ repository }: { repository?: Repository }) {
+  const indexStatusQuery = useIndexStatusQuery(repository?.id, false)
+  return (
+    <WorkspacePage
+      main={
+        <EvaluationPage
+          repository={repository}
+          indexStatus={indexStatusQuery.data ?? null}
+          indexState={toAsyncViewState(indexStatusQuery, { enabled: Boolean(repository) })}
+          onRetry={() => { void indexStatusQuery.refetch() }}
+        />
+      }
+      side={<EvidenceSummary />}
+    />
+  )
 }
 
 function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, setChatInput, sendChatMessage, openEvidence }: AppRoutesProps & { main: ReactNode }) {

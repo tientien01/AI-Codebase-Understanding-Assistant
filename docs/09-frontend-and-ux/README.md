@@ -21,6 +21,8 @@ The static reconstruction under `references/ai-codebase-ui-reference/` records t
 
 UI-004 browser qualification lives under `frontend/e2e/`: deterministic owned fixtures exercise the architecture tour into source, complete graph focus/relations with reduced motion, and honest current-impact disclosure. Axe serious/critical checks and 12/80/220-node Chromium observations are part of the named CI gate; they do not create a Phase 6 release-performance threshold.
 
+UI-005 replaces the remaining fabricated Evaluation/Settings content. Settings reads only the existing non-secret allowlist and effective ignore patterns; Evaluation preserves repository/index context while explicitly disclosing that interactive dataset/run/result APIs are unavailable. The UI never presents offline CI evidence as a user-triggered run or exposes a control for an unsupported settings mutation.
+
 ## Quality
 
 Keyboard navigation, color contrast, focus management, accessible status messages, virtualization for large lists/code, performance budgets, error boundaries, and critical Playwright flows are release requirements.

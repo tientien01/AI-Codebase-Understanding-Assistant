@@ -9,7 +9,7 @@ import { toAsyncViewState } from './asyncState'
 import { queryKeys } from './keys'
 import { useServerMutations } from './mutations'
 import { indexRefetchInterval, retryDelay, shouldRetry } from './policy'
-import { useFileContentQuery } from './queries'
+import { useFileContentQuery, useIgnorePatternsQuery, useSettingsQuery } from './queries'
 
 const repository: Repository = {
   id: 'repo-1',
@@ -94,6 +94,27 @@ describe('server-state ownership policy', () => {
     expect(toAsyncViewState(snapshot({ data: ['cached'], isStale: true }))).toMatchObject({ kind: 'stale' })
     expect(toAsyncViewState(snapshot({ data: [] }), { enabled: true, empty: (data) => Array.isArray(data) && data.length === 0 })).toMatchObject({ kind: 'empty' })
     expect(toAsyncViewState(snapshot({ isError: true, error: new DOMException('cancelled', 'AbortError') }))).toMatchObject({ kind: 'cancelled' })
+  })
+
+  it('owns global settings query identity and uses the exact non-secret read endpoints', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      urls.push(url)
+      return jsonResponse(url.endsWith('/ignore-patterns')
+        ? { default_patterns: [], user_patterns: [], effective_patterns: [] }
+        : { indexing: {}, providers: {}, security: {} })
+    }))
+    const { wrapper } = testQueryClient()
+    const settingsQuery = renderHook(() => useSettingsQuery(), { wrapper })
+    const patternsQuery = renderHook(() => useIgnorePatternsQuery(), { wrapper })
+
+    await waitFor(() => expect(settingsQuery.result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(patternsQuery.result.current.isSuccess).toBe(true))
+    expect(queryKeys.settings).toEqual(['settings'])
+    expect(queryKeys.ignorePatterns).toEqual(['settings', 'ignore-patterns'])
+    expect(urls.some((url) => url.endsWith('/api/v1/settings'))).toBe(true)
+    expect(urls.some((url) => url.endsWith('/api/v1/settings/ignore-patterns'))).toBe(true)
   })
 
   it('forwards query cancellation when a file deep link is superseded', async () => {

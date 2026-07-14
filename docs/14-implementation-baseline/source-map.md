@@ -37,6 +37,7 @@
 | Frontend canonical routing and recovery | `frontend/src/routing/routes.ts`, `frontend/src/App.tsx`, `frontend/src/pages/routing/` |
 | Frontend surfaces | `frontend/src/pages/`, `frontend/src/components/` |
 | Frontend UI-004 browser qualification | `frontend/e2e/`, `frontend/playwright.config.ts`; named job in `.github/workflows/ci.yml` |
+| Frontend settings/evaluation readiness | `frontend/src/pages/workspace/SettingsPage.tsx`, `EvaluationPage.tsx`; typed reads in `frontend/src/api/server.ts` and `frontend/src/features/server-state/`; UI-005 browser gate in `frontend/e2e/ui005.spec.ts` |
 | Tests/fixture | `tests/` |
 
 The versioned API routes resolve domain-specific application boundaries from one
@@ -74,3 +75,5 @@ The compatibility graph API now resolves one active repository version and appli
 UI-004 now presents that unchanged bounded projection through a deterministic architecture-layer canvas with SVG direction, selected-neighborhood focus, zoom/fit controls, a minimap summary, contextual relation/support/impact inspection and the complete UI-003 relation-list fallback. Overview derives a guided reading tour only from current module and important-file signals. Impact groups current compatibility results into direct, inferred and unknown and explicitly reports that historical comparison is unavailable. No new graph fact, API field, dependency or historical snapshot is synthesized by the client.
 
 The UI-004 browser harness intercepts only owned API routes with deterministic fixtures and verifies Architecture-to-source, Graph focus/relation/reduced-motion and Impact disclosure journeys in Chromium. It also applies axe serious/critical checks and records complete Small/Medium/Large returned-projection observations; these observations do not establish an accepted release performance budget.
+
+UI-005 now reads the existing authenticated Settings and effective-ignore responses through global TanStack Query keys and renders only the explicit non-secret fields. Evaluation retains the selected repository and active-index facts but declares interactive datasets/runs/results unavailable because those public APIs do not exist. Shared async presentation now includes typed limited and unavailable states; no backend API, provider execution, stored evaluation result or settings mutation is added.

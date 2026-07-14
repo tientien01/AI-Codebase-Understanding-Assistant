@@ -1,6 +1,6 @@
 # Phase 6 — Production Workspace UX
 
-Status: Approved; UI-001 through UI-004 are verified; UI-005 is ready, while Phase 6 release evidence remains open
+Status: Approved; UI-001 through UI-005 are verified, while Phase 6 release evidence remains open
 
 ## Outcome
 
@@ -34,4 +34,4 @@ Frontend CI reports, navigation/state E2E, accessibility report, performance bud
 
 `UI-004` is verified. It renders the unchanged bounded projection as a connected architecture-layer canvas with contextual support/impact inspection; Overview exposes deterministic signal-backed tour steps; and Impact separates direct, inferred and unknown while declaring historical comparison unavailable. Six deterministic Chromium journeys verify Architecture-to-source, Graph focus/relation/reduced-motion, current Impact disclosure, zero serious/critical axe findings and complete 12/80/220-node observations. The named GitHub Actions job passes; these observations are not an accepted Phase 6 performance budget.
 
-`UI-005` is ready. It removes fabricated Evaluation/Settings content, connects the two existing non-secret Settings reads and current repository/index status through UI-002 server state, and presents the missing public Evaluation-run and Settings-mutation APIs as explicit unavailable capabilities. It does not expose secrets, execute datasets/providers, add backend APIs or convert offline CI evidence into an interactive run.
+`UI-005` is verified. It removes fabricated Evaluation/Settings content, connects the two existing non-secret Settings reads and current repository/index status through UI-002 server state, and presents the missing public Evaluation-run and Settings-mutation APIs as explicit unavailable capabilities. Four Chromium journeys cover Settings success/permission/retry recovery and Evaluation context/unavailable behavior with zero serious/critical axe findings. The named GitHub Actions job passes; Phase 6 release evidence remains separate.

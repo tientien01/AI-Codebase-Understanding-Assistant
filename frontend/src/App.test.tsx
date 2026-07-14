@@ -10,6 +10,7 @@ const repository = {
   name: 'Owned repository',
   source_type: 'upload_folder',
   status: 'indexed',
+  current_index_version: 7,
   detected_stack: ['TypeScript'],
   total_files: 1,
   indexed_files: 1,
@@ -108,6 +109,24 @@ describe('App routing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'History Forward' }))
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/overview'))
   })
+
+  it('loads the server-backed non-secret settings profile on the canonical route', async () => {
+    renderApp(['/settings'])
+
+    expect(await screen.findByText('Balanced')).toBeTruthy()
+    expect(screen.getByText('Configured')).toBeTruthy()
+    expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/api\/v1\/settings$/), expect.any(Object))
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/api/v1/settings/ignore-patterns'), expect.any(Object))
+  })
+
+  it('preserves repository/index context while evaluation is explicitly unavailable', async () => {
+    renderApp(['/repositories/repo-1/evaluation'])
+
+    expect(await screen.findByRole('heading', { name: 'Evaluation' })).toBeTruthy()
+    expect(screen.getByText('Active index: 7')).toBeTruthy()
+    expect(screen.getByText('Capability unavailable')).toBeTruthy()
+    expect(screen.getByText('POST /evaluation/runs')).toBeTruthy()
+  })
 })
 
 function renderApp(initialEntries: string[]) {
@@ -157,6 +176,24 @@ function errorResponse(status: number, code: string, message: string) {
 
 function responseFor(url: string) {
   if (url.endsWith('/api/v1/repositories')) return jsonResponse([repository])
+  if (url.endsWith('/api/v1/settings')) {
+    return jsonResponse({
+      indexing: { default_profile: 'balanced', max_file_size_mb: 1, max_upload_size_mb: 50 },
+      providers: {
+        llm_provider: 'openai-compatible',
+        llm_model: 'operator-selected',
+        llm_configured: true,
+        embedding_provider: 'local',
+        embedding_model: 'deterministic-fixture',
+        embedding_configured: false,
+        vector_store_provider: 'none',
+      },
+      security: { secret_scanning_enabled: true },
+    })
+  }
+  if (url.endsWith('/api/v1/settings/ignore-patterns')) {
+    return jsonResponse({ default_patterns: ['node_modules'], user_patterns: [], effective_patterns: ['node_modules', '.env'] })
+  }
   if (url.includes('/files/content?path=')) {
     return jsonResponse({
       file_path: 'src/auth.ts',

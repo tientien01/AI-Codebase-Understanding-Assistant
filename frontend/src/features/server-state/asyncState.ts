@@ -3,7 +3,7 @@ import { ApiError, isRequestCancelled, safeErrorMessage } from '../../api/client
 
 export type AsyncViewState =
   | { kind: 'initial' | 'loading' | 'success' | 'empty'; message?: string }
-  | { kind: 'refreshing' | 'stale'; message: string }
+  | { kind: 'refreshing' | 'limited' | 'stale' | 'unavailable'; message: string }
   | { kind: 'permission_denied' | 'error_retryable' | 'error_terminal' | 'cancelled'; message: string }
 
 type QuerySnapshot = Pick<
@@ -35,7 +35,7 @@ export function toAsyncViewState(
 }
 
 export function isBlockingAsyncState(state: AsyncViewState) {
-  return ['loading', 'permission_denied', 'error_retryable', 'error_terminal', 'cancelled'].includes(state.kind)
+  return ['loading', 'unavailable', 'permission_denied', 'error_retryable', 'error_terminal', 'cancelled'].includes(state.kind)
 }
 
 export function toMutationAsyncViewState(

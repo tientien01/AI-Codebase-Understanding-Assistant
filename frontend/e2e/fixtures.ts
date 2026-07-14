@@ -1,6 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
 const repositoryId = 'repo-ui004'
+const ui005RepositoryId = 'repo-ui005'
 
 export async function installUi004Api(page: Page, graphSize = 12) {
   await page.route('**/api/v1/**', async (route) => {
@@ -19,6 +20,33 @@ export async function installUi004Api(page: Page, graphSize = 12) {
 
     return json(route, { error: { code: 'fixture_route_missing', message: `No UI-004 fixture for ${request.method()} ${path}` } }, 404)
   })
+}
+
+export async function installUi005Api(
+  page: Page,
+  options: { settingsMode?: 'success' | 'permission' | 'retryable' } = {},
+) {
+  let settingsRecovered = false
+  await page.route('**/api/v1/**', async (route) => {
+    const url = new URL(route.request().url())
+    const path = url.pathname
+
+    if (path === '/api/v1/repositories') return json(route, [ui005Repository])
+    if (path.endsWith(`/${ui005RepositoryId}/index/status`)) return json(route, ui005IndexStatus)
+    if (path === '/api/v1/settings/ignore-patterns') return json(route, ui005IgnorePatterns)
+    if (path === '/api/v1/settings') {
+      if (options.settingsMode === 'permission') {
+        return json(route, { error: { code: 'permission_denied', message: 'Settings access is not allowed.' } }, 403)
+      }
+      if (options.settingsMode === 'retryable' && !settingsRecovered) {
+        return json(route, { error: { code: 'settings_unavailable', message: 'Settings are temporarily unavailable.' } }, 503)
+      }
+      return json(route, ui005Settings)
+    }
+
+    return json(route, { error: { code: 'fixture_route_missing', message: `No UI-005 fixture for ${route.request().method()} ${path}` } }, 404)
+  })
+  return { recoverSettings: () => { settingsRecovered = true } }
 }
 
 export function graphFixture(nodeCount: number) {
@@ -78,6 +106,56 @@ const repository = {
   endpoints: 8,
   chunks: 420,
   graph_nodes: 220,
+}
+
+const ui005Repository = {
+  id: ui005RepositoryId,
+  name: 'UI-005 Truthful Workspace',
+  source_type: 'upload_folder',
+  status: 'indexed',
+  current_index_version: 31,
+  detected_stack: ['React', 'FastAPI'],
+  total_files: 48,
+  indexed_files: 42,
+  symbols: 110,
+  endpoints: 6,
+  chunks: 240,
+  graph_nodes: 80,
+}
+
+const ui005IndexStatus = {
+  repository_id: ui005RepositoryId,
+  index_version: 31,
+  status: 'completed_with_warnings',
+  current_step: 'completed',
+  total_files: 48,
+  processed_files: 42,
+  skipped_files: 6,
+  failed_files: 0,
+  progress: 100,
+  stats: {},
+  logs: [],
+  warnings: ['Six unsupported files were skipped.'],
+}
+
+const ui005Settings = {
+  indexing: { default_profile: 'balanced', max_file_size_mb: 1, max_upload_size_mb: 50 },
+  providers: {
+    llm_provider: 'openai-compatible',
+    llm_model: 'operator-selected',
+    llm_configured: true,
+    embedding_provider: 'local',
+    embedding_model: 'deterministic-fixture',
+    embedding_configured: false,
+    vector_store_provider: 'none',
+  },
+  security: { secret_scanning_enabled: true },
+}
+
+const ui005IgnorePatterns = {
+  default_patterns: ['node_modules', '.venv', 'dist', 'build'],
+  user_patterns: [],
+  effective_patterns: ['node_modules', '.venv', 'dist', 'build', '.env', '.env.*', '*.pem', '*.key'],
 }
 
 const indexStatus = {
