@@ -233,7 +233,9 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     if (!selectedRepository) return
     navigate(pathForPage('graph', selectedRepository.id, {
       graphView: view,
-      graphRoot: route.status === 'valid' ? route.graphRoot : undefined,
+      // Canonical roots belong to one projection vocabulary and may not exist
+      // in another view. A new relationship question starts without stale focus.
+      graphRoot: undefined,
       graphDepth: route.status === 'valid' ? route.graphDepth : undefined,
     }))
   }
