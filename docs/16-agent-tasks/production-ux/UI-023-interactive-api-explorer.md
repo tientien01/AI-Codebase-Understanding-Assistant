@@ -1,7 +1,7 @@
 ---
 id: UI-023
 title: Make API Explorer selectable, filterable, and source-linked
-status: in_progress
+status: completed
 priority: P1
 phase: 6
 owner: project-maintainer

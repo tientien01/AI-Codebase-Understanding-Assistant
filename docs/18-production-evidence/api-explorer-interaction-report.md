@@ -1,6 +1,6 @@
 # API Explorer Interaction Verification Report
 
-Status: Local verification complete; GitHub Actions pending
+Status: Verified
 
 Task: UI-023
 
@@ -35,9 +35,10 @@ Branch: `agent/api-explorer-interactions`
 
 The complete backend invocation reached 316 passed and 31 skipped, with 18 evaluation failures caused by the checked-out Windows fixture bytes not matching the frozen hash for `tests/fixtures/retrieval_benchmark_repo/backend/auth_service.py`. Those failures occur before scoring and do not touch files in UI-023. The only feature-related full-suite failure was expected OpenAPI drift after adding `endpoint_key`; the artifact was regenerated with `backend/scripts/export_openapi.py --write`, also recording projection-limit drift already present in server source, and the focused API contract now passes.
 
-## Pending production evidence
+## GitHub verification
 
-- GitHub Actions must execute on the Linux runner after the draft PR is opened.
-- UI-023 remains `in_progress` until required PR checks pass.
+- Draft PR: [#40](https://github.com/tientien01/AI-Codebase-Understanding-Assistant/pull/40)
+- Implementation head verified: `1fe0882`
+- Both push and pull-request workflow runs passed Backend tests, AI/graph/incremental regression, Frontend quality gates, UI-004 E2E/accessibility, and UI-005 E2E/accessibility.
 
 The first PR run exposed an existing UI-004 browser-gate mismatch also present on the latest `main` run: the test still targeted the removed generic graph heading/canvas and expected all request relations before choosing an entry point. UI-023 updates that owned gate to the accepted progressive request/dependency regions and select-before-expansion behavior; the rerun result is recorded on PR #40.
