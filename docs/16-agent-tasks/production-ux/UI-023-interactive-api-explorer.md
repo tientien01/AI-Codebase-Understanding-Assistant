@@ -18,6 +18,7 @@ allowed_paths:
   - frontend/src/App.tsx
   - frontend/src/App.test.tsx
   - frontend/src/AppRoutes.tsx
+  - frontend/e2e/ui004.spec.ts
   - frontend/src/api/server.ts
   - frontend/src/components/common/AsyncState.tsx
   - frontend/src/features/server-state/asyncState.ts
@@ -73,6 +74,7 @@ Deliver an evidence-backed API browsing workflow from endpoint discovery through
 - Bind API Detail to the selected endpoint with source and API-flow actions.
 - Stop treating generic TanStack Query cache eligibility as user-visible stale repository data.
 - Add focused backend/frontend regressions and production evidence.
+- Realign the owned UI-004 browser gate with the accepted progressive graph labels and select-before-expansion behavior required by current main.
 
 ## Out of scope
 

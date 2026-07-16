@@ -27,16 +27,17 @@ test.describe('UI-004 evidence-backed workspace', () => {
     await installUi004Api(page, 12)
     await page.goto(`${repositoryRoot}/graph?view=api-flow`)
 
-    const canvas = page.getByLabel('Graph nodes')
-    await expect(page.getByRole('heading', { name: 'Graph Explorer' })).toBeVisible()
+    const stage = page.getByLabel('Progressive request flow graph')
+    const canvas = page.getByLabel('Request flow nodes')
+    await expect(stage).toBeVisible()
     await expect(canvas.getByRole('button')).toHaveCount(12)
-    await expect(page.getByText('Accessible relation list (11)')).toBeVisible()
+    await expect(stage.getByText('Relations (0)')).toBeVisible()
 
     await canvas.getByRole('button', { name: /Service 2/ }).click()
-    const inspector = page.getByLabel('Selected graph entity')
+    const inspector = page.getByLabel('Selected request flow entity')
     await expect(inspector.getByRole('heading', { name: 'Service 2' })).toBeVisible()
-    await inspector.getByRole('tab', { name: 'relations' }).click()
-    await expect(inspector.getByText(/Outgoing|Incoming/).first()).toBeVisible()
+    await expect(stage.getByText('Relations (11)')).toBeVisible()
+    await expect(inspector.getByText(/Upstream visible|Downstream visible/).first()).toBeVisible()
 
     const animationName = await page.locator('.graph-edge.active').first().evaluate((element) => getComputedStyle(element).animationName)
     const transitionDuration = await canvas.getByRole('button', { name: /Service 2/ }).evaluate((element) => getComputedStyle(element).transitionDuration)
@@ -51,10 +52,10 @@ test.describe('UI-004 evidence-backed workspace', () => {
     await page.goto(`${repositoryRoot}/graph?view=dependencies`)
 
     const canvas = page.getByLabel('Graph nodes')
-    await expect(page.getByRole('heading', { name: 'Dependency Explorer' })).toBeVisible()
+    await expect(page.getByLabel('Progressive dependency graph')).toBeVisible()
     await expect(canvas.getByRole('button')).toHaveCount(3)
     await expect(page.getByText('3 suggested starting points')).toBeVisible()
-    await expect(page.getByText(/other qualified points available/)).toBeVisible()
+    await expect(page.getByText(/qualified points are outside/)).toBeVisible()
 
     const seed = canvas.getByRole('button', { name: /Seed 0/ })
     const initialPosition = await seed.getAttribute('style')
@@ -91,8 +92,11 @@ for (const graphCase of [
     await installUi004Api(page, graphCase.nodes)
     const startedAt = performance.now()
     await page.goto(`${repositoryRoot}/graph?view=api-flow`)
-    await expect(page.getByLabel('Graph nodes').getByRole('button')).toHaveCount(graphCase.nodes)
-    await expect(page.locator('.graph-edge')).toHaveCount(Math.max(0, graphCase.nodes - 1))
+    const canvas = page.getByLabel('Request flow nodes')
+    await expect(canvas.getByRole('button')).toHaveCount(graphCase.nodes)
+    await canvas.getByRole('button').first().click()
+    await expect(canvas.getByRole('button')).toHaveCount(graphCase.nodes)
+    await expect(page.locator('.request-flow-stage .graph-edge')).toHaveCount(Math.max(0, graphCase.nodes - 1))
     const readyMs = Math.round(performance.now() - startedAt)
     const browserMetrics = await page.evaluate(() => ({
       domNodes: document.getElementsByTagName('*').length,
