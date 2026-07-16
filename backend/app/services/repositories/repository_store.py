@@ -4,7 +4,7 @@ import json
 import hashlib
 from pathlib import Path
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 
 from app.db.models import (
     AgentTraceEventORM,
@@ -24,13 +24,18 @@ from app.db.models import (
     SymbolRecordORM,
 )
 from app.db.session import SessionLocal, init_db
-from app.schemas.api import EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
+from app.schemas.api import CitationDTO, EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
 from app.services.chat.trace_persistence import (
     AssistantTraceReplay,
     PersistedAssistantTurn,
     PersistedClaim,
     TraceEventRecord,
     TraceEventType,
+)
+from app.services.chat.conversation_memory import (
+    ConversationMessageRecord,
+    ConversationSummaryRecord,
+    ConversationTranscriptRecord,
 )
 from app.services.index_models import ChunkRecord, EndpointRecord, FileRecord, IndexingJobRecord, RepositoryState, SymbolRecord
 
@@ -331,7 +336,7 @@ class RepositoryStore:
                         id=turn.conversation_id,
                         repository_id=turn.repository_id,
                         status="active",
-                        title=turn.question_type,
+                        title=turn.operator_message[:80],
                     )
                 )
             session.add_all(
@@ -355,6 +360,7 @@ class RepositoryStore:
                     ),
                 ]
             )
+
             for ordinal, claim in enumerate(turn.claims):
                 session.add(
                     ClaimORM(
@@ -417,6 +423,117 @@ class RepositoryStore:
                     for event in turn.events
                 ]
             )
+
+    def list_conversations(
+        self, repository_id: str, limit: int
+    ) -> tuple[ConversationSummaryRecord, ...]:
+        with SessionLocal() as session:
+            ids = session.scalars(
+                select(ConversationORM.id)
+                .join(AgentTraceORM, AgentTraceORM.conversation_id == ConversationORM.id)
+                .where(ConversationORM.repository_id == repository_id)
+                .group_by(ConversationORM.id)
+                .order_by(func.max(AgentTraceORM.started_at).desc(), ConversationORM.id.desc())
+                .limit(limit)
+            ).all()
+            return tuple(self._conversation_summary(session, repository_id, item) for item in ids)
+
+    def get_conversation_transcript(
+        self, repository_id: str, conversation_id: str, limit: int
+    ) -> ConversationTranscriptRecord | None:
+        with SessionLocal() as session:
+            conversation = session.get(ConversationORM, conversation_id)
+            if conversation is None or conversation.repository_id != repository_id:
+                return None
+            traces = session.scalars(
+                select(AgentTraceORM)
+                .where(
+                    AgentTraceORM.repository_id == repository_id,
+                    AgentTraceORM.conversation_id == conversation_id,
+                )
+                .order_by(AgentTraceORM.started_at.desc(), AgentTraceORM.id.desc())
+                .limit(max(1, limit // 2))
+            ).all()
+            traces.reverse()
+            messages: list[ConversationMessageRecord] = []
+            for trace in traces:
+                request = session.get(MessageORM, trace.request_message_id)
+                response = session.get(MessageORM, trace.response_message_id)
+                if request is None or response is None:
+                    continue
+                evidence_rows = session.scalars(
+                    select(EvidenceORM)
+                    .join(CitationORM, CitationORM.evidence_id == EvidenceORM.evidence_id)
+                    .join(ClaimORM, ClaimORM.id == CitationORM.claim_id)
+                    .where(ClaimORM.message_id == response.id)
+                    .order_by(EvidenceORM.file_path, EvidenceORM.start_line, EvidenceORM.evidence_id)
+                ).all()
+                citations = tuple(
+                    CitationDTO(
+                        evidence_id=item.evidence_id,
+                        file_path=item.file_path,
+                        symbol_name=item.symbol_name,
+                        start_line=item.start_line,
+                        end_line=item.end_line,
+                        index_version=item.index_version,
+                        is_stale=bool(item.is_stale),
+                    )
+                    for item in evidence_rows
+                )
+                created_at = trace.started_at
+                messages.extend(
+                    (
+                        ConversationMessageRecord(
+                            request.id, "user", request.content, request.index_version, created_at
+                        ),
+                        ConversationMessageRecord(
+                            response.id,
+                            "assistant",
+                            response.content,
+                            response.index_version,
+                            created_at,
+                            citations,
+                            response.assistant_outcome == "answered",
+                        ),
+                    )
+                )
+            return ConversationTranscriptRecord(
+                self._conversation_summary(session, repository_id, conversation_id),
+                tuple(messages[:limit]),
+            )
+
+    def _conversation_summary(
+        self, session, repository_id: str, conversation_id: str
+    ) -> ConversationSummaryRecord:
+        conversation = session.get(ConversationORM, conversation_id)
+        created_at, updated_at = session.execute(
+            select(func.min(AgentTraceORM.started_at), func.max(AgentTraceORM.started_at)).where(
+                AgentTraceORM.repository_id == repository_id,
+                AgentTraceORM.conversation_id == conversation_id,
+            )
+        ).one()
+        message_count = session.scalar(
+            select(func.count(MessageORM.id)).where(
+                MessageORM.repository_id == repository_id,
+                MessageORM.conversation_id == conversation_id,
+            )
+        ) or 0
+        latest_index = session.scalar(
+            select(func.max(MessageORM.index_version)).where(
+                MessageORM.repository_id == repository_id,
+                MessageORM.conversation_id == conversation_id,
+            )
+        ) or 0
+        created_at = created_at or ""
+        return ConversationSummaryRecord(
+            conversation_id,
+            conversation.title if conversation else None,
+            conversation.status if conversation else "active",
+            int(message_count),
+            int(latest_index),
+            created_at,
+            updated_at or created_at,
+        )
 
     def get_agent_trace(
         self, repository_id: str, trace_id: str

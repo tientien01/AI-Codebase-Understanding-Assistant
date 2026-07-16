@@ -110,6 +110,9 @@ describe('UI-008 sixty-second architecture', () => {
 
   it('provides a fresh-chat view, evidence disclosure, multiline composer, and collapsed rail', () => {
     const onSubmit = vi.fn()
+    const onRemoveContext = vi.fn()
+    const onNewChat = vi.fn()
+    const onSelectConversation = vi.fn()
     const citation = { evidence_id: 'e-1', file_path: 'backend/auth.py', start_line: 10, end_line: 30 }
     render(
       <CollapsibleAssistantPanel
@@ -119,22 +122,40 @@ describe('UI-008 sixty-second architecture', () => {
           { role: 'assistant', content: 'The request enters the authentication API.', citations: [citation], evidenceSufficient: true },
         ]}
         disabled={false}
+        context={{ page: 'code', file_path: 'backend/auth.py', start_line: 10, end_line: 10, symbol_name: 'login' }}
         suggestions={['Explain the architecture']}
+        conversations={[{
+          conversation_id: 'conversation_test',
+          title: 'How does login work?',
+          status: 'active',
+          message_count: 2,
+          latest_index_version: 1,
+          is_stale: false,
+          created_at: '2026-07-16T00:00:00Z',
+          updated_at: '2026-07-16T00:00:00Z',
+        }]}
         onInput={vi.fn()}
+        onRemoveContext={onRemoveContext}
         onSubmit={onSubmit}
         onEvidence={vi.fn()}
+        onNewChat={onNewChat}
+        onSelectConversation={onSelectConversation}
       />,
     )
 
     expect(screen.getByRole('textbox', { name: 'Message AI Assistant' }).tagName).toBe('TEXTAREA')
     expect(screen.getByText('Evidence')).toBeTruthy()
+    expect(screen.getByLabelText('Assistant workspace context').textContent).toContain('backend/auth.py · line 10 · login')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove assistant context' }))
+    expect(onRemoveContext).toHaveBeenCalledOnce()
     fireEvent.keyDown(screen.getByRole('textbox', { name: 'Message AI Assistant' }), { key: 'Enter' })
     expect(onSubmit).toHaveBeenCalledOnce()
 
     fireEvent.click(screen.getByRole('button', { name: 'Start new chat' }))
-    expect(screen.getByText('What do you want to understand?')).toBeTruthy()
+    expect(onNewChat).toHaveBeenCalledOnce()
     fireEvent.click(screen.getByRole('button', { name: 'Show chat history' }))
-    expect(screen.getByText('The request enters the authentication API.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /How does login work/ }))
+    expect(onSelectConversation).toHaveBeenCalledWith('conversation_test')
 
     fireEvent.click(screen.getByRole('button', { name: 'Collapse AI Assistant' }))
     expect(screen.queryByRole('textbox', { name: 'Message AI Assistant' })).toBeNull()

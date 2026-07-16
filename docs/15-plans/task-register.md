@@ -35,6 +35,10 @@ Phase outcomes and gates are canonical in `master-roadmap.md` and `phases/`. Thi
 | AGT-001 | Add typed bounded workflow/tool registry | RET-003 | Routing/tool contract tests |
 | AGT-002 | Add sufficiency, repair, citation validation | AGT-001 | Hallucination/refusal tests |
 | AGT-003 | Persist structured trace/conversations | AGT-002,DAT-003 | Trace privacy/integration tests |
+| AGT-006 | Add repository-owned conversation replay and bounded multi-turn memory | AGT-003,AGT-005,UI-001,UI-002 | History/replay/memory budget tests |
+| AGT-007 | Add optional grounded Ollama chat provider | AGT-004,AGT-006 | Provider health/fallback/grounding tests |
+| RET-004 | Benchmark Ollama dense embeddings against sparse retrieval | EVA-001,AGT-007 | Same-input quality/latency/resource report |
+| RET-005 | Add versioned dense embedding index after accepted benchmark | RET-004 | Index compatibility/rebuild/fallback tests |
 | EVA-001 | Implement datasets, baselines and evaluation runner | RET-003 | Reproducible evaluation run |
 | EVA-002 | Add CI AI/graph/incremental regression gates | EVA-001,AGT-002 | Threshold report |
 | UI-001 | Add Router and deep-linked workspace | FND-003 | Navigation E2E |
@@ -48,6 +52,7 @@ Phase outcomes and gates are canonical in `master-roadmap.md` and `phases/`. Thi
 | UI-021 | Replace global Value Flow browsing with contextual Value Trace | UI-003,UI-009,UI-012,UI-015,UI-018 | Context resolution and focused trace UX regression gates |
 | UI-022 | Preserve Code Explorer context and embed source-launched Value Trace | UI-002,UI-009,UI-021,INT-006 | Tree/source continuity and embedded trace frontend regression gates |
 | UI-023 | Make API Explorer selectable, filterable, and source-linked | UI-001,UI-002,UI-020 | Endpoint selection, source/flow actions, and cache-state regression gates |
+| UI-024 | Disclose assistant provider and fallback readiness | AGT-006,AGT-007,RET-004 | Truthful provider/readiness UI tests |
 | INT-006 | Trace resolved Python values across direct function calls | INT-002,INT-003,UI-021 | Direct argument/return binding and bounded interprocedural trace regression gates |
 | UI-005 | Connect real evaluation/settings/status surfaces | EVA-001,UI-002 | Feature E2E |
 | UI-009 | Refine Code Explorer workspace from approved visual reference | UI-002 | Responsive Code Explorer component and build gates |

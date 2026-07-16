@@ -95,13 +95,15 @@ class AgentWorkflowService:
         repository: RepositoryState,
         message: str,
         is_cancelled: Callable[[], bool] | None = None,
+        context_anchor: str | None = None,
     ) -> AgentWorkflowResult:
         started = self.clock()
         question_type = self.retrieval.classify_question(message)
+        retrieval_query = self._retrieval_query(message, context_anchor)
         workflow_request = WorkflowRequest(
             repository_id=repository.id,
             index_version_id=f"idx_compat_{max(repository.current_index_version, 0)}",
-            question=message,
+            question=retrieval_query,
             question_type=question_type,
         )
         typed_plan = self._plan(workflow_request)
@@ -143,6 +145,7 @@ class AgentWorkflowService:
                     self.configuration.max_selected_evidence,
                 ),
                 round_number=1,
+                classification_query=message if context_anchor else None,
             )
             if tool_input.equivalence_key in seen_calls:
                 observations.append(
@@ -273,13 +276,14 @@ class AgentWorkflowService:
                     tool_version="1",
                     repository_id=workflow_request.repository_id,
                     index_version_id=workflow_request.index_version_id,
-                    query=decision.repair_query or message,
+                    query=self._retrieval_query(decision.repair_query or message, context_anchor),
                     question_type=workflow_request.question_type,
                     limit=min(
                         self.configuration.max_candidates_per_tool,
                         self.configuration.max_selected_evidence,
                     ),
                     round_number=2,
+                    classification_query=message if context_anchor else None,
                 )
                 tool_calls_used += 1
                 try:
@@ -477,6 +481,12 @@ class AgentWorkflowService:
             citations,
             tuple(citation.evidence_id for citation in citations),
         )
+
+    @staticmethod
+    def _retrieval_query(message: str, context_anchor: str | None) -> str:
+        if not context_anchor:
+            return message
+        return f"{message}\n{context_anchor}"
 
     def _plan(self, request: WorkflowRequest) -> WorkflowPlan:
         multi_step_types = {

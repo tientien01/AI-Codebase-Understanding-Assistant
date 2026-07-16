@@ -1095,6 +1095,35 @@
   min-height: 540px;
 }
 
+.assistant-full-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.assistant-full-history {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.assistant-history { display: grid; gap: 7px; min-width: 0; }
+.assistant-history > strong { color: #edf2fa; font-size: 12px; }
+.assistant-history > p { margin: 0; color: #91a1b8; font-size: 11px; }
+.assistant-history > button { display: grid; min-width: 0; gap: 3px; border: 1px solid #2b3d58; border-radius: 9px; padding: 9px; background: #0b1421; color: #cbd6e5; text-align: left; }
+.assistant-history > button.active { border-color: #6177e8; background: #17234b; }
+.assistant-history > button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-history > button small { color: #91a1b8; font-size: 9px; }
+.assistant-replay-state, .assistant-stale-notice { margin: 0; border: 1px solid #344760; border-radius: 9px; padding: 9px; color: #aebbd0; font-size: 11px; }
+.assistant-replay-state.error { border-color: #75404a; color: #ffabb5; }
+.assistant-stale-notice { border-color: #705b2c; background: #241d10; color: #f2c76d; }
+
+@media (max-width: 900px) {
+  .assistant-full-layout { grid-template-columns: 1fr; }
+  .assistant-full-history { max-height: 220px; overflow: auto; }
+}
+
 .chat-feed {
   display: grid;
   gap: 12px;
@@ -2549,6 +2578,13 @@
 .chat-composer-actions > span { color: #6f7f96; font-size: 8px; }
 .chat-composer-actions .chat-send { background: linear-gradient(145deg, #526cff, #7a4cf1); color: white; }
 .chat-composer-actions .chat-send:disabled { background: #283348; opacity: .5; }
+.assistant-context-chip { display: flex; align-items: center; gap: 8px; margin: 8px 8px 0; border: 1px solid #287f83; border-radius: 9px; padding: 7px 9px; background: #0c292d; color: #d9ffff; }
+.assistant-context-chip > span { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.assistant-context-chip strong, .assistant-context-chip small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-context-chip strong { font-size: 11px; }
+.assistant-context-chip small { color: #91c7c9; font-size: 9px; }
+.assistant-context-chip > button { display: grid; width: 24px; height: 24px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 6px; padding: 0; background: transparent; color: #a9d7d9; font-size: 16px; }
+.assistant-context-chip > button:hover { background: #174247; color: white; }
 
 @media (max-width: 1350px) {
   .architecture-system-map { grid-template-columns: 180px minmax(380px, 1fr); }

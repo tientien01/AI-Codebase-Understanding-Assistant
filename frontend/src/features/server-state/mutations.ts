@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { serverApi } from '../../api/server'
-import type { ChatMessage } from '../../types/api'
+import type { AssistantRequestContext } from '../../types/api'
 import { queryKeys } from './keys'
 
 export function useServerMutations(repositoryId: string | undefined, indexVersion?: number) {
@@ -64,24 +64,13 @@ export function useServerMutations(repositoryId: string | undefined, indexVersio
   })
 
   const chat = useMutation({
-    mutationFn: ({ targetRepositoryId, message }: ChatInput) =>
-      serverApi.chat(targetRepositoryId, message),
-    onMutate: (input) => {
-      queryClient.setQueryData<ChatMessage[]>(queryKeys.chat(input.targetRepositoryId, input.indexVersion), (messages = []) => [
-        ...messages,
-        { role: 'user', content: input.message },
-      ])
-    },
+    mutationFn: ({ targetRepositoryId, message, context, conversationId }: ChatInput) =>
+      serverApi.chat(targetRepositoryId, message, context, conversationId),
     onSuccess: (response, input) => {
-      queryClient.setQueryData<ChatMessage[]>(queryKeys.chat(input.targetRepositoryId, input.indexVersion), (messages = []) => [
-        ...messages,
-        {
-          role: 'assistant',
-          content: response.answer,
-          citations: response.citations,
-          evidenceSufficient: response.evidence_sufficient,
-        },
-      ])
+      void queryClient.invalidateQueries({ queryKey: queryKeys.conversations(input.targetRepositoryId) })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.conversation(input.targetRepositoryId, response.conversation_id),
+      })
     },
   })
 
@@ -104,4 +93,6 @@ type ChatInput = {
   targetRepositoryId: string
   indexVersion?: number
   message: string
+  context?: AssistantRequestContext
+  conversationId?: string
 }

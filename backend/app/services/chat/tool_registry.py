@@ -36,7 +36,9 @@ class ExactLookupTool:
 
     def execute(self, tool_input: ToolInput, repository: RepositoryState) -> ToolExecution:
         started = monotonic()
-        classification = self.retrieval.classifier.classify(tool_input.query)
+        classification = self.retrieval.classifier.classify(
+            tool_input.classification_query or tool_input.query
+        )
         request = RetrievalRequest.for_repository(
             repository,
             tool_input.query,
@@ -63,11 +65,22 @@ class HybridRetrievalTool:
 
     def execute(self, tool_input: ToolInput, repository: RepositoryState) -> ToolExecution:
         started = monotonic()
-        request, ranked = self.retrieval.ranked_search(
-            repository,
-            tool_input.query,
-            tool_input.limit,
+        classification = self.retrieval.classifier.classify(
+            tool_input.classification_query or tool_input.query
         )
+        if tool_input.classification_query and tool_input.classification_query != tool_input.query:
+            request, ranked = self.retrieval.ranked_search(
+                repository,
+                tool_input.query,
+                tool_input.limit,
+                classification,
+            )
+        else:
+            request, ranked = self.retrieval.ranked_search(
+                repository,
+                tool_input.query,
+                tool_input.limit,
+            )
         if request.classification.compatibility_label != tool_input.question_type:
             raise ValueError("tool input question type does not match deterministic classification")
         ranked_tuple = tuple(ranked)

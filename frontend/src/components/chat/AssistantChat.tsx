@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import type { ChatMessage, Citation } from '../../types/api'
+import type { AssistantRequestContext, ChatMessage, Citation, ConversationSummary } from '../../types/api'
 import { Icon } from '../common/Icon'
 import { Panel } from '../common/ui'
 
@@ -8,10 +8,19 @@ type AssistantChatProps = {
   input: string
   messages: ChatMessage[]
   disabled: boolean
+  context?: AssistantRequestContext
+  conversations?: ConversationSummary[]
+  activeConversationId?: string
+  activeConversationStale?: boolean
+  replayLoading?: boolean
+  replayError?: boolean
   full?: boolean
   onInput: (value: string) => void
   onSubmit: (event?: FormEvent) => void
   onEvidence: (citation: Citation) => void
+  onRemoveContext?: () => void
+  onNewChat?: () => void
+  onSelectConversation?: (conversationId: string) => void
 }
 
 export function AssistantPanel(props: Omit<AssistantChatProps, 'full'>) {
@@ -24,16 +33,13 @@ export function AssistantPanel(props: Omit<AssistantChatProps, 'full'>) {
 
 export function CollapsibleAssistantPanel(props: Omit<AssistantChatProps, 'full'> & { suggestions?: string[] }) {
   const [open, setOpen] = useState(true)
-  const [sessionStart, setSessionStart] = useState(0)
   const [showHistory, setShowHistory] = useState(false)
   const suggestions = props.suggestions ?? []
-  const currentMessages = showHistory ? props.messages : props.messages.slice(sessionStart)
-  const hasHistory = sessionStart > 0
+  const hasHistory = Boolean(props.conversations?.length)
 
   const startNewChat = () => {
-    setSessionStart(props.messages.length)
+    props.onNewChat?.()
     setShowHistory(false)
-    props.onInput('')
   }
 
   return (
@@ -54,7 +60,7 @@ export function CollapsibleAssistantPanel(props: Omit<AssistantChatProps, 'full'
               aria-label={showHistory ? 'Hide chat history' : 'Show chat history'}
               aria-pressed={showHistory}
               disabled={!hasHistory}
-              title={hasHistory ? 'Show earlier messages' : 'No earlier messages in this session'}
+              title={hasHistory ? 'Browse saved conversations' : 'No saved conversations yet'}
             >
               <Icon name="history" size={15} />
             </button>
@@ -72,21 +78,31 @@ export function CollapsibleAssistantPanel(props: Omit<AssistantChatProps, 'full'
       </div>
       {open ? (
         <div className="assistant-drawer-body">
-          {!currentMessages.length ? (
+          {showHistory ? (
+            <ConversationHistory
+              conversations={props.conversations ?? []}
+              activeConversationId={props.activeConversationId}
+              onSelect={(conversationId) => {
+                props.onSelectConversation?.(conversationId)
+                setShowHistory(false)
+              }}
+            />
+          ) : null}
+          {!showHistory && !props.messages.length ? (
             <div className="assistant-empty-state">
               <Icon name="spark" size={22} />
               <strong>What do you want to understand?</strong>
               <p>Ask about architecture, a code path, or where to begin reading. Answers stay tied to indexed evidence.</p>
             </div>
           ) : null}
-          {!currentMessages.length && suggestions.length ? (
+          {!showHistory && !props.messages.length && suggestions.length ? (
             <div className="assistant-suggestions" aria-label="Suggested questions">
               {suggestions.map((suggestion) => (
                 <button type="button" key={suggestion} onClick={() => props.onInput(suggestion)}>{suggestion}</button>
               ))}
             </div>
           ) : null}
-          <AssistantChat {...props} messages={currentMessages} />
+          {!showHistory ? <AssistantChat {...props} /> : null}
         </div>
       ) : (
         <button className="assistant-rail-action" type="button" onClick={() => setOpen(true)} aria-label="Open AI Assistant">
@@ -102,10 +118,15 @@ export function AssistantChat({
   input,
   messages,
   disabled,
+  context,
+  activeConversationStale,
+  replayLoading,
+  replayError,
   full = false,
   onInput,
   onSubmit,
   onEvidence,
+  onRemoveContext,
 }: AssistantChatProps) {
   const submitOnEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -117,11 +138,28 @@ export function AssistantChat({
   return (
     <div className={full ? 'assistant-chat full' : 'assistant-chat'}>
       <div className="chat-feed" aria-live="polite">
+        {replayLoading ? <p className="assistant-replay-state" role="status">Loading conversation…</p> : null}
+        {replayError ? <p className="assistant-replay-state error" role="alert">This conversation could not be loaded.</p> : null}
+        {activeConversationStale ? (
+          <p className="assistant-stale-notice" role="status">
+            This conversation was created from an older index. New answers use only current-index evidence.
+          </p>
+        ) : null}
         {messages.map((message, index) => (
           <ChatMessageCard message={message} index={index} key={`${message.role}-${index}`} onEvidence={onEvidence} />
         ))}
       </div>
       <form className="chat-form" onSubmit={onSubmit}>
+        {context ? (
+          <div className="assistant-context-chip" aria-label="Assistant workspace context">
+            <Icon name={context.page === 'code' ? 'file' : 'home'} size={14} />
+            <span>
+              <strong>{context.page === 'code' ? fileName(context.file_path) : 'Overview'}</strong>
+              <small>{assistantContextLabel(context)}</small>
+            </span>
+            <button type="button" onClick={onRemoveContext} aria-label="Remove assistant context">×</button>
+          </div>
+        ) : null}
         <textarea
           disabled={disabled}
           rows={3}
@@ -143,6 +181,37 @@ export function AssistantChat({
         </div>
       </form>
     </div>
+  )
+}
+
+export function ConversationHistory({
+  conversations,
+  activeConversationId,
+  onSelect,
+}: {
+  conversations: ConversationSummary[]
+  activeConversationId?: string
+  onSelect: (conversationId: string) => void
+}) {
+  return (
+    <nav className="assistant-history" aria-label="Saved conversations">
+      <strong>History</strong>
+      {!conversations.length ? <p>No saved conversations yet.</p> : null}
+      {conversations.map((conversation) => (
+        <button
+          type="button"
+          key={conversation.conversation_id}
+          className={conversation.conversation_id === activeConversationId ? 'active' : ''}
+          aria-current={conversation.conversation_id === activeConversationId ? 'page' : undefined}
+          onClick={() => onSelect(conversation.conversation_id)}
+        >
+          <span>{conversation.title || 'Untitled conversation'}</span>
+          <small>
+            {conversation.message_count} messages{conversation.is_stale ? ' · older index' : ''}
+          </small>
+        </button>
+      ))}
+    </nav>
   )
 }
 
@@ -191,4 +260,16 @@ function ChatMessageCard({ message, index, onEvidence }: { message: ChatMessage;
 
 function fileName(path: string) {
   return path.split(/[\\/]/).pop() ?? path
+}
+
+function assistantContextLabel(context: AssistantRequestContext) {
+  if (context.page === 'overview') return 'Current workspace page'
+  const details = [context.file_path]
+  if (context.start_line && context.end_line) {
+    details.push(context.start_line === context.end_line
+      ? `line ${context.start_line}`
+      : `lines ${context.start_line}–${context.end_line}`)
+  }
+  if (context.symbol_name) details.push(context.symbol_name)
+  return details.join(' · ')
 }

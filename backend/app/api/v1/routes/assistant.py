@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.dependencies import get_assistant_use_cases
 from app.core.auth import require_api_auth
 from app.schemas.assistant import (
     ChatRequest,
     ChatResponse,
+    ConversationListResponse,
+    ConversationTranscriptResponse,
     EvidenceDTO,
     EvidenceValidationRequest,
     EvidenceValidationResponse,
     SearchAskWithEvidenceRequest,
 )
 from app.services.application.use_cases import AssistantUseCases
+from app.services.chat.request_context import AssistantContextValidationError
+from app.services.chat.chat_service import ConversationNotFoundError
 
 
 router = APIRouter(prefix="/repositories", tags=["repositories"], dependencies=[Depends(require_api_auth)])
@@ -24,7 +28,46 @@ def chat_with_repository(
     request: ChatRequest,
     service: AssistantUseCases = Depends(get_assistant_use_cases),
 ) -> ChatResponse:
-    return service.chat(repository_id, request.message, request.conversation_id)
+    try:
+        return service.chat(repository_id, request.message, request.conversation_id, request.context)
+    except AssistantContextValidationError as error:
+        raise HTTPException(
+            status_code=422,
+            detail={"code": error.code, "message": "Workspace context is invalid."},
+        ) from error
+    except ConversationNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "conversation_not_found", "message": "Conversation was not found."},
+        ) from error
+
+
+@router.get("/{repository_id}/conversations", response_model=ConversationListResponse)
+def list_conversations(
+    repository_id: str,
+    limit: int = Query(default=20, ge=1, le=50),
+    service: AssistantUseCases = Depends(get_assistant_use_cases),
+) -> ConversationListResponse:
+    return service.list_conversations(repository_id, limit)
+
+
+@router.get(
+    "/{repository_id}/conversations/{conversation_id}",
+    response_model=ConversationTranscriptResponse,
+)
+def get_conversation(
+    repository_id: str,
+    conversation_id: str,
+    limit: int = Query(default=200, ge=1, le=200),
+    service: AssistantUseCases = Depends(get_assistant_use_cases),
+) -> ConversationTranscriptResponse:
+    try:
+        return service.get_conversation(repository_id, conversation_id, limit)
+    except ConversationNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "conversation_not_found", "message": "Conversation was not found."},
+        ) from error
 
 
 @router.get("/{repository_id}/evidence/{evidence_id}", response_model=EvidenceDTO)
@@ -51,4 +94,12 @@ def ask_with_search_evidence(
     request: SearchAskWithEvidenceRequest,
     service: AssistantUseCases = Depends(get_assistant_use_cases),
 ) -> ChatResponse:
-    return service.ask_with_evidence(repository_id, request.message, request.evidence_ids, request.conversation_id)
+    try:
+        return service.ask_with_evidence(
+            repository_id, request.message, request.evidence_ids, request.conversation_id
+        )
+    except ConversationNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "conversation_not_found", "message": "Conversation was not found."},
+        ) from error

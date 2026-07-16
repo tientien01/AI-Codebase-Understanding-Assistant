@@ -24,8 +24,9 @@ export const queryKeys = {
     [...queryKeys.version(repositoryId, indexVersion), 'evidence', evidenceId] as const,
   search: (repositoryId: string, indexVersion: number | undefined, query: string) =>
     [...queryKeys.version(repositoryId, indexVersion), 'search', query] as const,
-  chat: (repositoryId: string, indexVersion?: number) =>
-    [...queryKeys.version(repositoryId, indexVersion), 'chat'] as const,
+  conversations: (repositoryId: string) => ['repository', repositoryId, 'conversations'] as const,
+  conversation: (repositoryId: string, conversationId: string) =>
+    [...queryKeys.conversations(repositoryId), conversationId] as const,
   importPreview: (sessionId: string) => ['import-session', sessionId, 'preview'] as const,
   importStatus: (sessionId: string) => ['import-session', sessionId, 'status'] as const,
 }

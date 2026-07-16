@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from app.schemas.api import CitationDTO
 from app.services.index_models import ChunkRecord, RepositoryState
-from app.services.retrieval.contracts import RetrievalCandidate, RetrievalRequest
+from app.services.retrieval.contracts import QueryClassification, RetrievalCandidate, RetrievalRequest
 from app.services.retrieval.query_classifier import QueryClassifier
 from app.services.retrieval.ranking import (
     RankedCandidate,
@@ -87,8 +87,9 @@ class RetrievalService:
         repository: RepositoryState,
         query: str,
         limit: int,
+        classification: QueryClassification | None = None,
     ) -> tuple[RetrievalRequest, list[RetrievalCandidate]]:
-        classification = self.classifier.classify(query)
+        classification = classification or self.classifier.classify(query)
         request = RetrievalRequest.for_repository(repository, query, limit, classification)
         if not RetrievalScorer().query_terms(query):
             return request, []
@@ -125,9 +126,10 @@ class RetrievalService:
         repository: RepositoryState,
         query: str,
         limit: int,
+        classification: QueryClassification | None = None,
     ) -> tuple[RetrievalRequest, list[RankedCandidate]]:
         """Return the owned request and inspectable ranked candidates."""
-        request, candidates = self.retrieve_candidates(repository, query, limit)
+        request, candidates = self.retrieve_candidates(repository, query, limit, classification)
         return request, self.ranker.rank(request, candidates)
 
     def generate_grounded_answer(self, question_type: str, message: str, citations: list[CitationDTO]) -> str:

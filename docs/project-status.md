@@ -2,7 +2,7 @@
 
 Status: Accepted project control document  
 Owner: Project maintainer  
-Last verified: 2026-07-14
+Last verified: 2026-07-16
 
 This page is the operational front door. It reports verified progress; it does not replace product contracts, architecture, tasks, or release evidence.
 
@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 7 has verified SEC-001 and SEC-002; operations delivery remains open |
-| Active task | AGT-004 is complete locally on the current feature branch and awaits commit/review |
-| Next task candidate | Authorize OPS-001 structured telemetry and readiness after SEC-002 merge |
+| Active task | None; AGT-005 and AGT-006 are complete locally on the current feature branch and await owner-directed commit/review |
+| Next task candidate | Promote AGT-007 for the optional grounded Ollama chat adapter; it remains draft |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -43,6 +43,8 @@ This page is the operational front door. It reports verified progress; it does n
 - Assistant sufficiency now requires question-specific strong support/source/endpoint/graph coverage, permits only one controlled budgeted repair, validates claims against selected current citation IDs/scope and rejects optional provider output without valid declarations. The AGT-002 positive/refusal/repair/citation matrix passes.
 - Completed assistant turns now persist atomically as redacted conversation messages, claims, citations, budget summaries and controlled ordered trace events. Local SQLite replay enforces repository ownership, production mapping targets the accepted PostgreSQL schema, and persistence failure prevents a successful response. The AGT-003 privacy/rollback/replay matrix passes.
 - Optional provider calls now receive exact whole selected evidence spans rather than citation metadata alone. Current owner/index/source/hash/range/blocked/budget checks fail closed, imported source is delimited as untrusted data, and provider failure preserves deterministic fallback. The AGT-004 provider-context matrix and canonical-LF full backend gate pass; real-provider quality remains unverified.
+- Assistant requests now optionally include visible removable workspace context. Code Explorer sends the current file, selected line and containing parsed symbol; Overview sends page-only context. The backend verifies current repository ownership, source hash, line bounds and symbol membership before retrieval anchoring, returns stable 422 context errors before retrieval, and preserves context-free behavior. AGT-005 passes 81 focused backend/API regressions, 113 frontend tests and a 347-pass canonical-LF full backend gate.
+- Assistant conversations now expose repository-owned bounded history/replay, retain the server-issued identity across follow-ups, and restore deep-linked transcripts after refresh. A deterministic eight-message/1,000-token projection helps resolve follow-up intent without becoming evidence; stale assistant text is excluded and current-index citation gates remain authoritative. AGT-006 passes 61 focused backend/API regressions, 114 frontend tests and a 354-pass canonical-LF full backend gate.
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
@@ -64,8 +66,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Commit and review the completed AGT-004 provider-evidence slice without inferring real-provider or Phase 5 release qualification.
-2. Continue the separately governed SEC-002 review and authorize OPS-001 or another dependency-valid candidate under a new `ready` task.
+1. Review and commit the completed AGT-005/AGT-006 contextual and stateful-conversation slices when directed, without inferring real-provider or Phase 5 release qualification.
+2. Authorize exactly one next task: promote draft AGT-007 for optional Ollama chat, or continue the existing operations sequence.
 
 ## Status update rule
 

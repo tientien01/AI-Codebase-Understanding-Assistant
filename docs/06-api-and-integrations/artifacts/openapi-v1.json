@@ -394,6 +394,84 @@
         "title": "ArchitectureRelationDTO",
         "type": "object"
       },
+      "AssistantRequestContext": {
+        "additionalProperties": false,
+        "description": "Bounded workspace identifiers; source content never crosses this boundary.",
+        "properties": {
+          "end_line": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Line"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "page": {
+            "enum": [
+              "overview",
+              "code",
+              "graph",
+              "api",
+              "assistant",
+              "impact",
+              "search",
+              "evidence",
+              "evaluation"
+            ],
+            "title": "Page",
+            "type": "string"
+          },
+          "start_line": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Line"
+          },
+          "symbol_name": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol Name"
+          }
+        },
+        "required": [
+          "page"
+        ],
+        "title": "AssistantRequestContext",
+        "type": "object"
+      },
       "Body_create_folder_import_session_api_v1_import_sessions_upload_folder_post": {
         "properties": {
           "files": {
@@ -565,9 +643,22 @@
       },
       "ChatRequest": {
         "properties": {
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssistantRequestContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "conversation_id": {
             "anyOf": [
               {
+                "maxLength": 128,
+                "minLength": 14,
+                "pattern": "^conversation_[A-Za-z0-9_-]+$",
                 "type": "string"
               },
               {
@@ -577,6 +668,8 @@
             "title": "Conversation Id"
           },
           "message": {
+            "maxLength": 16000,
+            "minLength": 1,
             "title": "Message",
             "type": "string"
           },
@@ -689,6 +782,151 @@
           "end_line"
         ],
         "title": "CitationDTO",
+        "type": "object"
+      },
+      "ConversationListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationSummaryDTO"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ConversationListResponse",
+        "type": "object"
+      },
+      "ConversationMessageDTO": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationDTO"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "evidence_sufficient": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Sufficient"
+          },
+          "index_version": {
+            "title": "Index Version",
+            "type": "integer"
+          },
+          "message_id": {
+            "title": "Message Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message_id",
+          "role",
+          "content",
+          "index_version",
+          "created_at"
+        ],
+        "title": "ConversationMessageDTO",
+        "type": "object"
+      },
+      "ConversationSummaryDTO": {
+        "properties": {
+          "conversation_id": {
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "is_stale": {
+            "title": "Is Stale",
+            "type": "boolean"
+          },
+          "latest_index_version": {
+            "title": "Latest Index Version",
+            "type": "integer"
+          },
+          "message_count": {
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversation_id",
+          "status",
+          "message_count",
+          "latest_index_version",
+          "is_stale",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConversationSummaryDTO",
+        "type": "object"
+      },
+      "ConversationTranscriptResponse": {
+        "properties": {
+          "conversation": {
+            "$ref": "#/components/schemas/ConversationSummaryDTO"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationMessageDTO"
+            },
+            "title": "Messages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "conversation",
+          "messages"
+        ],
+        "title": "ConversationTranscriptResponse",
         "type": "object"
       },
       "EndpointDTO": {
@@ -5079,6 +5317,155 @@
           }
         },
         "summary": "Chat With Repository",
+        "tags": [
+          "repositories"
+        ]
+      }
+    },
+    "/api/v1/repositories/{repository_id}/conversations": {
+      "get": {
+        "operationId": "list_conversations_api_v1_repositories__repository_id__conversations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "repository_id",
+            "required": true,
+            "schema": {
+              "title": "Repository Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Conversations",
+        "tags": [
+          "repositories"
+        ]
+      }
+    },
+    "/api/v1/repositories/{repository_id}/conversations/{conversation_id}": {
+      "get": {
+        "operationId": "get_conversation_api_v1_repositories__repository_id__conversations__conversation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "repository_id",
+            "required": true,
+            "schema": {
+              "title": "Repository Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationTranscriptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Conversation",
         "tags": [
           "repositories"
         ]

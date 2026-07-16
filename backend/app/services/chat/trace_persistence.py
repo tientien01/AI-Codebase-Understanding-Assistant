@@ -15,6 +15,7 @@ from app.schemas.api import ChatResponse, CitationDTO
 
 if TYPE_CHECKING:
     from app.services.chat.agent_workflow_service import AgentWorkflowResult
+    from app.services.chat.conversation_memory import ConversationMemoryProjection
 
 
 MAX_PERSISTED_MESSAGE_CHARS = 16_000
@@ -203,6 +204,7 @@ def build_persisted_turn(
     result: AgentWorkflowResult | None,
     *,
     provider_accepted: bool = False,
+    memory: ConversationMemoryProjection | None = None,
 ) -> PersistedAssistantTurn:
     trace_id = _identity("trace_")
     request_message_id = _identity("message_")
@@ -296,6 +298,11 @@ def build_persisted_turn(
         elapsed_ms=budget.elapsed_ms if budget else 0,
         provider_calls_used=1 if provider_accepted else 0,
         provider_cost=budget.provider_cost if budget else 0.0,
+        memory_messages_used=memory.messages_used if memory else 0,
+        memory_tokens_used=memory.tokens_used if memory else 0,
+        memory_token_budget=memory.token_budget if memory else 0,
+        memory_truncated=memory.truncated if memory else False,
+        memory_stale_history=memory.stale_history if memory else False,
     )
     citation_ids = tuple(citation.evidence_id for citation in response.citations)
     support_level = "supported" if response.evidence_sufficient else (

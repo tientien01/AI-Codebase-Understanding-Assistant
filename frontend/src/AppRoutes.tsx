@@ -23,6 +23,8 @@ import {
 } from './pages/workspace'
 import type {
   ChatMessage,
+  ConversationSummary,
+  AssistantRequestContext,
   ApiEndpoint,
   Citation,
   Evidence,
@@ -63,6 +65,12 @@ type AppRoutesProps = {
   selectedEvidence: Evidence | null
   chatInput: string
   chatMessages: ChatMessage[]
+  conversations: ConversationSummary[]
+  activeConversationId?: string
+  activeConversationStale: boolean
+  chatReplayLoading: boolean
+  chatReplayError: boolean
+  chatContext?: AssistantRequestContext
   searchQuery: string
   searchResults: SearchResult[]
   impactTargetType: string
@@ -84,6 +92,7 @@ type AppRoutesProps = {
   isPreviewLoading: boolean
   setPage: (page: Page) => void
   setChatInput: (value: string) => void
+  clearChatContext: () => void
   setSearchQuery: (value: string) => void
   setImpactTargetType: (value: string) => void
   setImpactTargetRef: (value: string) => void
@@ -106,6 +115,8 @@ type AppRoutesProps = {
   selectCodeLine: (filePath: string, line: number) => void
   clearCodeLine: () => void
   sendChatMessage: (event?: FormEvent) => void
+  startNewChat: () => void
+  selectConversation: (conversationId: string) => void
   openEvidence: (citation: Citation) => void
   selectApiEndpoint: (endpointKey: string) => void
   openApiFlow: (endpoint: ApiEndpoint) => void
@@ -174,18 +185,6 @@ export function AppRoutes(props: AppRoutesProps) {
       />
     )
   }
-  if (route.detail === 'conversation') {
-    return (
-      <RouteRecoveryPage
-        title="Conversation replay is not available yet"
-        description="The conversation identity is preserved, but public owned-history loading is outside UI-001. Start from the current assistant without showing unrelated messages."
-        requestedPath={route.pathname}
-        actionPath={pathForPage('assistant', route.repositoryId)}
-        actionLabel="Open Assistant"
-      />
-    )
-  }
-
   if (page === 'projects') {
     return (
       <ProjectsPage
@@ -331,7 +330,28 @@ export function AppRoutes(props: AppRoutesProps) {
     )
   }
   if (page === 'assistant') {
-    return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />
+    return (
+      <WorkspacePage
+        main={(
+          <AssistantFullPage
+            input={chatInput}
+            messages={chatMessages}
+            conversations={props.conversations}
+            activeConversationId={props.activeConversationId}
+            activeConversationStale={props.activeConversationStale}
+            replayLoading={props.chatReplayLoading}
+            replayError={props.chatReplayError}
+            disabled={!canChat(selectedRepository) || props.chatReplayError}
+            onInput={props.setChatInput}
+            onSubmit={props.sendChatMessage}
+            onEvidence={props.openEvidence}
+            onNewChat={props.startNewChat}
+            onSelectConversation={props.selectConversation}
+          />
+        )}
+        side={<EvidenceSummary />}
+      />
+    )
   }
   if (page === 'impact') {
     return (
@@ -403,7 +423,7 @@ function EvaluationRoute({ repository }: { repository?: Repository }) {
   )
 }
 
-function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, setChatInput, sendChatMessage, openEvidence }: AppRoutesProps & { main: ReactNode }) {
+function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, chatContext, conversations, activeConversationId, activeConversationStale, chatReplayLoading, chatReplayError, setChatInput, clearChatContext, sendChatMessage, startNewChat, selectConversation, openEvidence }: AppRoutesProps & { main: ReactNode }) {
   return (
     <WorkspacePage
       main={main}
@@ -412,9 +432,18 @@ function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages,
         <CollapsibleAssistantPanel
           input={chatInput}
           messages={chatMessages}
-          disabled={!canChat(selectedRepository)}
+          context={chatContext}
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          activeConversationStale={activeConversationStale}
+          replayLoading={chatReplayLoading}
+          replayError={chatReplayError}
+          disabled={!canChat(selectedRepository) || chatReplayError}
           suggestions={['Explain the architecture', 'Trace the login flow', 'Where should I start reading?']}
           onInput={setChatInput}
+          onRemoveContext={clearChatContext}
+          onNewChat={startNewChat}
+          onSelectConversation={selectConversation}
           onSubmit={sendChatMessage}
           onEvidence={openEvidence}
         />

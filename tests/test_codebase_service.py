@@ -517,9 +517,18 @@ def test_ask_with_selected_evidence_requires_valid_evidence() -> None:
     search = service.search(created.repository_id, "login")
     evidence_id = search.results[0].evidence_id
 
-    answer = service.ask_with_evidence(created.repository_id, "Explain this login evidence.", [evidence_id], "conv_test")
+    answer = service.ask_with_evidence(
+        created.repository_id, "Explain this login evidence.", [evidence_id]
+    )
+    follow_up = service.ask_with_evidence(
+        created.repository_id,
+        "Where is that login evidence used?",
+        [evidence_id],
+        answer.conversation_id,
+    )
 
-    assert answer.conversation_id == "conv_test"
+    assert answer.conversation_id.startswith("conversation_")
+    assert follow_up.conversation_id == answer.conversation_id
     assert answer.evidence_sufficient
     assert answer.citations[0].evidence_id == evidence_id
 
