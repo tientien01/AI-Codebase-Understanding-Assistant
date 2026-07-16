@@ -9,6 +9,7 @@ import {
   useChatTranscriptQuery,
   useDebouncedValue,
   useEvidenceQuery,
+  useEndpointsQuery,
   useFileContentQuery,
   useFileTreeQuery,
   useGraphQuery,
@@ -23,6 +24,7 @@ import { pathForPage } from '../routing/routes'
 import type { AppRoute } from '../routing/routes'
 import type {
   Citation,
+  ApiEndpoint,
   GraphData,
   GraphDirection,
   GraphProjectionInput,
@@ -36,7 +38,7 @@ import type { ValueTraceContext } from '../utils/valueTrace'
 import { useImportController } from './useImportController'
 
 const workspacePages: Page[] = ['overview', 'code', 'graph', 'api', 'assistant', 'impact', 'search', 'evidence', 'evaluation']
-const overviewPages: Page[] = ['overview', 'code', 'graph', 'api', 'impact']
+const overviewPages: Page[] = ['overview', 'code', 'graph', 'impact']
 const graphViews: GraphView[] = ['project-map', 'dependencies', 'api-flow', 'function-flow', 'data-flow']
 const emptyRepositories: Repository[] = []
 const requestFlowNodeTypes = ['endpoint', 'api_call', 'function', 'method']
@@ -112,6 +114,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   }
 
   const overviewQuery = useOverviewQuery(usableRepository, overviewPages.includes(page))
+  const endpointsQuery = useEndpointsQuery(usableRepository, page === 'api')
   const graphQuery = useGraphQuery(usableRepository, activeGraphView, graphProjection, page === 'graph' || Boolean(codeTraceRoot))
   const fetchGraphExpansion = useGraphExpansion(usableRepository)
   const fileTreeQuery = useFileTreeQuery(usableRepository, page === 'code')
@@ -144,6 +147,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     repositoriesQuery,
     indexStatusQuery,
     overviewQuery,
+    endpointsQuery,
     graphQuery,
     fileTreeQuery,
     fileContentQuery,
@@ -181,6 +185,32 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   function openEvidence(citation: Citation) {
     if (!selectedRepository) return
     navigate(pathForPage('evidence', selectedRepository.id, { evidenceId: citation.evidence_id }))
+  }
+
+  function selectApiEndpoint(endpointKey: string) {
+    if (!selectedRepository) return
+    navigate(pathForPage('api', selectedRepository.id, { endpointKey }))
+  }
+
+  function openApiFlow(endpoint: ApiEndpoint) {
+    if (!selectedRepository) return
+    const endpointKey = endpoint.endpoint_key
+    if (!endpointKey) return
+    setGraphViewFallback('api-flow')
+    setGraphProjectionControls({
+      ...defaultGraphProjection,
+      nodeTypes: requestFlowNodeTypes,
+      edgeTypes: requestFlowEdgeTypes,
+      direction: 'outgoing',
+      maxNodes: 32,
+      maxEdges: 64,
+      projectionMode: 'neighbors',
+    })
+    navigate(pathForPage('graph', selectedRepository.id, {
+      graphView: 'api-flow',
+      graphRoot: endpointKey,
+      graphDepth: 2,
+    }))
   }
 
   async function reindexRepository(repositoryId: string) {
@@ -419,6 +449,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     repositoriesLoadFailed: repositoriesQuery.isError,
     selectedRepository,
     overview: overviewQuery.data ?? null,
+    apiEndpoints: endpointsQuery.data?.items ?? [],
     indexStatus: indexStatusQuery.data ?? null,
     graph: graphQuery.data ?? null,
     graphView: activeGraphView,
@@ -457,6 +488,8 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     retryActivePage: pageQuery.query ? () => { void pageQuery.refetch() } : undefined,
     sendChatMessage,
     openEvidence,
+    selectApiEndpoint,
+    openApiFlow,
     runSearch,
     analyzeGraphArea,
     runImpactAnalysis,
@@ -482,6 +515,7 @@ function activePageQuery(input: {
   repositoriesQuery: UseQueryResult<Repository[], Error>
   indexStatusQuery: UseQueryResult<unknown, Error>
   overviewQuery: UseQueryResult<unknown, Error>
+  endpointsQuery: UseQueryResult<unknown, Error>
   graphQuery: UseQueryResult<unknown, Error>
   fileTreeQuery: UseQueryResult<unknown, Error>
   fileContentQuery: UseQueryResult<unknown, Error>
@@ -498,7 +532,13 @@ function activePageQuery(input: {
   })
   if (input.page === 'projects') return asPageQuery(input.repositoriesQuery, true, (data) => Array.isArray(data) && data.length === 0)
   if (input.page === 'indexing') return asPageQuery(input.indexStatusQuery)
-  if (['overview', 'api'].includes(input.page)) return asPageQuery(input.overviewQuery)
+  if (input.page === 'overview') return asPageQuery(input.overviewQuery)
+  if (input.page === 'api') {
+    return asPageQuery(input.endpointsQuery, true, (data) => {
+      const response = data as { items?: unknown[] }
+      return Array.isArray(response.items) && response.items.length === 0
+    })
+  }
   if (input.page === 'graph') return asPageQuery(input.graphQuery)
   if (input.page === 'code') {
     return input.hasFilePath

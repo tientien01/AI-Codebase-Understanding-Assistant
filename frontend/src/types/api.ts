@@ -83,10 +83,26 @@ export type Overview = {
   detected_stack: string[]
   important_files: { file_path: string; reason: string }[]
   modules: { name: string; summary: string; file_count: number }[]
-  endpoints: { method: string; path: string; handler: string; file_path: string; start_line: number; end_line: number }[]
+  endpoints: ApiEndpoint[]
   documentation_gaps: string[]
   stats: Record<string, number>
   architecture?: ArchitectureOverview
+}
+
+export type ApiEndpoint = {
+  endpoint_key?: string
+  method: string
+  path: string
+  handler: string
+  file_path: string
+  start_line: number
+  end_line: number
+  metadata?: Record<string, string>
+}
+
+export type EndpointListResponse = {
+  items: ApiEndpoint[]
+  next_cursor: string | null
 }
 
 export type ArchitectureEvidence = {

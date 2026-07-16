@@ -17,6 +17,7 @@ class ModuleDTO(BaseModel):
 
 
 class EndpointDTO(BaseModel):
+    endpoint_key: str
     method: str
     path: str
     handler: str

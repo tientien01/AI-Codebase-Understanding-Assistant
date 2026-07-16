@@ -10,6 +10,8 @@ export const queryKeys = {
     ['repository', repositoryId, 'version', indexVersion ?? 'active'] as const,
   overview: (repositoryId: string, indexVersion?: number) =>
     [...queryKeys.version(repositoryId, indexVersion), 'overview'] as const,
+  endpoints: (repositoryId: string, indexVersion?: number) =>
+    [...queryKeys.version(repositoryId, indexVersion), 'api-endpoints'] as const,
   graphFamily: (repositoryId: string, indexVersion?: number) =>
     [...queryKeys.version(repositoryId, indexVersion), 'graph'] as const,
   graph: (repositoryId: string, indexVersion: number | undefined, view: string, projection?: GraphProjectionInput) =>

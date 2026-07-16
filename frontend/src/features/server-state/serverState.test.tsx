@@ -9,7 +9,7 @@ import { toAsyncViewState } from './asyncState'
 import { queryKeys } from './keys'
 import { useServerMutations } from './mutations'
 import { indexRefetchInterval, retryDelay, shouldRetry } from './policy'
-import { useFileContentQuery, useIgnorePatternsQuery, useSettingsQuery } from './queries'
+import { useEndpointsQuery, useFileContentQuery, useIgnorePatternsQuery, useSettingsQuery } from './queries'
 
 const repository: Repository = {
   id: 'repo-1',
@@ -95,11 +95,12 @@ describe('server-state ownership policy', () => {
     expect(indexRefetchInterval(running, { hidden: true, repositoryId: 'repo-1' })).toBe(false)
   })
 
-  it('projects permission, retryable, refreshing, stale, empty and cancelled states', () => {
+  it('projects permission, retryable, refreshing, explicit stale, empty and cancelled states', () => {
     expect(toAsyncViewState(snapshot({ isError: true, error: new ApiError('no', { status: 403, retryable: false }) }))).toMatchObject({ kind: 'permission_denied' })
     expect(toAsyncViewState(snapshot({ isError: true, error: new ApiError('later', { status: 503, retryable: true }) }))).toMatchObject({ kind: 'error_retryable' })
     expect(toAsyncViewState(snapshot({ data: ['cached'], isFetching: true }))).toMatchObject({ kind: 'refreshing' })
-    expect(toAsyncViewState(snapshot({ data: ['cached'], isStale: true }))).toMatchObject({ kind: 'stale' })
+    expect(toAsyncViewState(snapshot({ data: ['cached'], isStale: true }))).toMatchObject({ kind: 'success' })
+    expect(toAsyncViewState(snapshot({ data: ['cached'], isStale: true }), { enabled: true, stale: true })).toMatchObject({ kind: 'stale' })
     expect(toAsyncViewState(snapshot({ data: [] }), { enabled: true, empty: (data) => Array.isArray(data) && data.length === 0 })).toMatchObject({ kind: 'empty' })
     expect(toAsyncViewState(snapshot({ isError: true, error: new DOMException('cancelled', 'AbortError') }))).toMatchObject({ kind: 'cancelled' })
   })
@@ -123,6 +124,22 @@ describe('server-state ownership policy', () => {
     expect(queryKeys.ignorePatterns).toEqual(['settings', 'ignore-patterns'])
     expect(urls.some((url) => url.endsWith('/api/v1/settings'))).toBe(true)
     expect(urls.some((url) => url.endsWith('/api/v1/settings/ignore-patterns'))).toBe(true)
+  })
+
+  it('owns API endpoint-list state by repository and active index version', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      urls.push(String(input))
+      return jsonResponse({ items: [], next_cursor: null })
+    }))
+    const { wrapper } = testQueryClient()
+    const endpointsQuery = renderHook(() => useEndpointsQuery(repository, true), { wrapper })
+
+    await waitFor(() => expect(endpointsQuery.result.current.isSuccess).toBe(true))
+    expect(queryKeys.endpoints('repo-1', 7)).toEqual([
+      'repository', 'repo-1', 'version', 7, 'api-endpoints',
+    ])
+    expect(urls.some((url) => url.endsWith('/api/v1/repositories/repo-1/api/endpoints'))).toBe(true)
   })
 
   it('forwards query cancellation when a file deep link is superseded', async () => {
