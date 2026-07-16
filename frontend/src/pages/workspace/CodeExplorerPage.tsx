@@ -35,6 +35,9 @@ export function CodeExplorerPage({
   const [displayContent, setDisplayContent] = useState<FileContent | null>(fileContent)
   const [traceTarget, setTraceTarget] = useState<{ filePath: string; line: number }>()
   const [dismissedSelectedLine, setDismissedSelectedLine] = useState<string>()
+  const [filesCollapsed, setFilesCollapsed] = useState(Boolean(tracePanel))
+  const filesCollapsedBeforeTrace = useRef(false)
+  const traceWasOpen = useRef(Boolean(tracePanel))
   const sourceRef = useRef<HTMLPreElement>(null)
   const visibleTree = useMemo(() => filterTree(fileTree, fileQuery), [fileQuery, fileTree])
   const activeContent = fileContent ?? displayContent
@@ -82,18 +85,41 @@ export function CodeExplorerPage({
     source.scrollTop = loadSourceScroll(repositoryId, activeContent.file_path)
   }, [activeContent, repositoryId, selectedLine])
 
+  useEffect(() => {
+    const traceOpen = Boolean(tracePanel)
+    if (traceOpen && !traceWasOpen.current) {
+      filesCollapsedBeforeTrace.current = filesCollapsed
+      setFilesCollapsed(true)
+    } else if (!traceOpen && traceWasOpen.current) {
+      setFilesCollapsed(filesCollapsedBeforeTrace.current)
+    }
+    traceWasOpen.current = traceOpen
+  }, [filesCollapsed, tracePanel])
+
   return (
     <div className="code-explorer-page">
       <PageTitle title="Code Explorer" subtitle="Browse source files with parsed symbols, endpoints, imports, and citation-ready line ranges." />
-      <div className="code-explorer-grid">
-        <Panel title="Files">
-          <label className="code-explorer-search">
-            <Icon name="search" />
-            <span className="sr-only">Search repository files</span>
-            <input className="panel-search" value={fileQuery} onChange={(event) => setFileQuery(event.target.value)} placeholder="Search files..." />
-          </label>
-          {visibleTree.length ? <FileTree nodes={visibleTree} repositoryId={repositoryId} selectedFilePath={selectedFilePath} searchActive={Boolean(fileQuery.trim())} onSelectFile={onSelectFile} /> : <p className="code-explorer-empty">No matching files found.</p>}
-        </Panel>
+      <div className={`code-explorer-grid ${filesCollapsed ? 'files-collapsed' : ''}`}>
+        {filesCollapsed ? (
+          <aside className="code-explorer-files-rail" aria-label="Collapsed repository files">
+            <button type="button" aria-label="Expand files panel" title="Expand files panel" onClick={() => setFilesCollapsed(false)}>
+              <Icon name="folder" />
+              <span>Files</span>
+            </button>
+          </aside>
+        ) : (
+          <div className="code-explorer-files-panel">
+            <button type="button" className="code-explorer-files-collapse" aria-label="Collapse files panel" title="Collapse files panel" onClick={() => setFilesCollapsed(true)}>«</button>
+            <Panel title="Files">
+              <label className="code-explorer-search">
+                <Icon name="search" />
+                <span className="sr-only">Search repository files</span>
+                <input className="panel-search" value={fileQuery} onChange={(event) => setFileQuery(event.target.value)} placeholder="Search files..." />
+              </label>
+              {visibleTree.length ? <FileTree nodes={visibleTree} repositoryId={repositoryId} selectedFilePath={selectedFilePath} searchActive={Boolean(fileQuery.trim())} onSelectFile={onSelectFile} /> : <p className="code-explorer-empty">No matching files found.</p>}
+            </Panel>
+          </div>
+        )}
         <div className={`code-explorer-reader ${tracePanel ? 'trace-open' : ''}`}>
           <section className="code-explorer-ide" aria-label="Code editor">
             <div className="code-explorer-source-meta">

@@ -918,6 +918,56 @@
   min-width: 0;
 }
 
+.code-explorer-grid.files-collapsed {
+  grid-template-columns: 52px minmax(0, 1fr);
+}
+
+.code-explorer-files-panel {
+  position: relative;
+  min-width: 0;
+}
+
+.code-explorer-files-collapse {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  border: 1px solid #31445f;
+  border-radius: 7px;
+  padding: 3px 7px;
+  background: #0d1827;
+  color: #aebed4;
+  cursor: pointer;
+}
+
+.code-explorer-files-rail {
+  display: grid;
+  position: sticky;
+  top: 8px;
+  min-height: 240px;
+  border: 1px solid #26364d;
+  border-radius: 10px;
+  background: #0c1624;
+}
+
+.code-explorer-files-rail button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  padding: 12px 0;
+  background: transparent;
+  color: #aec0d8;
+  cursor: pointer;
+  writing-mode: vertical-rl;
+}
+
+.code-explorer-files-rail button:hover,
+.code-explorer-files-rail button:focus-visible {
+  background: #13233a;
+  color: #fff;
+}
+
 .api-table {
   width: 100%;
   border-collapse: collapse;
@@ -2049,22 +2099,22 @@
 
 /* UI-022: source and value-flow continuity inside Code Explorer. */
 .code-explorer-reader.trace-open {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(540px, 1fr) minmax(380px, 460px);
   align-items: start;
 }
 
-.code-explorer-reader.trace-open .code-explorer-intelligence { grid-column: 1; }
+.code-explorer-reader.trace-open .code-explorer-intelligence { grid-column: 1 / -1; }
 
 .code-explorer-trace-panel {
-  position: static;
-  grid-column: 1;
-  height: clamp(320px, 42vh, 520px);
-  min-height: 240px;
+  position: sticky;
+  top: 8px;
+  grid-column: 2;
+  height: calc(100vh - 126px);
+  min-height: 480px;
   min-width: 0;
-  max-height: min(72vh, 760px);
+  max-height: 760px;
   overflow: auto;
   overscroll-behavior: contain;
-  resize: vertical;
   border: 1px solid #2a4e57;
   border-radius: 11px;
   padding: 9px;
@@ -2075,7 +2125,10 @@
   height: auto;
   min-height: 0;
   overflow: hidden;
-  resize: none;
+}
+
+.code-explorer-reader.trace-open:has(.embedded-collapsed) {
+  grid-template-columns: minmax(540px, 1fr) minmax(250px, 320px);
 }
 
 .embedded-value-trace-header {
@@ -2251,9 +2304,28 @@
   .architecture-layers { grid-template-columns: 1fr; }
   .architecture-flow { transform: none; text-align: center; }
   .graph-explorer-workspace,
-  .code-explorer-reader.trace-open,
   .impact-result-groups { grid-template-columns: 1fr; }
   .graph-inspector { position: static; }
+}
+
+@media (max-width: 1100px) {
+  .code-explorer-reader.trace-open,
+  .code-explorer-reader.trace-open:has(.embedded-collapsed) { grid-template-columns: minmax(0, 1fr); }
+  .code-explorer-reader.trace-open .code-explorer-intelligence { grid-column: 1; }
+  .code-explorer-trace-panel {
+    position: fixed;
+    top: 96px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 30;
+    grid-column: auto;
+    width: min(520px, calc(100vw - 32px));
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
+  }
+  .code-explorer-trace-panel:has(.embedded-collapsed) { bottom: auto; }
 }
 
 @media (max-width: 960px) {

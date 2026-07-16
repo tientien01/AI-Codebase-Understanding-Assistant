@@ -9,7 +9,8 @@ Verified: 2026-07-16
 - Search reveals matching descendant paths without overwriting the unfiltered expansion state.
 - Tree scroll is stored per repository for the browser session. Selecting another file retains the mounted tree and the previous source while the new file is visibly loading.
 - The canonical Code route owns the selected repository-relative file, line, and optional validated `value-context:v1` trace. Per-file source scroll is transient repository-scoped session state.
-- Selecting a source identifier opens the existing bounded progressive Value Trace below the code without narrowing the source reader. The panel is vertically resizable, collapses to a compact value/relation summary, and supports close, full-graph, graph expansion, source opening, and return-to-source without losing the trace context.
+- Selecting a source identifier opens the existing bounded progressive Value Trace immediately beside the code. The file browser automatically contracts to an accessible 52px rail to preserve source width, can be reopened on demand, and returns to its prior state when trace closes. Constrained viewports use a fixed trace drawer so results never appear below the fold.
+- Value Trace collapses to a compact value/relation summary and supports close, full-graph, graph expansion, source opening, and return-to-source without losing trace context.
 - Selected-value and relation details render after the embedded graph instead of absolutely covering it. Their close actions remain independent from closing the whole trace.
 - Closing the source identifier chooser clears both local selection and the canonical `line` query while retaining an active trace context when present, so the chooser cannot immediately reappear.
 - Workspace navigation remembers the last canonical Code URL for each repository, so Code/Graph switching returns to the same file, line, and trace.
@@ -27,7 +28,7 @@ Verified: 2026-07-16
 - This is a static indexed value flow, not a runtime debugger or runtime value recorder.
 - Source editing, Monaco integration, unsaved buffers, cross-window synchronization, and database persistence remain out of scope.
 - The tree is not virtualized; a measured size breach still requires the existing performance-contract follow-up.
-- The user-selected embedded panel height is transient CSS resize state and is not persisted across reloads.
+- File-column collapse is transient workspace state and is restored to its pre-trace value when the embedded trace closes.
 
 ## Verification
 
@@ -35,11 +36,11 @@ Executed from `frontend` unless noted:
 
 | Gate | Result |
 | --- | --- |
-| Focused UI-022 Vitest suite | Passed: 6 files, 74 tests |
-| Full Vitest suite | Passed: 16 files, 110 tests |
+| Focused UI-022 Vitest suite | Passed: 6 files, 75 tests |
+| Full Vitest suite | Passed: 16 files, 111 tests |
 | `npm.cmd run lint` | Passed |
 | `npx.cmd tsc -b --pretty false` | Passed |
 | `npm.cmd run build` | Passed; 147 modules transformed, existing bundle-size warning only |
 | Scoped `git diff --check` | Passed; line-ending notices only |
 
-The focused regressions cover folder collapse/persistence, transient search expansion, tree scroll restoration, source-line routing and clearing, bottom-panel collapse, in-flow inspector dismissal, embedded trace actions, full-graph source return, canonical trace validation, and last-Code-location navigation.
+The focused regressions cover folder collapse/persistence, transient search expansion, tree scroll restoration, automatic Files rail/restore behavior, source-line routing and clearing, trace summary collapse, in-flow inspector dismissal, embedded trace actions, full-graph source return, canonical trace validation, and last-Code-location navigation.

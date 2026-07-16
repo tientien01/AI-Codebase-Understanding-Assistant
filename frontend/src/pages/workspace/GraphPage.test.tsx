@@ -417,7 +417,7 @@ describe('GraphPage focused call-flow UX', () => {
 })
 
 describe('GraphPage progressive value-flow UX', () => {
-  it('embeds a collapsible trace below source and offers explicit close and full-graph actions', () => {
+  it('embeds a collapsible trace alongside source and offers explicit close and full-graph actions', () => {
     const onCloseEmbedded = vi.fn()
     const onOpenFullGraph = vi.fn()
     const { container } = render(

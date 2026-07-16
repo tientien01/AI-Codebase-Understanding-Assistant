@@ -69,7 +69,7 @@ Turn Code Explorer into a stateful source workspace with a collapsible persisten
 - Keep the Code Explorer shell mounted while a different file is loading.
 - Put selected file and line in the canonical Code route and retain the last Code destination in workspace navigation.
 - Embed the existing progressive Value Trace for source-launched token context and provide close/full-graph/back-to-source actions.
-- Keep source width primary by placing embedded Value Trace in a resizable, collapsible bottom panel; selected-value details must not cover its graph.
+- Keep embedded Value Trace in the active viewport beside source by temporarily collapsing Files to an accessible rail; constrained viewports use a fixed trace drawer instead of placing results below the fold.
 - Make identifier, selected-value detail, and whole-trace close actions distinct and route-consistent.
 - Preserve graph query ownership, bounded expansion, limitation language and deep-link recovery.
 
@@ -126,7 +126,7 @@ git diff --check -- frontend/src/App.tsx frontend/src/App.test.tsx frontend/src/
 - Selecting a file below the initial tree viewport does not reset tree scroll or flash a page-level loading replacement.
 - Returning from Value Trace restores the originating file, selected line and source scroll.
 - Source-launched trace expansion is usable without leaving Code Explorer; full graph and back-to-source preserve the same context.
-- Embedded trace does not narrow the source reader, can collapse to a compact summary, and keeps selected-value details in document flow.
+- Embedded trace is visible immediately beside source, Files can collapse/reopen without losing state, constrained viewports keep trace in a fixed drawer, and selected-value details remain in document flow.
 - Closing the identifier chooser removes the canonical selected line so it does not immediately reappear.
 - All declared verification commands pass.
 
