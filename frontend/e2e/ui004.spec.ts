@@ -25,7 +25,7 @@ test.describe('UI-004 evidence-backed workspace', () => {
   test('graph focus preserves every relation, supports reduced motion, and passes accessibility', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await installUi004Api(page, 12)
-    await page.goto(`${repositoryRoot}/graph?view=project-map`)
+    await page.goto(`${repositoryRoot}/graph?view=api-flow`)
 
     const canvas = page.getByLabel('Graph nodes')
     await expect(page.getByRole('heading', { name: 'Graph Explorer' })).toBeVisible()
@@ -43,6 +43,28 @@ test.describe('UI-004 evidence-backed workspace', () => {
     expect(animationName).toBe('none')
     expect(transitionDuration).toBe('0s')
 
+    await expectNoSeriousAccessibilityViolations(page)
+  })
+
+  test('dependency graph starts adaptively and expands only the selected branch', async ({ page }) => {
+    await installUi004Api(page)
+    await page.goto(`${repositoryRoot}/graph?view=dependencies`)
+
+    const canvas = page.getByLabel('Graph nodes')
+    await expect(page.getByRole('heading', { name: 'Dependency Explorer' })).toBeVisible()
+    await expect(canvas.getByRole('button')).toHaveCount(3)
+    await expect(page.getByText('3 suggested starting points')).toBeVisible()
+    await expect(page.getByText(/other qualified points available/)).toBeVisible()
+
+    const seed = canvas.getByRole('button', { name: /Seed 0/ })
+    const initialPosition = await seed.getAttribute('style')
+    await seed.click()
+
+    await expect(canvas.getByRole('button')).toHaveCount(4)
+    await expect(canvas.getByRole('button', { name: /Resolved dependency/ })).toBeVisible()
+    await expect(page.locator('.dependency-node.dimmed')).toHaveCount(2)
+    expect(await seed.getAttribute('style')).toBe(initialPosition)
+    await expect(page.getByText('Relations (1)')).toBeVisible()
     await expectNoSeriousAccessibilityViolations(page)
   })
 
@@ -68,7 +90,7 @@ for (const graphCase of [
   test(`records ${graphCase.name} graph browser observation`, async ({ page }, testInfo) => {
     await installUi004Api(page, graphCase.nodes)
     const startedAt = performance.now()
-    await page.goto(`${repositoryRoot}/graph?view=project-map`)
+    await page.goto(`${repositoryRoot}/graph?view=api-flow`)
     await expect(page.getByLabel('Graph nodes').getByRole('button')).toHaveCount(graphCase.nodes)
     await expect(page.locator('.graph-edge')).toHaveCount(Math.max(0, graphCase.nodes - 1))
     const readyMs = Math.round(performance.now() - startedAt)

@@ -186,3 +186,46 @@ def test_malformed_python_keeps_safe_compatibility_summary(tmp_path: Path) -> No
     assert file_record.parse_status == "failed"
     assert len(repository.parse_diagnostics) == 1
     assert [chunk.chunk_type for chunk in repository.chunks] == ["file_summary"]
+
+
+def test_javascript_parser_extracts_configured_imported_and_template_client_calls(tmp_path: Path) -> None:
+    sources = {
+        "frontend/src/services/apiClient.js": (
+            'import axios from "axios";\n'
+            'const apiClient = axios.create({ baseURL: "http://localhost:8000/api" });\n'
+            "export default apiClient;\n"
+        ),
+        "frontend/src/services/restaurantService.js": (
+            'import apiClient from "./apiClient";\n'
+            'export const search = () => apiClient.get("/restaurants/search");\n'
+            "export const detail = (restaurantId) => apiClient.get(`/restaurants/${restaurantId}`);\n"
+            "export const unresolved = (route) => apiClient.get(route);\n"
+        ),
+        "frontend/src/services/direct.js": (
+            'import axios from "axios";\n'
+            'const localClient = axios.create({ baseURL: "/api" });\n'
+            'localClient.get("/health");\n'
+            'axios.delete("/api/session");\n'
+            'fetch("/api/login", { method: "POST" });\n'
+        ),
+    }
+    files: list[FileRecord] = []
+    for relative_path, source in sources.items():
+        absolute_path = tmp_path / relative_path
+        absolute_path.parent.mkdir(parents=True, exist_ok=True)
+        absolute_path.write_text(source, encoding="utf-8")
+        files.append(FileRecord(relative_path, absolute_path, "javascript", "source", len(source), "hash"))
+    repository = RepositoryState("repo_js_calls", "js calls", "upload_folder", None, tmp_path, files=files)
+
+    ParserService(ChunkingService()).parse_files(repository)
+
+    calls = [node for node in repository.graph_nodes if node.type == "api_call"]
+    assert [node.label for node in calls] == [
+        "GET /restaurants/search",
+        "GET /restaurants/{restaurantId}",
+        "GET /api/health",
+        "DELETE /api/session",
+        "POST /api/login",
+    ]
+    assert all(node.start_line and node.end_line and node.file_path for node in calls)
+    assert not any("unresolved" in node.label.lower() for node in calls)

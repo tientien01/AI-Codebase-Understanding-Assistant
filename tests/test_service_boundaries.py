@@ -180,9 +180,11 @@ def test_graph_links_frontend_api_call_to_matching_endpoint(tmp_path: Path) -> N
         ],
         symbols=[
             SymbolRecord("symbol_login", "login", "function", "backend/routes.py", 1, 2),
+            SymbolRecord("symbol_login_form", "login_form", "function", "backend/routes.py", 3, 4),
         ],
         endpoints=[
             EndpointRecord("POST", "/login", "login", "backend/routes.py", 1, 2),
+            EndpointRecord("GET", "/login", "login_form", "backend/routes.py", 3, 4),
         ],
         graph_nodes=[
             GraphNodeDTO(id="api_call_login", type="api_call", label="POST /api/login", file_path="frontend/authApi.ts"),
@@ -193,9 +195,39 @@ def test_graph_links_frontend_api_call_to_matching_endpoint(tmp_path: Path) -> N
 
     assert any(edge.type == "exposes_endpoint" for edge in repository.graph_edges)
     assert any(edge.type == "exposes_endpoint" and edge.target == "symbol_login" for edge in repository.graph_edges)
-    assert any(edge.type == "calls_api" and edge.source == "api_call_login" for edge in repository.graph_edges)
+    api_edges = [edge for edge in repository.graph_edges if edge.type == "calls_api" and edge.source == "api_call_login"]
+    assert len(api_edges) == 1
+    assert api_edges[0].target == node_id("endpoint", "POST:/login")
     assert any(node.type == "folder" and node.coverage == "mapped" for node in repository.graph_nodes)
     assert any(node.type == "file" and node.coverage == "deep_indexed" for node in repository.graph_nodes)
+
+
+def test_graph_matches_route_templates_by_method_without_guessing_ambiguous_targets(tmp_path: Path) -> None:
+    repository = RepositoryState(
+        id="repo_templates",
+        name="templates",
+        source_type="upload_folder",
+        source_uri=str(tmp_path),
+        source_path=tmp_path,
+        endpoints=[
+            EndpointRecord("GET", "/restaurants/{restaurant_id}", "get_restaurant", "backend/restaurants.py", 1, 2),
+            EndpointRecord("POST", "/restaurants/{restaurant_id}", "update_restaurant", "backend/restaurants.py", 3, 4),
+        ],
+        graph_nodes=[
+            GraphNodeDTO(
+                id="api_call_restaurant",
+                type="api_call",
+                label="GET /api/restaurants/{restaurantId}",
+                file_path="frontend/restaurantService.js",
+            ),
+        ],
+    )
+
+    GraphService().build_graph(repository)
+
+    api_edges = [edge for edge in repository.graph_edges if edge.type == "calls_api"]
+    assert len(api_edges) == 1
+    assert api_edges[0].target == node_id("endpoint", "GET:/restaurants/{restaurant_id}")
 
 
 def test_retrieval_classifies_and_scores_login_queries(tmp_path: Path) -> None:

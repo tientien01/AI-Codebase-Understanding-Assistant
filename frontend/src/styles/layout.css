@@ -2,7 +2,10 @@
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
   min-height: 100vh;
+  transition: grid-template-columns 180ms ease;
 }
+
+.app-shell:has(.sidebar.collapsed) { grid-template-columns: 76px minmax(0, 1fr); }
 
 .sidebar {
   position: sticky;
@@ -12,6 +15,29 @@
   border-right: 1px solid #1d2838;
   background: linear-gradient(180deg, #09111f, #070c15);
 }
+
+.sidebar-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sidebar-brand-row .brand { min-width: 0; }
+.sidebar-toggle {
+  display: grid;
+  flex: 0 0 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #2b3c55;
+  border-radius: 8px;
+  background: #0c1726;
+  color: #aebbd0;
+}
+.sidebar-toggle:hover { border-color: #526cff; color: #fff; }
+.sidebar.collapsed { padding-inline: 12px; }
+.sidebar.collapsed .sidebar-brand-row { flex-direction: column; }
+.sidebar.collapsed .brand { margin-bottom: 4px; }
+.sidebar.collapsed .brand-copy,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .side-info { display: none; }
+.sidebar.collapsed .back-link,
+.sidebar.collapsed .nav-list a { justify-content: center; padding-inline: 6px; }
+.sidebar.collapsed .nav-mark { min-width: 30px; }
 
 .brand {
   display: flex;
@@ -313,6 +339,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-shell { transition: none; }
   .assistant-workspace-layout {
     transition: none;
   }

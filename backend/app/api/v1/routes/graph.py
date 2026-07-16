@@ -9,6 +9,9 @@ from pydantic import StringConstraints
 from app.api.dependencies import get_graph_use_cases
 from app.core.auth import require_api_auth
 from app.schemas.graph import (
+    GRAPH_NEIGHBOR_OFFSET_MAX,
+    GRAPH_SEED_LIMIT_DEFAULT,
+    GRAPH_SEED_LIMIT_MAX,
     GraphExpansionRequest,
     GraphExpansionResponse,
     GraphProjectionRequest,
@@ -35,6 +38,10 @@ def graph_projection_request(
     max_edges: int = Query(default=520, ge=0, le=520),
     min_confidence: float = Query(default=0.0, ge=0.0, le=1.0),
     support_levels: list[GraphFilter] = Query(default=[], max_length=10),
+    projection_mode: Literal["full", "seeds", "neighbors"] = Query(default="full"),
+    dependency_scope: Literal["adaptive", "internal", "detected"] = Query(default="detected"),
+    seed_limit: int = Query(default=GRAPH_SEED_LIMIT_DEFAULT, ge=1, le=GRAPH_SEED_LIMIT_MAX),
+    neighbor_offset: int = Query(default=0, ge=0, le=GRAPH_NEIGHBOR_OFFSET_MAX),
 ) -> GraphProjectionRequest:
     return GraphProjectionRequest(
         index_version=index_version,
@@ -47,6 +54,10 @@ def graph_projection_request(
         max_edges=max_edges,
         min_confidence=min_confidence,
         support_levels=support_levels,
+        projection_mode=projection_mode,
+        dependency_scope=dependency_scope,
+        seed_limit=seed_limit,
+        neighbor_offset=neighbor_offset,
     )
 
 

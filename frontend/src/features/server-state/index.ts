@@ -9,6 +9,7 @@ export {
   useFileContentQuery,
   useFileTreeQuery,
   useGraphQuery,
+  useGraphExpansion,
   useIgnorePatternsQuery,
   useImportPreviewQuery,
   useImportSessionStatusQuery,

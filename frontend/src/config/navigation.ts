@@ -15,7 +15,6 @@ export const workspaceNav: { page: Page; label: string; icon: IconName }[] = [
   { page: 'impact', label: 'Impact Analysis', icon: 'target' },
   { page: 'search', label: 'Search', icon: 'search' },
   { page: 'evaluation', label: 'Evaluation', icon: 'chart' },
-  { page: 'settings', label: 'Settings', icon: 'settings' },
 ]
 
 export const pipelineSteps = [

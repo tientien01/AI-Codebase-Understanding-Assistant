@@ -12,6 +12,7 @@ import {
   useFileContentQuery,
   useFileTreeQuery,
   useGraphQuery,
+  useGraphExpansion,
   useIndexStatusQuery,
   useOverviewQuery,
   useRepositoriesQuery,
@@ -22,18 +23,27 @@ import { pathForPage } from '../routing/routes'
 import type { AppRoute } from '../routing/routes'
 import type {
   Citation,
+  GraphData,
+  GraphDirection,
   GraphProjectionInput,
   GraphView,
   Page,
   Repository,
 } from '../types/api'
-import { findFirstFile, isRepositoryUsable } from '../utils/repository'
+import { findFirstFile, isRepositoryUsable, reconcileRepositoryIndexStatus } from '../utils/repository'
+import { decodeValueTraceContext, encodeValueTraceContext } from '../utils/valueTrace'
+import type { ValueTraceContext } from '../utils/valueTrace'
 import { useImportController } from './useImportController'
 
 const workspacePages: Page[] = ['overview', 'code', 'graph', 'api', 'assistant', 'impact', 'search', 'evidence', 'evaluation']
 const overviewPages: Page[] = ['overview', 'code', 'graph', 'api', 'impact']
 const graphViews: GraphView[] = ['project-map', 'dependencies', 'api-flow', 'function-flow', 'data-flow']
 const emptyRepositories: Repository[] = []
+const requestFlowNodeTypes = ['endpoint', 'api_call', 'function', 'method']
+const requestFlowEdgeTypes = ['calls_api', 'exposes_endpoint', 'calls']
+const callFlowNodeTypes = ['function', 'method', 'builtin_call', 'stdlib_call', 'framework_call', 'external_call', 'unresolved_call']
+const callFlowEdgeTypes = ['calls', 'calls_builtin', 'calls_stdlib', 'calls_framework', 'calls_external', 'calls_unresolved']
+const valueFlowNodeTypes = ['dfg_node']
 const defaultGraphProjection: Omit<GraphProjectionInput, 'indexVersion' | 'rootKeys' | 'maxDepth'> = {
   nodeTypes: [],
   edgeTypes: [],
@@ -42,6 +52,10 @@ const defaultGraphProjection: Omit<GraphProjectionInput, 'indexVersion' | 'rootK
   maxEdges: 160,
   minConfidence: 0,
   supportLevels: [],
+  projectionMode: 'seeds',
+  dependencyScope: 'adaptive',
+  seedLimit: 12,
+  neighborOffset: 0,
 }
 
 export function useAppController(route: AppRoute, navigate: NavigateFunction) {
@@ -60,6 +74,8 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     ? route.graphView as GraphView
     : undefined
   const graphView = routeGraphView ?? graphViewFallback
+  const codeTraceRoot = route.status === 'valid' && route.page === 'code' ? route.codeTrace : undefined
+  const activeGraphView: GraphView = codeTraceRoot ? 'data-flow' : graphView
   const searchQuery = route.status === 'valid' && route.page === 'search' && route.searchQuery !== undefined
     ? route.searchQuery
     : searchQueryDraft
@@ -73,22 +89,31 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
 
   const repositoriesQuery = useRepositoriesQuery()
   const repositories = repositoriesQuery.data ?? emptyRepositories
-  const selectedRepository = useMemo(() => {
+  const repositoryFromList = useMemo(() => {
     if (routeRepositoryId) return repositories.find((repository) => repository.id === routeRepositoryId)
     return repositories.find((repository) => repository.id === selectedRepositoryId) ?? repositories[0]
   }, [repositories, routeRepositoryId, selectedRepositoryId])
+  const indexStatusQuery = useIndexStatusQuery(repositoryFromList?.id, page === 'indexing')
+  const selectedRepository = useMemo(
+    () => reconcileRepositoryIndexStatus(repositoryFromList, indexStatusQuery.data),
+    [indexStatusQuery.data, repositoryFromList],
+  )
   const usableRepository = isRepositoryUsable(selectedRepository) ? selectedRepository : undefined
   const isWorkspacePage = Boolean(routeRepositoryId && workspacePages.includes(page))
   const graphProjection: GraphProjectionInput = {
     ...graphProjectionControls,
     indexVersion: usableRepository?.current_index_version,
-    rootKeys: route.status === 'valid' && route.page === 'graph' && route.graphRoot ? [route.graphRoot] : [],
+    rootKeys: route.status === 'valid' && route.page === 'graph' && route.graphRoot
+      ? [route.graphRoot]
+      : codeTraceRoot
+        ? [codeTraceRoot]
+        : [],
     maxDepth: route.status === 'valid' && route.page === 'graph' && route.graphDepth !== undefined ? route.graphDepth : 2,
   }
 
-  const indexStatusQuery = useIndexStatusQuery(selectedRepository?.id, page === 'indexing')
   const overviewQuery = useOverviewQuery(usableRepository, overviewPages.includes(page))
-  const graphQuery = useGraphQuery(usableRepository, graphView, graphProjection, page === 'graph')
+  const graphQuery = useGraphQuery(usableRepository, activeGraphView, graphProjection, page === 'graph' || Boolean(codeTraceRoot))
+  const fetchGraphExpansion = useGraphExpansion(usableRepository)
   const fileTreeQuery = useFileTreeQuery(usableRepository, page === 'code')
   const defaultFilePath = page === 'code' ? findFirstFile(fileTreeQuery.data ?? [])?.path : undefined
   const selectedFilePath = route.status === 'valid' && route.page === 'code'
@@ -138,8 +163,19 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     navigate(pathForPage('overview', repositoryId))
   }
 
-  function openFile(repositoryId: string, filePath: string) {
-    navigate(pathForPage('code', repositoryId, { filePath }))
+  function openFile(repositoryId: string, filePath: string, line?: number) {
+    const traceRoot = codeTraceRoot
+      ?? (route.status === 'valid' && route.page === 'graph' && decodeValueTraceContext(route.graphRoot) ? route.graphRoot : undefined)
+    navigate(pathForPage('code', repositoryId, { filePath, line, codeTrace: traceRoot }))
+  }
+
+  function selectCodeLine(filePath: string, line: number) {
+    if (!selectedRepository) return
+    navigate(pathForPage('code', selectedRepository.id, {
+      filePath,
+      line,
+      codeTrace: codeTraceRoot,
+    }), { replace: true })
   }
 
   function openEvidence(citation: Citation) {
@@ -250,6 +286,10 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
       maxEdges: next.maxEdges,
       minConfidence: next.minConfidence,
       supportLevels: next.supportLevels,
+      projectionMode: next.projectionMode,
+      dependencyScope: next.dependencyScope,
+      seedLimit: next.seedLimit,
+      neighborOffset: next.neighborOffset,
     })
     if (route.status === 'valid' && route.page === 'graph' && route.repositoryId) {
       navigate(pathForPage('graph', route.repositoryId, {
@@ -257,6 +297,79 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
         graphRoot: next.rootKeys[0],
         graphDepth: next.maxDepth,
       }), { replace: true })
+    }
+  }
+
+  function traceValue(context: ValueTraceContext) {
+    if (!selectedRepository) return
+    const graphRoot = encodeValueTraceContext(context)
+    setGraphViewFallback('data-flow')
+    setGraphProjectionControls({
+      ...defaultGraphProjection,
+      nodeTypes: valueFlowNodeTypes,
+      direction: 'both',
+      maxNodes: 24,
+      maxEdges: 48,
+      projectionMode: 'seeds',
+      dependencyScope: undefined,
+      seedLimit: 24,
+    })
+    if (route.status === 'valid' && route.page === 'code' && context.kind === 'token') {
+      navigate(pathForPage('code', selectedRepository.id, {
+        filePath: context.filePath,
+        line: context.line,
+        codeTrace: graphRoot,
+      }))
+      return
+    }
+    navigate(pathForPage('graph', selectedRepository.id, {
+      graphView: 'data-flow',
+      graphRoot,
+      graphDepth: 1,
+    }))
+  }
+
+  function closeCodeTrace() {
+    if (!selectedRepository || route.status !== 'valid' || route.page !== 'code') return
+    navigate(pathForPage('code', selectedRepository.id, { filePath: selectedFilePath, line: route.line }), { replace: true })
+  }
+
+  function openCodeTraceInGraph() {
+    if (!selectedRepository || !codeTraceRoot) return
+    navigate(pathForPage('graph', selectedRepository.id, { graphView: 'data-flow', graphRoot: codeTraceRoot, graphDepth: 1 }))
+  }
+
+  function returnToTraceSource() {
+    if (!selectedRepository || route.status !== 'valid' || route.page !== 'graph') return
+    const context = decodeValueTraceContext(route.graphRoot)
+    if (!context) return
+    const line = context.kind === 'token' ? context.line : context.startLine
+    navigate(pathForPage('code', selectedRepository.id, { filePath: context.filePath, line, codeTrace: route.graphRoot }))
+  }
+
+  async function expandGraphNode(nodeId: string, direction: GraphDirection, neighborOffset = 0): Promise<GraphData | null> {
+    if (!usableRepository || !['dependencies', 'api-flow', 'function-flow', 'data-flow'].includes(activeGraphView)) return null
+    const requestFlow = activeGraphView === 'api-flow'
+    const callFlow = activeGraphView === 'function-flow'
+    const valueFlow = activeGraphView === 'data-flow'
+    const expansionProjection: GraphProjectionInput = {
+      ...graphProjection,
+      rootKeys: [nodeId],
+      direction,
+      maxDepth: 1,
+      maxNodes: 13,
+      maxEdges: 24,
+      projectionMode: 'neighbors',
+      neighborOffset,
+      nodeTypes: requestFlow ? requestFlowNodeTypes : callFlow ? callFlowNodeTypes : valueFlow ? valueFlowNodeTypes : graphProjection.nodeTypes,
+      edgeTypes: requestFlow ? requestFlowEdgeTypes : callFlow ? callFlowEdgeTypes : graphProjection.edgeTypes,
+    }
+    setApiError('')
+    try {
+      return await fetchGraphExpansion(activeGraphView, expansionProjection)
+    } catch (error) {
+      setApiError(safeErrorMessage(error))
+      return null
     }
   }
 
@@ -308,7 +421,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     overview: overviewQuery.data ?? null,
     indexStatus: indexStatusQuery.data ?? null,
     graph: graphQuery.data ?? null,
-    graphView,
+    graphView: activeGraphView,
     graphProjection,
     fileTree: fileTreeQuery.data ?? [],
     selectedFilePath,
@@ -339,6 +452,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     deleteRepository,
     deleteAllRepositories,
     loadFileContent: openFile,
+    selectCodeLine,
     reloadRepositories: repositoriesQuery.refetch,
     retryActivePage: pageQuery.query ? () => { void pageQuery.refetch() } : undefined,
     sendChatMessage,
@@ -347,7 +461,12 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     analyzeGraphArea,
     runImpactAnalysis,
     changeGraphView,
+    traceValue,
+    closeCodeTrace,
+    openCodeTraceInGraph,
+    returnToTraceSource,
     changeGraphProjection,
+    expandGraphNode,
   }
 }
 

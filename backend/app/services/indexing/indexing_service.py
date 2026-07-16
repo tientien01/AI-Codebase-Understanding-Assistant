@@ -33,6 +33,11 @@ class IndexingAuthorityLost(Exception):
     """Stop a stale production worker without persisting another side effect."""
 
 
+ACTIVE_INDEX_JOB_STATUSES = {"queued", "running", "paused", "cancelling"}
+SUCCESSFUL_INDEX_JOB_STATUSES = {"completed", "completed_with_warnings"}
+INDEXED_REPOSITORY_STATUSES = {"indexed", "indexed_with_warnings"}
+
+
 class IndexingJobControl:
     def __init__(self, authority_check: Callable[[], None] | None = None) -> None:
         self.pause_requested = Event()
@@ -197,8 +202,57 @@ class IndexingService:
         self, repository_id: str, *, initial_status: str = "running"
     ) -> tuple[RepositoryState, IndexingJobRecord, IndexingJobControl, str]:
         repository = self.repositories.get_repository(repository_id)
+        latest_job = self.store.get_latest_indexing_job(repository.id)
+        if latest_job and latest_job.status in ACTIVE_INDEX_JOB_STATUSES:
+            with self._controls_lock:
+                locally_controlled = latest_job.id in self._controls
+            local_orphan = (
+                self.job_queue is None
+                and self.job_state_store is None
+                and not locally_controlled
+            )
+            if not local_orphan:
+                raise DomainError("INDEXING_ALREADY_RUNNING", "Repository indexing is already running.", 409)
+
+            # In the local thread profile there is no durable worker that can
+            # resume a job after process restart. Retire the orphan explicitly
+            # so it cannot lock re-index forever.
+            latest_job.status = "failed"
+            latest_job.current_step = "interrupted"
+            latest_job.finished_at = utc_now()
+            latest_job.error_code = "INDEXING_INTERRUPTED"
+            latest_job.error_message = "The local indexing worker stopped before completion."
+            latest_job.logs.append(f"{latest_job.finished_at} interrupted")
+            self.store.save_indexing_job(latest_job)
+            if repository.current_index_version > 0:
+                repository.status = "indexed_with_warnings" if repository.warnings else "indexed"
+                repository.current_step = "index_failed_previous_index_retained"
+            else:
+                repository.status = "failed"
+                repository.current_step = "interrupted"
+            self.repositories.persist_repository_metadata(repository)
+
+        # A terminated local worker can leave lifecycle metadata at `indexing`
+        # even though the same version was already activated. Repair only that
+        # version-proven state; an unactivated candidate still fails closed.
         if repository.status == "indexing":
-            raise DomainError("INDEXING_ALREADY_RUNNING", "Repository indexing is already running.", 409)
+            recoverable_status = (
+                latest_job.status
+                if latest_job
+                and latest_job.status in SUCCESSFUL_INDEX_JOB_STATUSES
+                and latest_job.index_version == repository.current_index_version
+                and repository.current_index_version > 0
+                else None
+            )
+            if recoverable_status is None:
+                raise DomainError("INDEXING_ALREADY_RUNNING", "Repository indexing is already running.", 409)
+            repository.status = (
+                "indexed_with_warnings"
+                if recoverable_status == "completed_with_warnings"
+                else "indexed"
+            )
+            self.repositories.persist_repository_metadata(repository)
+
         previous_status = repository.status
         job = IndexingJobRecord(
             id=f"job_{uuid4().hex[:10]}",
@@ -207,7 +261,11 @@ class IndexingService:
             index_version=repository.current_index_version + 1,
             started_at=utc_now(),
         )
-        repository.status = "indexing"
+        # Keep an already activated version readable while its replacement is
+        # built. The job owns build progress; repository lifecycle owns the
+        # currently queryable version until atomic replacement succeeds.
+        if previous_status not in INDEXED_REPOSITORY_STATUSES:
+            repository.status = "indexing"
         repository.current_step = "queued"
         repository.started_at = job.started_at
         repository.finished_at = None
@@ -283,10 +341,46 @@ class IndexingService:
     def get_index_status(self, repository_id: str) -> IndexStatusResponse:
         repository = self.repositories.get_repository(repository_id)
         job = self.store.get_latest_indexing_job(repository.id)
+
+        # Migrate re-index attempts started by older application versions,
+        # which temporarily hid an already activated version behind `indexing`.
+        if (
+            repository.status == "indexing"
+            and repository.current_index_version > 0
+            and job
+            and job.status in ACTIVE_INDEX_JOB_STATUSES
+            and job.index_version > repository.current_index_version
+        ):
+            repository.status = "indexed_with_warnings" if repository.warnings else "indexed"
+            self.repositories.persist_repository_metadata(repository)
+
+        # Repair stale lifecycle metadata when the latest successful job is the
+        # repository's already activated version. This restores workspace access
+        # without claiming that a newer candidate was published.
+        if (
+            repository.status == "indexing"
+            and job
+            and job.status in SUCCESSFUL_INDEX_JOB_STATUSES
+            and job.index_version == repository.current_index_version
+            and repository.current_index_version > 0
+        ):
+            repository.status = (
+                "indexed_with_warnings"
+                if job.status == "completed_with_warnings"
+                else "indexed"
+            )
+            self.repositories.persist_repository_metadata(repository)
+
         total = job.total_files if job else len(repository.files)
-        processed = job.processed_files if job else (total if repository.status in {"indexed", "indexed_with_warnings"} else 0)
-        progress = 100 if total == 0 and repository.status in {"indexed", "indexed_with_warnings"} else int((processed / max(total, 1)) * 100)
-        if repository.status in {"indexed", "indexed_with_warnings"}:
+        processed = job.processed_files if job else (total if repository.status in INDEXED_REPOSITORY_STATUSES else 0)
+        progress = int((processed / max(total, 1)) * 100)
+        job_is_activated = bool(
+            job
+            and job.status in SUCCESSFUL_INDEX_JOB_STATUSES
+            and job.index_version == repository.current_index_version
+            and repository.status in INDEXED_REPOSITORY_STATUSES
+        )
+        if job_is_activated or (job is None and repository.status in INDEXED_REPOSITORY_STATUSES):
             progress = 100
         return IndexStatusResponse(
             repository_id=repository.id,

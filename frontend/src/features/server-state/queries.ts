@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { serverApi } from '../../api/server'
 import type { ChatMessage, GraphProjectionInput, GraphView, Repository } from '../../types/api'
 import { queryKeys } from './keys'
@@ -65,6 +65,18 @@ export function useGraphQuery(repository: Repository | undefined, view: GraphVie
   })
 }
 
+export function useGraphExpansion(repository: Repository | undefined) {
+  const queryClient = useQueryClient()
+  return async (view: GraphView, projection: GraphProjectionInput) => {
+    if (!repository) return null
+    return queryClient.fetchQuery({
+      queryKey: queryKeys.graph(repository.id, repository.current_index_version, view, projection),
+      queryFn: ({ signal }) => serverApi.graph(repository.id, view, projection, signal),
+      staleTime: Number.POSITIVE_INFINITY,
+    })
+  }
+}
+
 export function useFileTreeQuery(repository: Repository | undefined, enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.fileTree(repository?.id ?? 'unselected', repository?.current_index_version),
@@ -78,6 +90,7 @@ export function useFileContentQuery(repository: Repository | undefined, filePath
     queryKey: queryKeys.fileContent(repository?.id ?? 'unselected', repository?.current_index_version, filePath ?? 'unselected'),
     queryFn: ({ signal }) => serverApi.fileContent(repository!.id, filePath!, signal),
     enabled: Boolean(repository && filePath && enabled),
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -43,6 +43,10 @@ describe('server-state ownership policy', () => {
   it('normalizes graph projection identity and serializes every bounded request input', () => {
     const projection = {
       indexVersion: 7,
+      projectionMode: 'neighbors' as const,
+      dependencyScope: 'internal' as const,
+      seedLimit: 9,
+      neighborOffset: 12,
       rootKeys: ['node-b', 'node-a', 'node-a'],
       nodeTypes: ['function'],
       edgeTypes: ['calls'],
@@ -60,6 +64,10 @@ describe('server-state ownership policy', () => {
     )
     const params = new URLSearchParams(graphProjectionParams(reordered))
     expect(params.get('index_version')).toBe('7')
+    expect(params.get('projection_mode')).toBe('neighbors')
+    expect(params.get('dependency_scope')).toBe('internal')
+    expect(params.get('seed_limit')).toBe('9')
+    expect(params.get('neighbor_offset')).toBe('12')
     expect(params.getAll('root_keys')).toEqual(['node-a', 'node-b'])
     expect(params.get('direction')).toBe('outgoing')
     expect(params.get('max_depth')).toBe('3')

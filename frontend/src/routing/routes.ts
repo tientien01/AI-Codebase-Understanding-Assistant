@@ -1,8 +1,10 @@
 import type { Page } from '../types/api'
+import { decodeValueTraceContext } from '../utils/valueTrace'
 
 export type RouteOptions = {
   filePath?: string
   line?: number
+  codeTrace?: string
   symbolKey?: string
   endpointKey?: string
   graphView?: string
@@ -91,6 +93,7 @@ export function resolveAppRoute(location: { pathname: string; search: string }):
     return validRoute(page, pathname, repositoryId, {
       filePath,
       line,
+      codeTrace: decodeValueTraceContext(query.get('trace') || undefined) ? query.get('trace')! : undefined,
     })
   }
   if (page === 'api') {
@@ -146,6 +149,7 @@ export function pathForPage(page: Page, repositoryId?: string, options: RouteOpt
     if (!isSafeRelativeSourcePath(options.filePath)) throw new Error('Source path must be repository-relative.')
     query.set('path', options.filePath)
     if (options.line && options.line > 0) query.set('line', String(Math.floor(options.line)))
+    if (decodeValueTraceContext(options.codeTrace)) query.set('trace', options.codeTrace!)
   }
   if (page === 'api' && options.endpointKey) query.set('endpoint', options.endpointKey)
   if (page === 'graph') {

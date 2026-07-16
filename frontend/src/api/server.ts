@@ -92,6 +92,10 @@ export function graphProjectionParams(projection: GraphProjectionInput) {
     min_confidence: String(projection.minConfidence),
   })
   if (projection.indexVersion !== undefined) params.set('index_version', String(projection.indexVersion))
+  if (projection.projectionMode) params.set('projection_mode', projection.projectionMode)
+  if (projection.dependencyScope) params.set('dependency_scope', projection.dependencyScope)
+  if (projection.seedLimit !== undefined) params.set('seed_limit', String(projection.seedLimit))
+  if (projection.neighborOffset !== undefined) params.set('neighbor_offset', String(projection.neighborOffset))
   for (const root of normalizedValues(projection.rootKeys)) params.append('root_keys', root)
   for (const nodeType of normalizedValues(projection.nodeTypes)) params.append('node_types', nodeType)
   for (const edgeType of normalizedValues(projection.edgeTypes)) params.append('edge_types', edgeType)

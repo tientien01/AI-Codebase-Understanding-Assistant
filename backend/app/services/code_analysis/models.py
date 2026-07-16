@@ -323,6 +323,7 @@ class DFGEdge:
     target: str
     type: str
     confidence: float = 0.85
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

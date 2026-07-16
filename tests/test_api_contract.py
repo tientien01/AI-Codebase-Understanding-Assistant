@@ -179,6 +179,20 @@ def test_graph_projection_openapi_declares_bounded_inputs_and_disclosure_fields(
     response_schema = document["components"]["schemas"]["GraphResponse"]["properties"]
     assert {"nodes", "edges", "counts", "coverage", "truncation", "unsupported_hops", "can_expand", "provenance"} <= response_schema.keys()
 
+    dependency_operation = document["paths"]["/api/v1/repositories/{repository_id}/graph/dependencies"]["get"]
+    dependency_parameters = {parameter["name"]: parameter for parameter in dependency_operation["parameters"]}
+    assert {"projection_mode", "dependency_scope", "seed_limit", "neighbor_offset"} <= dependency_parameters.keys()
+    assert dependency_parameters["seed_limit"]["schema"]["default"] == 24
+    assert dependency_parameters["seed_limit"]["schema"]["maximum"] == 100
+    assert dependency_parameters["neighbor_offset"]["schema"]["maximum"] == 100_000
+    assert {
+        "dependency_scope_used",
+        "seed_strategy",
+        "seeds",
+        "additional_starting_points",
+        "expansion",
+    } <= response_schema.keys()
+
 
 def test_folder_import_openapi_declares_batched_session_flow() -> None:
     paths = app.openapi()["paths"]

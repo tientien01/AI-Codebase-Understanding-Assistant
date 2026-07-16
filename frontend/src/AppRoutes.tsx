@@ -41,6 +41,8 @@ import type {
   SearchResult,
 } from './types/api'
 import { canChat } from './utils/repository'
+import type { ValueTraceContext } from './utils/valueTrace'
+import { ValueTracePanel } from './pages/workspace/GraphPage'
 
 type AppRoutesProps = {
   route: ValidAppRoute
@@ -97,7 +99,8 @@ type AppRoutesProps = {
   cancelIndexingJob: (repositoryId: string, jobId: string) => void
   deleteRepository: (repositoryId: string) => void
   deleteAllRepositories: () => void
-  loadFileContent: (repositoryId: string, filePath: string) => void
+  loadFileContent: (repositoryId: string, filePath: string, line?: number) => void
+  selectCodeLine: (filePath: string, line: number) => void
   sendChatMessage: (event?: FormEvent) => void
   openEvidence: (citation: Citation) => void
   runSearch: (event?: FormEvent) => void
@@ -105,7 +108,12 @@ type AppRoutesProps = {
   openImpact: (targetType: string, targetRef: string) => void
   analyzeGraphArea: (scopePath: string) => void
   changeGraphView: (view: GraphView) => void
+  traceValue: (context: ValueTraceContext) => void
+  closeCodeTrace: () => void
+  openCodeTraceInGraph: () => void
+  returnToTraceSource: () => void
   changeGraphProjection: (patch: Partial<GraphProjectionInput>) => void
+  expandGraphNode: (nodeId: string, direction: GraphProjectionInput['direction'], neighborOffset?: number) => Promise<GraphData | null>
   isWorkspacePage: boolean
 }
 
@@ -249,9 +257,24 @@ export function AppRoutes(props: AppRoutesProps) {
     )
   }
   if (page === 'code') {
+    const tracePanel = route.codeTrace ? (
+      <ValueTracePanel
+        key={route.codeTrace}
+        graph={graph}
+        projection={graphProjection}
+        overview={overview}
+        onGraphView={props.changeGraphView}
+        onProjection={props.changeGraphProjection}
+        onExpandNode={props.expandGraphNode}
+        onAnalyzeArea={props.analyzeGraphArea}
+        onOpenSource={(node) => node.file_path && selectedRepository && props.loadFileContent(selectedRepository.id, node.file_path, node.start_line)}
+        onCloseEmbedded={props.closeCodeTrace}
+        onOpenFullGraph={props.openCodeTraceInGraph}
+      />
+    ) : null
     return (
       <AssistantWorkspace
-        main={<CodeExplorerPage fileTree={fileTree} selectedFilePath={selectedFilePath} selectedLine={route.line} fileContent={fileContent} overview={overview} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} />}
+        main={<CodeExplorerPage repositoryId={selectedRepository?.id ?? 'unselected'} fileTree={fileTree} selectedFilePath={selectedFilePath} selectedLine={route.line} fileContent={fileContent} overview={overview} tracePanel={tracePanel} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} onSelectLine={props.selectCodeLine} onTraceValue={props.traceValue} />}
         {...props}
       />
     )
@@ -265,9 +288,12 @@ export function AppRoutes(props: AppRoutesProps) {
         overview={overview}
         onGraphView={props.changeGraphView}
         onProjection={props.changeGraphProjection}
+        onExpandNode={props.expandGraphNode}
         onAnalyzeArea={props.analyzeGraphArea}
-        onOpenSource={(node) => node.file_path && selectedRepository && props.loadFileContent(selectedRepository.id, node.file_path)}
+        onOpenSource={(node) => node.file_path && selectedRepository && props.loadFileContent(selectedRepository.id, node.file_path, node.start_line)}
         onOpenImpact={(node) => props.openImpact(impactTargetTypeFor(node.type), node.id)}
+        onTraceValue={props.traceValue}
+        onReturnToSource={props.returnToTraceSource}
       />
     )
   }

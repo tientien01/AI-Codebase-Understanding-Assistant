@@ -265,6 +265,71 @@ def test_force_reindex_replaces_index_records_without_duplicates() -> None:
     assert second_status.index_version == first_status.index_version + 1
 
 
+def test_reindex_keeps_active_version_queryable_and_rejects_duplicate_attempt() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-active-version-during-reindex-test")
+    service.start_indexing(created.repository_id, force_reindex=True)
+
+    repository, job, control, previous_status = service.indexing._prepare_indexing_job(created.repository_id)
+
+    assert repository.status == "indexed"
+    repository.status = "indexing"
+    service.repositories_service.persist_repository_metadata(repository)
+    status = service.get_index_status(created.repository_id)
+    assert repository.status == "indexed"
+    assert service.get_overview(created.repository_id).stats["files"] > 0
+    assert status.status == "running"
+    assert status.index_version == repository.current_index_version + 1
+    assert status.progress == 0
+    with pytest.raises(DomainError) as error:
+        service.indexing._prepare_indexing_job(created.repository_id)
+    assert error.value.code == "INDEXING_ALREADY_RUNNING"
+
+    service.indexing._execute_indexing(
+        repository,
+        job,
+        control,
+        previous_status,
+        force_reindex=True,
+    )
+
+
+def test_status_repairs_stale_lifecycle_for_the_already_activated_version() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-stale-completed-status-test")
+    service.start_indexing(created.repository_id, force_reindex=True)
+    repository = service.repositories[created.repository_id]
+    repository.status = "indexing"
+    repository.current_step = "queued"
+    service.repositories_service.persist_repository_metadata(repository)
+
+    status = service.get_index_status(created.repository_id)
+
+    assert repository.status == "indexed"
+    assert status.status == "completed"
+    assert status.job_id is not None
+    assert status.index_version == repository.current_index_version
+    assert status.progress == 100
+    assert service.get_overview(created.repository_id).stats["files"] > 0
+
+
+def test_local_orphan_job_does_not_lock_reindex_after_restart() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-local-orphan-recovery-test")
+    service.start_indexing(created.repository_id, force_reindex=True)
+    _, orphaned_job, _, _ = service.indexing._prepare_indexing_job(created.repository_id)
+    service.indexing._controls.clear()
+
+    result = service.start_indexing(created.repository_id, force_reindex=True)
+    interrupted = service.store.get_indexing_job(created.repository_id, orphaned_job.id)
+
+    assert interrupted is not None
+    assert interrupted.status == "failed"
+    assert interrupted.error_code == "INDEXING_INTERRUPTED"
+    assert result["status"] == "completed"
+    assert service.get_overview(created.repository_id).stats["files"] > 0
+
+
 def test_incremental_indexing_parses_only_changed_files() -> None:
     service = CodebaseService()
     created = import_fixture_folder(service, "fixture-incremental-index-test")

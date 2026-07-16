@@ -126,6 +126,70 @@ def test_python_code_analysis_emits_dfg_for_assignment_and_return(tmp_path: Path
     assert "definition: token" in dfg_labels
 
 
+def test_python_code_analysis_binds_resolved_call_arguments_and_returns(tmp_path: Path) -> None:
+    source = (
+        "def normalize(value):\n"
+        "    return value\n\n"
+        "def build(raw):\n"
+        "    result = normalize(raw)\n"
+        "    return result\n"
+    )
+    first = parse_python_source(tmp_path, source)
+    GraphService().build_graph(first)
+    second = parse_python_source(tmp_path, source)
+    GraphService().build_graph(second)
+
+    node_by_id = {node.id: node for node in first.graph_nodes}
+    relations = {
+        (node_by_id[edge.source].label, node_by_id[edge.target].label, edge.type)
+        for edge in first.graph_edges
+        if edge.type.startswith("dfg_")
+    }
+
+    assert ("argument: raw", "parameter: value", "dfg_argument_to_parameter") in relations
+    assert ("return: normalize", "call_result: normalize", "dfg_return_to_call_result") in relations
+    assert ("call_result: normalize", "definition: result", "dfg_call_result_to_definition") in relations
+    assert ("parameter: raw", "use: raw", "dfg_reaches") in relations
+    binding = next(edge for edge in first.graph_edges if edge.type == "dfg_argument_to_parameter")
+    assert binding.evidence_level == "inferred"
+    assert binding.metadata == {
+        "path": "sample.py",
+        "line": "5",
+        "resolution": "static_resolved",
+        "scope": "direct_interprocedural",
+    }
+    assert {
+        (edge.source, edge.target, edge.type)
+        for edge in first.graph_edges
+        if edge.type.startswith("dfg_")
+    } == {
+        (edge.source, edge.target, edge.type)
+        for edge in second.graph_edges
+        if edge.type.startswith("dfg_")
+    }
+
+
+def test_python_code_analysis_does_not_bind_ambiguous_or_unresolved_calls(tmp_path: Path) -> None:
+    repository = parse_python_source(
+        tmp_path,
+        "class First:\n"
+        "    def convert(self, value):\n"
+        "        return value\n\n"
+        "class Second:\n"
+        "    def convert(self, value):\n"
+        "        return value\n\n"
+        "def build(raw):\n"
+        "    ambiguous = convert(raw)\n"
+        "    external = vendor_transform(raw)\n"
+        "    return external\n",
+    )
+    GraphService().build_graph(repository)
+
+    edge_types = {edge.type for edge in repository.graph_edges}
+    assert "dfg_argument_to_parameter" not in edge_types
+    assert "dfg_return_to_call_result" not in edge_types
+
+
 def test_graph_projection_exposes_project_function_and_data_views(tmp_path: Path) -> None:
     repository = parse_python_source(
         tmp_path,
@@ -143,7 +207,7 @@ def test_graph_projection_exposes_project_function_and_data_views(tmp_path: Path
     data_flow = projection.data_flow(repository)
 
     assert any(node.type == "function" for node in project_map.nodes)
-    assert any(edge.type.startswith("cfg_") for edge in function_flow.edges)
+    assert any(edge.type.startswith("calls") for edge in function_flow.edges)
     assert any(edge.type.startswith("dfg_") for edge in data_flow.edges)
 
 
