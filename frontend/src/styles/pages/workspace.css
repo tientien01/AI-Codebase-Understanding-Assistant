@@ -776,7 +776,6 @@
 }
 
 .graph-workspace,
-.api-layout,
 .impact-grid,
 .evidence-grid {
   display: grid;
@@ -913,6 +912,10 @@
 .type-endpoint {
   border-color: #536cff;
   background: #122154;
+}
+
+.api-explorer-page {
+  min-width: 0;
 }
 
 .api-table {
