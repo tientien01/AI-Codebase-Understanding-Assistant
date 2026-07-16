@@ -11,6 +11,10 @@ from app.services.chat.citation_validation import (
     ClaimCitationValidator,
     ClaimSupportLevel,
 )
+from app.services.chat.provider_context import (
+    ProviderEvidenceContext,
+    ProviderEvidenceContextBuilder,
+)
 from app.services.chat.sufficiency import (
     SufficiencyAction,
     SufficiencyDecision,
@@ -56,6 +60,7 @@ class AgentWorkflowResult:
     diagnostics: WorkflowDiagnostics | None = None
     sufficiency: SufficiencyDecision | None = None
     citation_validation: CitationValidationResult | None = None
+    provider_context: ProviderEvidenceContext | None = None
 
 
 class AgentWorkflowService:
@@ -69,6 +74,7 @@ class AgentWorkflowService:
         registry: ToolRegistry | None = None,
         sufficiency: SufficiencyPolicy | None = None,
         citation_validator: ClaimCitationValidator | None = None,
+        provider_context_builder: ProviderEvidenceContextBuilder | None = None,
         clock: Callable[[], float] = monotonic,
     ) -> None:
         self.retrieval = retrieval
@@ -79,6 +85,9 @@ class AgentWorkflowService:
         self.registry = registry or ToolRegistry.default(retrieval)
         self.sufficiency = sufficiency or SufficiencyPolicy()
         self.citation_validator = citation_validator or ClaimCitationValidator(evidence)
+        self.provider_context_builder = (
+            provider_context_builder or ProviderEvidenceContextBuilder()
+        )
         self.clock = clock
 
     def answer(
@@ -408,6 +417,14 @@ class AgentWorkflowService:
             context.used_tokens,
             elapsed_ms,
         )
+        provider_context = self.provider_context_builder.from_selected(
+            repository,
+            context.selected,
+            min(
+                self.configuration.context_token_budget,
+                self.retrieval.ranking_configuration.context_token_budget,
+            ),
+        )
         return AgentWorkflowResult(
             question_type=plan.question_type,
             answer=answer,
@@ -418,6 +435,7 @@ class AgentWorkflowService:
             diagnostics=diagnostics,
             sufficiency=decision,
             citation_validation=citation_validation,
+            provider_context=provider_context,
         )
 
     def answer_from_citations(

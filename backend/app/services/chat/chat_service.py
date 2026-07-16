@@ -5,6 +5,7 @@ from uuid import uuid4
 from app.schemas.api import ChatResponse, CitationDTO, EvidenceDTO
 from app.services.chat.agent_workflow_service import AgentWorkflowResult, AgentWorkflowService
 from app.services.chat.llm_client import LLMClient
+from app.services.chat.provider_context import ProviderEvidenceContextBuilder
 from app.services.chat.trace_persistence import build_persisted_turn, normalize_conversation_id
 from app.services.evidence.evidence_service import EvidenceService
 from app.services.repositories.repository_service import RepositoryService
@@ -23,7 +24,12 @@ class ChatService:
         self.retrieval = retrieval
         self.evidence = evidence
         self.llm = llm or LLMClient()
-        self.agent = AgentWorkflowService(retrieval, evidence)
+        self.provider_context_builder = ProviderEvidenceContextBuilder()
+        self.agent = AgentWorkflowService(
+            retrieval,
+            evidence,
+            provider_context_builder=self.provider_context_builder,
+        )
 
     def chat(self, repository_id: str, message: str, conversation_id: str | None = None) -> ChatResponse:
         repository = self.repositories.get_indexed_repository(repository_id)
@@ -41,8 +47,8 @@ class ChatService:
             return self._persist(repository.id, repository.current_index_version, message, response, result)
 
         generated = (
-            self.llm.generate_grounded_answer(message, result.question_type, result.citations)
-            if result.evidence_sufficient
+            self.llm.generate_grounded_answer(message, result.question_type, result.provider_context)
+            if result.evidence_sufficient and result.provider_context is not None
             else None
         )
         if generated and self.agent.validate_generated_answer(
@@ -114,9 +120,14 @@ class ChatService:
         evidences = [self.evidence.get_evidence(repository.id, evidence_id) for evidence_id in evidence_ids]
         citations = [self._citation_from_evidence(evidence) for evidence in evidences]
         agent_result = self.agent.answer_from_citations(repository, message, citations)
+        provider_context = self.provider_context_builder.from_saved(
+            repository,
+            evidences,
+            self.agent.configuration.context_token_budget,
+        )
         generated = (
-            self.llm.generate_grounded_answer(message, question_type, citations)
-            if agent_result.evidence_sufficient
+            self.llm.generate_grounded_answer(message, question_type, provider_context)
+            if agent_result.evidence_sufficient and provider_context is not None
             else None
         )
         if generated and self.agent.validate_generated_answer(

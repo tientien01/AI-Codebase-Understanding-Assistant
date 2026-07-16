@@ -13,7 +13,7 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 7 has verified SEC-001 and SEC-002; operations delivery remains open |
-| Active task | SEC-002 is complete locally and awaiting PR review/merge |
+| Active task | AGT-004 is complete locally on the current feature branch and awaits commit/review |
 | Next task candidate | Authorize OPS-001 structured telemetry and readiness after SEC-002 merge |
 | Production readiness | Not ready |
 
@@ -42,6 +42,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Assistant routing now uses immutable versioned workflow/tool contracts and an explicit exact/hybrid allowlist. Exact hits avoid hybrid/semantic work, exact misses fall back once, multi-step types route directly to hybrid, and call/time/context/cancellation/deduplication boundaries emit safe observations. The AGT-001 routing/tool matrix passes.
 - Assistant sufficiency now requires question-specific strong support/source/endpoint/graph coverage, permits only one controlled budgeted repair, validates claims against selected current citation IDs/scope and rejects optional provider output without valid declarations. The AGT-002 positive/refusal/repair/citation matrix passes.
 - Completed assistant turns now persist atomically as redacted conversation messages, claims, citations, budget summaries and controlled ordered trace events. Local SQLite replay enforces repository ownership, production mapping targets the accepted PostgreSQL schema, and persistence failure prevents a successful response. The AGT-003 privacy/rollback/replay matrix passes.
+- Optional provider calls now receive exact whole selected evidence spans rather than citation metadata alone. Current owner/index/source/hash/range/blocked/budget checks fail closed, imported source is delimited as untrusted data, and provider failure preserves deterministic fallback. The AGT-004 provider-context matrix and canonical-LF full backend gate pass; real-provider quality remains unverified.
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
@@ -63,8 +64,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review and merge the completed SEC-002 pull request without inferring Phase 7 or L3 completion.
-2. Select and authorize OPS-001 or another dependency-valid candidate under a separate `ready` task.
+1. Commit and review the completed AGT-004 provider-evidence slice without inferring real-provider or Phase 5 release qualification.
+2. Continue the separately governed SEC-002 review and authorize OPS-001 or another dependency-valid candidate under a new `ready` task.
 
 ## Status update rule
 

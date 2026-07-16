@@ -19,7 +19,7 @@
 | Typed retrieval and ranking | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`, `ranking.py`; compatibility facade in `retrieval_service.py` |
 | Validated evidence selection and context budgeting | `backend/app/services/evidence/selection.py`; persistence/citation projection in `evidence_service.py` |
 | Versioned retrieval evaluation and CI smoke gate | `backend/app/services/evaluation/`; immutable dataset in `evaluation/datasets/retrieval-v1/`; gate policy in `evaluation/gates/eva-002-ci.json`; synthetic fixture in `tests/fixtures/retrieval_benchmark_repo/`; named job in `.github/workflows/ci.yml` |
-| Bounded assistant, sufficiency, citation validation and trace contracts | `backend/app/services/chat/workflow_contracts.py`, `tool_registry.py`, `sufficiency.py`, `citation_validation.py`, `trace_persistence.py`; compatibility orchestration/provider boundary in `agent_workflow_service.py`, `chat_service.py`, `llm_client.py` |
+| Bounded assistant, sufficiency, citation validation, provider evidence and trace contracts | `backend/app/services/chat/workflow_contracts.py`, `tool_registry.py`, `sufficiency.py`, `citation_validation.py`, `provider_context.py`, `trace_persistence.py`; compatibility orchestration/provider boundary in `agent_workflow_service.py`, `chat_service.py`, `llm_client.py` |
 | Impact | `backend/app/services/impact/` |
 | Persistence | `backend/app/db/`, `services/repositories/repository_store.py` |
 | Production PostgreSQL metadata | `backend/app/db/production_base.py`, `backend/app/db/production_models/` |

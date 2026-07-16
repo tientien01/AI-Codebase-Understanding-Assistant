@@ -253,4 +253,4 @@ def test_llm_client_is_not_configured_for_fake_provider() -> None:
     client = LLMClient(provider="fake", model="fake-chat-model", api_key="")
 
     assert not client.is_configured
-    assert client.generate_grounded_answer("question", "code_question", []) is None
+    assert client.generate_grounded_answer("question", "code_question", None) is None
