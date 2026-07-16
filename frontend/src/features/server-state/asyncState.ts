@@ -13,7 +13,7 @@ type QuerySnapshot = Pick<
 
 export function toAsyncViewState(
   query: QuerySnapshot | undefined,
-  options: { enabled: boolean; empty?: (data: unknown) => boolean } = { enabled: true },
+  options: { enabled: boolean; empty?: (data: unknown) => boolean; stale?: boolean } = { enabled: true },
 ): AsyncViewState {
   if (!options.enabled || !query) return { kind: 'initial' }
   if (query.isPending && query.isFetching) return { kind: 'loading', message: 'Loading current data…' }
@@ -27,9 +27,9 @@ export function toAsyncViewState(
       message: safeErrorMessage(query.error),
     }
   }
-  if (query.data !== undefined && query.isFetching) return { kind: 'refreshing', message: 'Refreshing cached data…' }
+  if (query.data !== undefined && query.isFetching) return { kind: 'refreshing', message: 'Refreshing current data…' }
   if (query.data !== undefined && options.empty?.(query.data)) return { kind: 'empty' }
-  if (query.data !== undefined && query.isStale) return { kind: 'stale', message: 'Showing cached data while it is eligible for refresh.' }
+  if (query.data !== undefined && options.stale) return { kind: 'stale', message: 'Showing data from an older index version.' }
   if (query.data !== undefined) return { kind: 'success' }
   return { kind: 'initial' }
 }

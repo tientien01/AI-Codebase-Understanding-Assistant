@@ -62,7 +62,9 @@ def test_service_indexes_fixture_and_answers_with_evidence() -> None:
 
     assert overview.stats["files"] >= 8
     assert overview.stats["endpoints"] >= 1
-    assert any(endpoint.path == "/login" for endpoint in overview.endpoints)
+    login_endpoint = next(endpoint for endpoint in overview.endpoints if endpoint.path == "/login")
+    assert login_endpoint.endpoint_key.startswith("endpoint_")
+    assert any(endpoint.endpoint_key == login_endpoint.endpoint_key for endpoint in service.list_endpoints(created.repository_id).items)
     assert overview.architecture.system_type == "Full-stack web application"
     assert overview.architecture.coverage_state == "ready"
     component_labels = {component.label for component in overview.architecture.components}

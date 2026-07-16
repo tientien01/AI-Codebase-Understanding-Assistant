@@ -23,7 +23,7 @@ function titleFor(kind: AsyncViewState['kind']) {
     limited: 'Limited data',
     success: 'Current',
     empty: 'No data',
-    stale: 'Cached data',
+    stale: 'Older index data',
     unavailable: 'Capability unavailable',
     permission_denied: 'Access denied',
     error_retryable: 'Temporary request failure',

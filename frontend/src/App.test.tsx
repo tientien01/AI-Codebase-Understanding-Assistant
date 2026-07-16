@@ -69,6 +69,28 @@ describe('App routing', () => {
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/search?q=refresh+token'))
   })
 
+  it('restores API endpoint selection, updates the URL, and opens exact source', async () => {
+    renderApp(['/repositories/repo-1/api?endpoint=endpoint_login'])
+
+    expect(await screen.findByText('API Detail')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Select POST /login' }).closest('tr')?.getAttribute('aria-selected')).toBe('true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select GET /users' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/api?endpoint=endpoint_users'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open source' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/code?path=src%2Fusers.ts&line=20'))
+  })
+
+  it('launches a bounded request-flow projection from API Detail', async () => {
+    renderApp(['/repositories/repo-1/api?endpoint=endpoint_login'])
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Trace request flow' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe(
+      '/repositories/repo-1/graph?view=api-flow&root=endpoint_login&depth=2',
+    ))
+  })
+
   it('does not replace an unknown repository with the first available repository', async () => {
     renderApp(['/repositories/missing/overview'])
 
@@ -305,10 +327,34 @@ function responseFor(url: string) {
       stats: {},
     })
   }
+  if (url.endsWith('/api/endpoints')) return jsonResponse({ items: apiEndpoints, next_cursor: null })
   if (url.includes('/graph/')) return jsonResponse({ nodes: [], edges: [] })
   if (url.endsWith('/files/tree')) return jsonResponse([])
   return jsonResponse({})
 }
+
+const apiEndpoints = [
+  {
+    endpoint_key: 'endpoint_login',
+    method: 'POST',
+    path: '/login',
+    handler: 'login',
+    file_path: 'src/auth.ts',
+    start_line: 4,
+    end_line: 12,
+    metadata: { framework: 'fastapi' },
+  },
+  {
+    endpoint_key: 'endpoint_users',
+    method: 'GET',
+    path: '/users',
+    handler: 'list_users',
+    file_path: 'src/users.ts',
+    start_line: 20,
+    end_line: 35,
+    metadata: { framework: 'fastapi' },
+  },
+]
 
 function completedIndexStatus(indexVersion: number | undefined): IndexStatus {
   return {

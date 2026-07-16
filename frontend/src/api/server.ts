@@ -2,6 +2,7 @@ import { API_V1, requestJson } from './client'
 import type {
   Citation,
   Evidence,
+  EndpointListResponse,
   FileContent,
   FileTreeNode,
   GraphData,
@@ -24,6 +25,8 @@ export const serverApi = {
   ignorePatterns: (signal?: AbortSignal) => requestJson<IgnorePatternsResponse>(`${API_V1}/settings/ignore-patterns`, { signal }),
   overview: (repositoryId: string, signal?: AbortSignal) =>
     requestJson<Overview>(`${API_V1}/repositories/${repositoryId}/overview`, { signal }),
+  endpoints: (repositoryId: string, signal?: AbortSignal) =>
+    requestJson<EndpointListResponse>(`${API_V1}/repositories/${repositoryId}/api/endpoints`, { signal }),
   indexStatus: (repositoryId: string, signal?: AbortSignal) =>
     requestJson<IndexStatus>(`${API_V1}/repositories/${repositoryId}/index/status`, { signal }),
   graph: (repositoryId: string, view: GraphView, projection: GraphProjectionInput, signal?: AbortSignal) =>

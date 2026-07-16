@@ -47,6 +47,7 @@ Phase outcomes and gates are canonical in `master-roadmap.md` and `phases/`. Thi
 | UI-020 | Keep workspace and indexing job readiness consistent | UI-002,UI-006,UI-019,IDX-003 | Repository/job authority and stale-version regression gates |
 | UI-021 | Replace global Value Flow browsing with contextual Value Trace | UI-003,UI-009,UI-012,UI-015,UI-018 | Context resolution and focused trace UX regression gates |
 | UI-022 | Preserve Code Explorer context and embed source-launched Value Trace | UI-002,UI-009,UI-021,INT-006 | Tree/source continuity and embedded trace frontend regression gates |
+| UI-023 | Make API Explorer selectable, filterable, and source-linked | UI-001,UI-002,UI-020 | Endpoint selection, source/flow actions, and cache-state regression gates |
 | INT-006 | Trace resolved Python values across direct function calls | INT-002,INT-003,UI-021 | Direct argument/return binding and bounded interprocedural trace regression gates |
 | UI-005 | Connect real evaluation/settings/status surfaces | EVA-001,UI-002 | Feature E2E |
 | UI-009 | Refine Code Explorer workspace from approved visual reference | UI-002 | Responsive Code Explorer component and build gates |

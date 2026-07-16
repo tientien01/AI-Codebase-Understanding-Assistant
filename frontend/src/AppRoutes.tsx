@@ -23,6 +23,7 @@ import {
 } from './pages/workspace'
 import type {
   ChatMessage,
+  ApiEndpoint,
   Citation,
   Evidence,
   FileContent,
@@ -40,6 +41,7 @@ import type {
   Repository,
   SearchResult,
 } from './types/api'
+import { endpointKeyFor } from './utils/apiEndpoint'
 import { canChat } from './utils/repository'
 import type { ValueTraceContext } from './utils/valueTrace'
 import { ValueTracePanel } from './pages/workspace/GraphPage'
@@ -50,6 +52,7 @@ type AppRoutesProps = {
   repositories: Repository[]
   selectedRepository?: Repository
   overview: Overview | null
+  apiEndpoints: ApiEndpoint[]
   indexStatus: IndexStatus | null
   graph: GraphData | null
   graphView: GraphView
@@ -103,6 +106,8 @@ type AppRoutesProps = {
   selectCodeLine: (filePath: string, line: number) => void
   sendChatMessage: (event?: FormEvent) => void
   openEvidence: (citation: Citation) => void
+  selectApiEndpoint: (endpointKey: string) => void
+  openApiFlow: (endpoint: ApiEndpoint) => void
   runSearch: (event?: FormEvent) => void
   runImpactAnalysis: (event?: FormEvent) => void
   openImpact: (targetType: string, targetRef: string) => void
@@ -123,6 +128,7 @@ export function AppRoutes(props: AppRoutesProps) {
     repositories,
     selectedRepository,
     overview,
+    apiEndpoints,
     indexStatus,
     graph,
     graphView,
@@ -297,7 +303,32 @@ export function AppRoutes(props: AppRoutesProps) {
       />
     )
   }
-  if (page === 'api') return <WorkspacePage main={<ApiExplorerPage overview={overview} />} side={<ApiDetails overview={overview} />} />
+  if (page === 'api') {
+    const selectedEndpoint = apiEndpoints.find((endpoint) => endpointKeyFor(endpoint) === route.endpointKey)
+    return (
+      <WorkspacePage
+        main={(
+          <ApiExplorerPage
+            endpoints={apiEndpoints}
+            selectedEndpointKey={route.endpointKey}
+            onSelectEndpoint={props.selectApiEndpoint}
+          />
+        )}
+        side={(
+          <ApiDetails
+            endpoint={selectedEndpoint}
+            requestedEndpointKey={route.endpointKey}
+            onOpenSource={(endpoint) => selectedRepository && props.loadFileContent(
+              selectedRepository.id,
+              endpoint.file_path,
+              endpoint.start_line,
+            )}
+            onTraceFlow={props.openApiFlow}
+          />
+        )}
+      />
+    )
+  }
   if (page === 'assistant') {
     return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />
   }

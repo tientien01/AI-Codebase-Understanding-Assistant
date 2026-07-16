@@ -35,7 +35,7 @@ from app.services.index_models import RepositoryState
 from app.services.architecture import RuleBasedArchitectureEngine
 from app.services.language_registry import LANGUAGE_DEFINITIONS
 from app.services.repositories.repository_port import RepositoryStorePort
-from app.services.text_utils import read_text
+from app.services.text_utils import node_id, read_text
 
 
 class RepositoryService:
@@ -557,6 +557,7 @@ class RepositoryService:
             modules=self.build_modules(repository),
             endpoints=[
                 EndpointDTO(
+                    endpoint_key=node_id("endpoint", f"{endpoint.method}:{endpoint.path}"),
                     method=endpoint.method,
                     path=endpoint.path,
                     handler=endpoint.handler,
@@ -636,6 +637,7 @@ class RepositoryService:
         return EndpointListResponse(
             items=[
                 EndpointDTO(
+                    endpoint_key=node_id("endpoint", f"{endpoint.method}:{endpoint.path}"),
                     method=endpoint.method,
                     path=endpoint.path,
                     handler=endpoint.handler,

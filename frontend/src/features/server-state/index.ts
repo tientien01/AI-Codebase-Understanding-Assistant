@@ -14,6 +14,7 @@ export {
   useImportPreviewQuery,
   useImportSessionStatusQuery,
   useIndexStatusQuery,
+  useEndpointsQuery,
   useOverviewQuery,
   useRepositoriesQuery,
   useSearchResultsQuery,

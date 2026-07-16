@@ -57,6 +57,14 @@ export function useOverviewQuery(repository: Repository | undefined, enabled: bo
   })
 }
 
+export function useEndpointsQuery(repository: Repository | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.endpoints(repository?.id ?? 'unselected', repository?.current_index_version),
+    queryFn: ({ signal }) => serverApi.endpoints(repository!.id, signal),
+    enabled: Boolean(repository && enabled),
+  })
+}
+
 export function useGraphQuery(repository: Repository | undefined, view: GraphView, projection: GraphProjectionInput, enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.graph(repository?.id ?? 'unselected', repository?.current_index_version, view, projection),

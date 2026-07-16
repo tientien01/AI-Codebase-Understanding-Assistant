@@ -1,5 +1,5 @@
 import { InDevelopmentInline, Panel, PreviewLine } from '../../components/common/ui'
-import type { GraphData, Overview } from '../../types/api'
+import type { ApiEndpoint, GraphData } from '../../types/api'
 
 export function GraphDetails({ graph }: { graph: GraphData | null }) {
   const includedNodes = graph?.counts?.included_nodes ?? graph?.nodes.length ?? 0
@@ -25,8 +25,17 @@ export function GraphDetails({ graph }: { graph: GraphData | null }) {
   )
 }
 
-export function ApiDetails({ overview }: { overview: Overview | null }) {
-  const endpoint = overview?.endpoints[0]
+export function ApiDetails({
+  endpoint,
+  requestedEndpointKey,
+  onOpenSource,
+  onTraceFlow,
+}: {
+  endpoint?: ApiEndpoint
+  requestedEndpointKey?: string
+  onOpenSource: (endpoint: ApiEndpoint) => void
+  onTraceFlow: (endpoint: ApiEndpoint) => void
+}) {
   return (
     <Panel title="API Detail">
       {endpoint ? (
@@ -35,9 +44,18 @@ export function ApiDetails({ overview }: { overview: Overview | null }) {
           <PreviewLine label="Method" value={endpoint.method} />
           <PreviewLine label="Handler" value={endpoint.handler} />
           <PreviewLine label="File" value={endpoint.file_path} />
+          <PreviewLine label="Lines" value={`${endpoint.start_line}-${endpoint.end_line}`} />
+          {endpoint.metadata?.framework && <PreviewLine label="Framework" value={endpoint.metadata.framework} />}
+          <div className="api-detail-actions">
+            <button type="button" className="primary" onClick={() => onOpenSource(endpoint)}>Open source</button>
+            <button type="button" className="secondary" onClick={() => onTraceFlow(endpoint)}>Trace request flow</button>
+          </div>
+          <p className="api-detail-note">Auth and schema details appear only when supported by deterministic indexed evidence.</p>
         </>
       ) : (
-        <p>No endpoint selected.</p>
+        <p>{requestedEndpointKey
+          ? 'This endpoint is not available in the active index. Select another endpoint.'
+          : 'Select an endpoint to inspect its handler and source evidence.'}</p>
       )}
     </Panel>
   )
