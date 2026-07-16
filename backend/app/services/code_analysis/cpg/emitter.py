@@ -274,7 +274,16 @@ class CPGEmitter:
                     )
                 )
             for edge in graph.edges:
-                repository.graph_edges.append(GraphEdgeDTO(source=edge.source, target=edge.target, type=edge.type, confidence=edge.confidence, evidence_level="inferred"))
+                repository.graph_edges.append(
+                    GraphEdgeDTO(
+                        source=edge.source,
+                        target=edge.target,
+                        type=edge.type,
+                        confidence=edge.confidence,
+                        evidence_level="inferred",
+                        metadata=edge.metadata,
+                    )
+                )
 
     def _class_symbol_type(self, item: IRClass) -> str:
         if "BaseModel" in item.bases:

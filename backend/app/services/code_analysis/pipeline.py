@@ -70,10 +70,12 @@ class CodeAnalysisPipeline:
         )
         if not settings.enable_cfg_dfg:
             return CPGResult(module=module, references=references, normalized_graph=normalized_graph)
+        dfg_graphs = [self.dfg_builder.build_function(repository.id, function) for function in functions]
+        self.dfg_builder.bind_resolved_calls(repository.id, module, functions, dfg_graphs, references)
         return CPGResult(
             module=module,
             cfg_graphs=[self.cfg_builder.build_function(repository.id, function) for function in functions],
-            dfg_graphs=[self.dfg_builder.build_function(repository.id, function) for function in functions],
+            dfg_graphs=dfg_graphs,
             references=references,
             normalized_graph=normalized_graph,
         )

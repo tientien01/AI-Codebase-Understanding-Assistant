@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isSafeRelativeSourcePath, pathForPage, resolveAppRoute } from './routes'
+import { encodeValueTraceContext } from '../utils/valueTrace'
 
 describe('canonical application routes', () => {
   it.each([
@@ -23,6 +24,26 @@ describe('canonical application routes', () => {
       repositoryId: 'repo/team',
       filePath: 'src/auth flow.ts',
       line: 42,
+    })
+  })
+
+  it('round-trips a source-launched trace and ignores malformed trace state', () => {
+    const trace = encodeValueTraceContext({ kind: 'token', filePath: 'src/auth.py', line: 42, value: 'user' })
+    const path = pathForPage('code', 'repo-1', { filePath: 'src/auth.py', line: 42, codeTrace: trace })
+
+    expect(resolveAppRoute({ pathname: '/repositories/repo-1/code', search: path.slice(path.indexOf('?')) })).toMatchObject({
+      status: 'valid',
+      filePath: 'src/auth.py',
+      line: 42,
+      codeTrace: trace,
+    })
+    expect(resolveAppRoute({ pathname: '/repositories/repo-1/code', search: '?path=src%2Fauth.py&trace=invalid' })).toMatchObject({
+      status: 'valid',
+      codeTrace: undefined,
+    })
+    expect(resolveAppRoute({ pathname: '/repositories/repo-1/code', search: '?path=src%2Fauth.py&trace=value-context%3Av1%3Anot-json' })).toMatchObject({
+      status: 'valid',
+      codeTrace: undefined,
     })
   })
 

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO, GraphResponse
 from app.schemas.graph import GraphProjectionRequest
 from app.services.graph.graph_projection_service import GraphProjectionService
 from app.services.graph.graph_schema_service import GraphSchemaService
-from app.services.index_models import RepositoryState
+from app.services.index_models import EndpointRecord, RepositoryState
 from app.services.text_utils import node_id, normalize_route
 
 
@@ -75,30 +76,52 @@ class GraphService:
             if handler_id:
                 edges.append(GraphEdgeDTO(source=endpoint_id, target=handler_id, type="exposes_endpoint", confidence=0.9))
 
-        endpoint_by_path = {normalize_route(endpoint.path): endpoint for endpoint in repository.endpoints}
+        endpoints_by_signature: dict[tuple[str, str], list[EndpointRecord]] = {}
+        for endpoint in repository.endpoints:
+            signature = (endpoint.method.upper(), self._route_shape(endpoint.path))
+            endpoints_by_signature.setdefault(signature, []).append(endpoint)
         for graph_node in list(repository.graph_nodes):
             if graph_node.type != "api_call":
                 continue
-            route = graph_node.label.split(" ", 1)[-1]
-            normalized_route = normalize_route(route)
-            endpoint = endpoint_by_path.get(normalized_route)
-            if endpoint is None:
-                endpoint = next(
-                    (
-                        candidate
-                        for candidate in repository.endpoints
-                        if normalized_route.endswith(normalize_route(candidate.path))
-                    ),
-                    None,
-                )
-            if not endpoint:
+            method, route = self._api_call_signature(graph_node.label)
+            if method is None or route is None:
                 continue
+            route_shape = self._route_shape(route)
+            candidates = endpoints_by_signature.get((method, route_shape), [])
+            if not candidates:
+                candidates = [
+                    candidate
+                    for candidate in repository.endpoints
+                    if candidate.method.upper() == method
+                    and self._route_suffix_matches(route_shape, self._route_shape(candidate.path))
+                ]
+            if len(candidates) != 1:
+                continue
+            endpoint = candidates[0]
             endpoint_id = node_id("endpoint", f"{endpoint.method}:{endpoint.path}")
             edges.append(GraphEdgeDTO(source=graph_node.id, target=endpoint_id, type="calls_api", confidence=0.72))
 
         repository.graph_nodes = list(nodes.values())
         repository.graph_edges = self._dedupe_edges(edges)
         self.schema.normalize_repository_graph(repository)
+
+    def _api_call_signature(self, label: str) -> tuple[str | None, str | None]:
+        parts = label.strip().split(" ", 1)
+        if len(parts) != 2:
+            return None, None
+        method, route = parts[0].upper(), parts[1].strip()
+        if method not in {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"} or not route:
+            return None, None
+        return method, route
+
+    def _route_shape(self, route: str) -> str:
+        normalized = normalize_route(route.split("?", 1)[0])
+        normalized = re.sub(r"\{[^/{}]+\}", "{}", normalized)
+        normalized = re.sub(r":[A-Za-z_$][\w$]*", "{}", normalized)
+        return normalized
+
+    def _route_suffix_matches(self, client_route: str, endpoint_route: str) -> bool:
+        return endpoint_route != "/" and client_route.endswith(endpoint_route)
 
     def _add_folder_path(self, nodes: dict[str, GraphNodeDTO], edges: list[GraphEdgeDTO], root_id: str, file_path: str) -> None:
         parts = Path(file_path).parts[:-1]

@@ -8,7 +8,9 @@ afterEach(cleanup)
 describe('CodeExplorerPage', () => {
   it('filters the tree, preserves file selection, and presents source-focused intelligence', () => {
     const onSelectFile = vi.fn()
-    const { container, rerender } = render(<CodeExplorerPage fileTree={fileTree} selectedFilePath="backend/app/routes.py" fileContent={fileContent} overview={overview} onSelectFile={onSelectFile} />)
+    const onTraceValue = vi.fn()
+    const onSelectLine = vi.fn()
+    const { container, rerender } = render(<CodeExplorerPage repositoryId="repo-code" fileTree={fileTree} selectedFilePath="backend/app/routes.py" fileContent={fileContent} overview={overview} onSelectFile={onSelectFile} onSelectLine={onSelectLine} onTraceValue={onTraceValue} />)
 
     expect(container.querySelectorAll('.file-tree')).toHaveLength(1)
     expect(screen.getAllByText('routes.py').length).toBeGreaterThan(0)
@@ -23,6 +25,11 @@ describe('CodeExplorerPage', () => {
     expect(screen.queryByText('Navigation unavailable')).toBeNull()
     expect(screen.queryByText(/Dang phat trien/i)).toBeNull()
 
+    fireEvent.click(screen.getByRole('button', { name: 'Select line 1 for value trace' }))
+    expect(onSelectLine).toHaveBeenCalledWith('backend/app/routes.py', 1)
+    fireEvent.click(screen.getByRole('button', { name: /login/ }))
+    expect(onTraceValue).toHaveBeenCalledWith({ kind: 'token', filePath: 'backend/app/routes.py', line: 1, value: 'login' })
+
     fireEvent.change(screen.getByRole('textbox', { name: 'Search repository files' }), { target: { value: 'readme' } })
     expect(screen.getByText('README.md')).toBeTruthy()
     expect(within(screen.getByLabelText('Repository files')).queryByText('routes.py')).toBeNull()
@@ -31,17 +38,25 @@ describe('CodeExplorerPage', () => {
     fireEvent.click(within(screen.getByLabelText('Repository files')).getByRole('button', { name: 'routes.py' }))
     expect(onSelectFile).toHaveBeenCalledWith('backend/app/routes.py')
 
-    rerender(<CodeExplorerPage fileTree={fileTree} selectedFilePath="README.md" fileContent={null} overview={overview} onSelectFile={onSelectFile} />)
+    rerender(<CodeExplorerPage repositoryId="repo-code" fileTree={fileTree} selectedFilePath="README.md" fileContent={null} overview={overview} onSelectFile={onSelectFile} onSelectLine={onSelectLine} onTraceValue={onTraceValue} />)
     expect(within(screen.getByLabelText(/Source content for backend\/app\/routes.py/)).getByText(/def login/)).toBeTruthy()
     expect(screen.getByText('Loading selection')).toBeTruthy()
   })
 
   it('does not render intelligence panels when the selected file has no parsed intelligence', () => {
-    render(<CodeExplorerPage fileTree={fileTree} selectedFilePath="README.md" fileContent={{ ...fileContent, file_path: 'README.md', symbols: [] }} overview={{ ...overview, endpoints: [] }} onSelectFile={vi.fn()} />)
+    render(<CodeExplorerPage repositoryId="repo-code" fileTree={fileTree} selectedFilePath="README.md" fileContent={{ ...fileContent, file_path: 'README.md', symbols: [] }} overview={{ ...overview, endpoints: [] }} onSelectFile={vi.fn()} />)
 
     expect(screen.queryByLabelText('File intelligence')).toBeNull()
     expect(screen.queryByText('Symbols')).toBeNull()
     expect(screen.queryByText('API endpoints')).toBeNull()
+  })
+
+  it('keeps source visible while presenting an embedded value trace', () => {
+    render(<CodeExplorerPage repositoryId="repo-code" fileTree={fileTree} selectedFilePath="backend/app/routes.py" selectedLine={1} fileContent={fileContent} overview={overview} tracePanel={<div>Trace result panel</div>} onSelectFile={vi.fn()} />)
+
+    expect(screen.getByLabelText('Embedded value trace')).toBeTruthy()
+    expect(screen.getByText('Trace result panel')).toBeTruthy()
+    expect(screen.getByLabelText(/Source content for backend\/app\/routes.py/)).toBeTruthy()
   })
 })
 

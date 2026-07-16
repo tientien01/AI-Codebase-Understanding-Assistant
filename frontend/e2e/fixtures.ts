@@ -12,6 +12,11 @@ export async function installUi004Api(page: Page, graphSize = 12) {
     if (path === '/api/v1/repositories') return json(route, [repository])
     if (path.endsWith(`/${repositoryId}/index/status`)) return json(route, indexStatus)
     if (path.endsWith(`/${repositoryId}/overview`)) return json(route, overview)
+    if (path.endsWith(`/${repositoryId}/graph/dependencies`)) {
+      const mode = url.searchParams.get('projection_mode')
+      const root = url.searchParams.get('root_keys')
+      return json(route, mode === 'neighbors' && root ? dependencyExpansionFixture(root) : dependencySeedFixture())
+    }
     if (path.includes(`/${repositoryId}/graph/`) && !path.endsWith('/expand')) return json(route, graphFixture(graphSize))
     if (path.endsWith(`/${repositoryId}/files/tree`)) return json(route, fileTree)
     if (path.endsWith(`/${repositoryId}/files/content`)) return json(route, fileContent)
@@ -90,6 +95,69 @@ export function graphFixture(nodeCount: number) {
     unsupported_hops: [],
     can_expand: false,
     provenance: { source: 'ui004_deterministic_fixture', deterministic_order: true, support_levels: ['deep', 'inferred'] },
+  }
+}
+
+function dependencySeedFixture() {
+  const nodes = [0, 1, 2].map((index) => ({
+    id: `seed-${index}`,
+    type: 'file',
+    label: `Seed ${index}`,
+    file_path: `src/seed-${index}.ts`,
+    coverage: 'deep_indexed',
+  }))
+  return {
+    repository_id: repositoryId,
+    index_version: 22,
+    view: 'dependencies',
+    nodes,
+    edges: [],
+    counts: { available_nodes: 7, included_nodes: 3, available_edges: 0, included_edges: 0, available_counts_are_estimates: false },
+    coverage: { state: 'ready', measured: { graph_nodes: 3 }, unknown: [] },
+    truncation: { truncated: false, reason: null, continuation_token: null },
+    unsupported_hops: [],
+    can_expand: true,
+    provenance: { source: 'ui011_dependency_fixture', deterministic_order: true, support_levels: ['deep'] },
+    dependency_scope_used: 'internal',
+    seed_strategy: 'dependency-starting-points/v1',
+    seeds: nodes.map((node, index) => ({
+      node_id: node.id,
+      reason_codes: index === 0 ? ['application_entrypoint', 'many_dependents'] : ['graph_region_representative'],
+      incoming_available: index,
+      outgoing_available: index === 0 ? 1 : 0,
+    })),
+    additional_starting_points: 4,
+  }
+}
+
+function dependencyExpansionFixture(root: string) {
+  const child = `${root}-dependency`
+  return {
+    repository_id: repositoryId,
+    index_version: 22,
+    view: 'dependencies',
+    nodes: [
+      { id: root, type: 'file', label: root.replace('seed-', 'Seed '), file_path: `src/${root}.ts`, coverage: 'deep_indexed' },
+      { id: child, type: 'file', label: 'Resolved dependency', file_path: `src/${child}.ts`, coverage: 'deep_indexed' },
+    ],
+    edges: [{ source: root, target: child, type: 'imports_internal', confidence: 1, evidence_level: 'deep' }],
+    counts: { available_nodes: 2, included_nodes: 2, available_edges: 1, included_edges: 1, available_counts_are_estimates: false },
+    coverage: { state: 'ready', measured: { graph_nodes: 2 }, unknown: [] },
+    truncation: { truncated: false, reason: null, continuation_token: null },
+    unsupported_hops: [],
+    can_expand: false,
+    provenance: { source: 'ui011_dependency_fixture', deterministic_order: true, support_levels: ['deep'] },
+    dependency_scope_used: 'internal',
+    expansion: {
+      root_key: root,
+      incoming_available: 0,
+      outgoing_available: 1,
+      included_neighbors: 1,
+      remaining_neighbors: 0,
+      next_neighbor_offset: null,
+      leaf: false,
+      limited: false,
+    },
   }
 }
 

@@ -4,6 +4,8 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom'
 import App from './App'
 import { createAppQueryClient } from './features/server-state'
+import { isRepositoryUsable, reconcileRepositoryIndexStatus } from './utils/repository'
+import type { IndexStatus } from './types/api'
 
 const repository = {
   id: 'repo-1',
@@ -127,6 +129,64 @@ describe('App routing', () => {
     expect(screen.getByText('Capability unavailable')).toBeTruthy()
     expect(screen.getByText('POST /evaluation/runs')).toBeTruthy()
   })
+
+  it('opens a completed versioned index while the repository list cache is still stale', async () => {
+    const staleRepository = { ...repository, status: 'indexing', current_index_version: undefined }
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/v1/repositories')) return jsonResponse([staleRepository])
+      if (url.endsWith('/index/status')) return jsonResponse(completedIndexStatus(8))
+      return responseFor(url)
+    }))
+    renderApp(['/index-jobs'])
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/index/status'), expect.any(Object)))
+    expect(await screen.findByText('Status: Completed')).toBeTruthy()
+    const openWorkspace = await screen.findByRole('button', { name: 'Open Workspace' })
+    await waitFor(() => expect((openWorkspace as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(openWorkspace)
+
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/overview'))
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/repositories/repo-1/overview'), expect.any(Object)))
+    expect(screen.queryByRole('heading', { name: 'Repository workspace is unavailable' })).toBeNull()
+  })
+
+  it('never treats progress-only, failed, cancelled or versionless jobs as usable', () => {
+    const staleRepository = { ...repository, status: 'indexing', current_index_version: undefined }
+    const valid = reconcileRepositoryIndexStatus(staleRepository, completedIndexStatus(8))
+    expect(isRepositoryUsable(valid)).toBe(true)
+    expect(valid?.current_index_version).toBe(8)
+
+    for (const status of ['running', 'failed', 'cancelled']) {
+      const unresolved = reconcileRepositoryIndexStatus(staleRepository, { ...completedIndexStatus(8), status, progress: 100 })
+      expect(isRepositoryUsable(unresolved)).toBe(false)
+    }
+    expect(isRepositoryUsable(reconcileRepositoryIndexStatus(staleRepository, completedIndexStatus(undefined)))).toBe(false)
+  })
+
+  it('does not mistake an older completed job for the active re-index attempt', () => {
+    const reindexingRepository = { ...repository, status: 'indexing', current_index_version: 8 }
+
+    const currentActive = reconcileRepositoryIndexStatus(reindexingRepository, completedIndexStatus(8))
+    expect(isRepositoryUsable(currentActive)).toBe(true)
+    expect(currentActive?.current_index_version).toBe(8)
+    expect(isRepositoryUsable(reconcileRepositoryIndexStatus(reindexingRepository, completedIndexStatus(7)))).toBe(false)
+
+    const newlyActivated = reconcileRepositoryIndexStatus(reindexingRepository, completedIndexStatus(9))
+    expect(isRepositoryUsable(newlyActivated)).toBe(true)
+    expect(newlyActivated?.current_index_version).toBe(9)
+  })
+
+  it('keeps the activated version usable while a newer version is indexing', () => {
+    const reindexingRepository = { ...repository, status: 'indexing', current_index_version: 8 }
+    const runningStatus = { ...completedIndexStatus(9), status: 'running', progress: 35 }
+
+    const activeRepository = reconcileRepositoryIndexStatus(reindexingRepository, runningStatus)
+
+    expect(isRepositoryUsable(activeRepository)).toBe(true)
+    expect(activeRepository?.current_index_version).toBe(8)
+    expect(runningStatus.index_version).toBe(9)
+  })
 })
 
 function renderApp(initialEntries: string[]) {
@@ -248,4 +308,22 @@ function responseFor(url: string) {
   if (url.includes('/graph/')) return jsonResponse({ nodes: [], edges: [] })
   if (url.endsWith('/files/tree')) return jsonResponse([])
   return jsonResponse({})
+}
+
+function completedIndexStatus(indexVersion: number | undefined): IndexStatus {
+  return {
+    repository_id: 'repo-1',
+    status: 'completed',
+    current_step: 'completed',
+    index_version: indexVersion,
+    total_files: 178,
+    processed_files: 178,
+    skipped_files: 35,
+    failed_files: 0,
+    progress: 100,
+    stats: { symbols: 12, endpoints: 2, chunks: 20, graph_nodes: 30 },
+    logs: [],
+    warnings: [],
+    finished_at: '2026-07-15T08:20:55Z',
+  }
 }

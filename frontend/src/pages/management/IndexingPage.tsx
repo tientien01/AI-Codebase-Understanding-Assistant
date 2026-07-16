@@ -1,7 +1,7 @@
 import { ListRow, Metric, PageTitle, Panel, PreviewLine, Progress } from '../../components/common/ui'
 import { pipelineSteps } from '../../config/navigation'
 import type { IndexStatus, Repository } from '../../types/api'
-import { isRepositoryUsable } from '../../utils/repository'
+import { isRepositoryUsable, reconcileRepositoryIndexStatus } from '../../utils/repository'
 
 export function IndexingPage({
   repository,
@@ -18,12 +18,13 @@ export function IndexingPage({
   onResume: () => void
   onCancel: () => void
 }) {
-  const progress = status?.progress ?? (isRepositoryUsable(repository) ? 100 : 0)
+  const readyRepository = reconcileRepositoryIndexStatus(repository, status)
+  const progress = status?.progress ?? (isRepositoryUsable(readyRepository) ? 100 : 0)
   const currentStageIndex = stageIndexFor(status?.current_step, status?.status, progress)
   const isRunning = status?.status === 'running'
   const isPaused = status?.status === 'paused'
   const isCancelling = status?.status === 'cancelling'
-  const completed = isRepositoryUsable(repository) || status?.status === 'completed' || status?.status === 'completed_with_warnings'
+  const completed = isRepositoryUsable(readyRepository) || status?.status === 'completed' || status?.status === 'completed_with_warnings'
   const statusLabel = formatStatus(status?.status ?? repository?.status ?? 'not started')
   const skippedFiles = status?.skipped_files ?? 0
   const failedFiles = status?.failed_files ?? 0
@@ -50,7 +51,7 @@ export function IndexingPage({
           {isRunning && <button className="secondary" onClick={onPause}>Pause</button>}
           {isPaused && <button className="secondary" onClick={onResume}>Resume</button>}
           {(isRunning || isPaused || isCancelling) && <button className="secondary" disabled={isCancelling} onClick={onCancel}>{isCancelling ? 'Cancelling' : 'Cancel'}</button>}
-          <button className="primary" disabled={!isRepositoryUsable(repository)} onClick={onOpen}>Open Workspace</button>
+          <button className="primary" disabled={!isRepositoryUsable(readyRepository)} onClick={onOpen}>Open Workspace</button>
         </div>
       </div>
       <div className="indexing-grid">

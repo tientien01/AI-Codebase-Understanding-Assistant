@@ -168,6 +168,8 @@ export type ChatMessage = {
 }
 
 export type GraphDirection = 'outgoing' | 'incoming' | 'both'
+export type GraphProjectionMode = 'full' | 'seeds' | 'neighbors'
+export type DependencyScope = 'adaptive' | 'internal' | 'detected'
 
 export type GraphProjectionInput = {
   indexVersion?: number
@@ -180,6 +182,10 @@ export type GraphProjectionInput = {
   maxEdges: number
   minConfidence: number
   supportLevels: string[]
+  projectionMode?: GraphProjectionMode
+  dependencyScope?: DependencyScope
+  seedLimit?: number
+  neighborOffset?: number
 }
 
 export type GraphData = {
@@ -222,6 +228,10 @@ export type GraphData = {
     max_edges: number
     min_confidence: number
     support_levels: string[]
+    projection_mode?: GraphProjectionMode
+    dependency_scope?: DependencyScope
+    seed_limit?: number
+    neighbor_offset?: number
   }
   counts?: {
     available_nodes: number
@@ -246,6 +256,25 @@ export type GraphData = {
     source: string
     deterministic_order: boolean
     support_levels: string[]
+  }
+  dependency_scope_used?: Exclude<DependencyScope, 'adaptive'>
+  seed_strategy?: string
+  seeds?: {
+    node_id: string
+    reason_codes: string[]
+    incoming_available: number
+    outgoing_available: number
+  }[]
+  additional_starting_points?: number
+  expansion?: {
+    root_key: string
+    incoming_available: number
+    outgoing_available: number
+    included_neighbors: number
+    remaining_neighbors: number
+    next_neighbor_offset?: number | null
+    leaf: boolean
+    limited: boolean
   }
 }
 

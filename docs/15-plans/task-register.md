@@ -41,6 +41,13 @@ Phase outcomes and gates are canonical in `master-roadmap.md` and `phases/`. Thi
 | UI-002 | Move server state to feature queries | UI-001 | Error/cache/invalidation tests |
 | UI-003 | Add bounded evidence-aware graph projections | INT-004,UI-002 | Large graph/performance tests |
 | UI-004 | Add architecture view, guided tour, diff impact | UI-003,AGT-002 | Evidence-backed UX E2E |
+| UI-010 | Make Graph Explorer focus-first and self-explanatory | UI-004 | Guided graph component tests |
+| UI-018 | Deliver a focused progressive Value Flow explorer | UI-003,UI-010,UI-015,UI-017,INT-003 | Focused DFG projection and frontend regression gates |
+| UI-019 | Unify sidebar navigation and completed-index workspace readiness | UI-001,UI-002,UI-005,UI-006,UI-017 | Navigation persistence and index-readiness regression gates |
+| UI-020 | Keep workspace and indexing job readiness consistent | UI-002,UI-006,UI-019,IDX-003 | Repository/job authority and stale-version regression gates |
+| UI-021 | Replace global Value Flow browsing with contextual Value Trace | UI-003,UI-009,UI-012,UI-015,UI-018 | Context resolution and focused trace UX regression gates |
+| UI-022 | Preserve Code Explorer context and embed source-launched Value Trace | UI-002,UI-009,UI-021,INT-006 | Tree/source continuity and embedded trace frontend regression gates |
+| INT-006 | Trace resolved Python values across direct function calls | INT-002,INT-003,UI-021 | Direct argument/return binding and bounded interprocedural trace regression gates |
 | UI-005 | Connect real evaluation/settings/status surfaces | EVA-001,UI-002 | Feature E2E |
 | UI-009 | Refine Code Explorer workspace from approved visual reference | UI-002 | Responsive Code Explorer component and build gates |
 | SEC-001 | Complete threat model, quotas and Git/import isolation | JOB-003 | Adversarial security suite |

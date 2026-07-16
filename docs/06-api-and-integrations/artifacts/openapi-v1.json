@@ -1362,6 +1362,60 @@
         "title": "GraphNodeDTO",
         "type": "object"
       },
+      "GraphNodeExpansionDTO": {
+        "properties": {
+          "included_neighbors": {
+            "default": 0,
+            "title": "Included Neighbors",
+            "type": "integer"
+          },
+          "incoming_available": {
+            "default": 0,
+            "title": "Incoming Available",
+            "type": "integer"
+          },
+          "leaf": {
+            "default": false,
+            "title": "Leaf",
+            "type": "boolean"
+          },
+          "limited": {
+            "default": false,
+            "title": "Limited",
+            "type": "boolean"
+          },
+          "next_neighbor_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Neighbor Offset"
+          },
+          "outgoing_available": {
+            "default": 0,
+            "title": "Outgoing Available",
+            "type": "integer"
+          },
+          "remaining_neighbors": {
+            "default": 0,
+            "title": "Remaining Neighbors",
+            "type": "integer"
+          },
+          "root_key": {
+            "title": "Root Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root_key"
+        ],
+        "title": "GraphNodeExpansionDTO",
+        "type": "object"
+      },
       "GraphProjectionCounts": {
         "properties": {
           "available_counts_are_estimates": {
@@ -1454,6 +1508,16 @@
       },
       "GraphProjectionRequest": {
         "properties": {
+          "dependency_scope": {
+            "default": "detected",
+            "enum": [
+              "adaptive",
+              "internal",
+              "detected"
+            ],
+            "title": "Dependency Scope",
+            "type": "string"
+          },
           "direction": {
             "default": "both",
             "enum": [
@@ -1512,6 +1576,13 @@
             "title": "Min Confidence",
             "type": "number"
           },
+          "neighbor_offset": {
+            "default": 0,
+            "maximum": 220.0,
+            "minimum": 0.0,
+            "title": "Neighbor Offset",
+            "type": "integer"
+          },
           "node_types": {
             "items": {
               "type": "string"
@@ -1520,6 +1591,16 @@
             "title": "Node Types",
             "type": "array"
           },
+          "projection_mode": {
+            "default": "full",
+            "enum": [
+              "full",
+              "seeds",
+              "neighbors"
+            ],
+            "title": "Projection Mode",
+            "type": "string"
+          },
           "root_keys": {
             "items": {
               "type": "string"
@@ -1527,6 +1608,13 @@
             "maxItems": 20,
             "title": "Root Keys",
             "type": "array"
+          },
+          "seed_limit": {
+            "default": 12,
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "Seed Limit",
+            "type": "integer"
           },
           "support_levels": {
             "items": {
@@ -1575,6 +1663,11 @@
       },
       "GraphResponse": {
         "properties": {
+          "additional_starting_points": {
+            "default": 0,
+            "title": "Additional Starting Points",
+            "type": "integer"
+          },
           "can_expand": {
             "default": false,
             "title": "Can Expand",
@@ -1586,12 +1679,37 @@
           "coverage": {
             "$ref": "#/components/schemas/GraphProjectionCoverage"
           },
+          "dependency_scope_used": {
+            "anyOf": [
+              {
+                "enum": [
+                  "internal",
+                  "detected"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependency Scope Used"
+          },
           "edges": {
             "items": {
               "$ref": "#/components/schemas/GraphEdgeDTO"
             },
             "title": "Edges",
             "type": "array"
+          },
+          "expansion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphNodeExpansionDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "index_version": {
             "anyOf": [
@@ -1628,6 +1746,24 @@
             ],
             "title": "Repository Id"
           },
+          "seed_strategy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed Strategy"
+          },
+          "seeds": {
+            "items": {
+              "$ref": "#/components/schemas/GraphSeedDTO"
+            },
+            "title": "Seeds",
+            "type": "array"
+          },
           "truncation": {
             "$ref": "#/components/schemas/GraphProjectionTruncation"
           },
@@ -1649,6 +1785,36 @@
           "edges"
         ],
         "title": "GraphResponse",
+        "type": "object"
+      },
+      "GraphSeedDTO": {
+        "properties": {
+          "incoming_available": {
+            "default": 0,
+            "title": "Incoming Available",
+            "type": "integer"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "outgoing_available": {
+            "default": 0,
+            "title": "Outgoing Available",
+            "type": "integer"
+          },
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reason Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "node_id"
+        ],
+        "title": "GraphSeedDTO",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -5331,6 +5497,60 @@
             }
           },
           {
+            "in": "query",
+            "name": "projection_mode",
+            "required": false,
+            "schema": {
+              "default": "full",
+              "enum": [
+                "full",
+                "seeds",
+                "neighbors"
+              ],
+              "title": "Projection Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependency_scope",
+            "required": false,
+            "schema": {
+              "default": "detected",
+              "enum": [
+                "adaptive",
+                "internal",
+                "detected"
+              ],
+              "title": "Dependency Scope",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seed_limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Seed Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "neighbor_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 220,
+              "minimum": 0,
+              "title": "Neighbor Offset",
+              "type": "integer"
+            }
+          },
+          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -5542,6 +5762,60 @@
               "maxItems": 10,
               "title": "Support Levels",
               "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "projection_mode",
+            "required": false,
+            "schema": {
+              "default": "full",
+              "enum": [
+                "full",
+                "seeds",
+                "neighbors"
+              ],
+              "title": "Projection Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependency_scope",
+            "required": false,
+            "schema": {
+              "default": "detected",
+              "enum": [
+                "adaptive",
+                "internal",
+                "detected"
+              ],
+              "title": "Dependency Scope",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seed_limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Seed Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "neighbor_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 220,
+              "minimum": 0,
+              "title": "Neighbor Offset",
+              "type": "integer"
             }
           },
           {
@@ -5759,6 +6033,60 @@
             }
           },
           {
+            "in": "query",
+            "name": "projection_mode",
+            "required": false,
+            "schema": {
+              "default": "full",
+              "enum": [
+                "full",
+                "seeds",
+                "neighbors"
+              ],
+              "title": "Projection Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependency_scope",
+            "required": false,
+            "schema": {
+              "default": "detected",
+              "enum": [
+                "adaptive",
+                "internal",
+                "detected"
+              ],
+              "title": "Dependency Scope",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seed_limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Seed Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "neighbor_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 220,
+              "minimum": 0,
+              "title": "Neighbor Offset",
+              "type": "integer"
+            }
+          },
+          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -5970,6 +6298,60 @@
               "maxItems": 10,
               "title": "Support Levels",
               "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "projection_mode",
+            "required": false,
+            "schema": {
+              "default": "full",
+              "enum": [
+                "full",
+                "seeds",
+                "neighbors"
+              ],
+              "title": "Projection Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependency_scope",
+            "required": false,
+            "schema": {
+              "default": "detected",
+              "enum": [
+                "adaptive",
+                "internal",
+                "detected"
+              ],
+              "title": "Dependency Scope",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seed_limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Seed Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "neighbor_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 220,
+              "minimum": 0,
+              "title": "Neighbor Offset",
+              "type": "integer"
             }
           },
           {
@@ -6255,6 +6637,60 @@
             }
           },
           {
+            "in": "query",
+            "name": "projection_mode",
+            "required": false,
+            "schema": {
+              "default": "full",
+              "enum": [
+                "full",
+                "seeds",
+                "neighbors"
+              ],
+              "title": "Projection Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependency_scope",
+            "required": false,
+            "schema": {
+              "default": "detected",
+              "enum": [
+                "adaptive",
+                "internal",
+                "detected"
+              ],
+              "title": "Dependency Scope",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seed_limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Seed Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "neighbor_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 220,
+              "minimum": 0,
+              "title": "Neighbor Offset",
+              "type": "integer"
+            }
+          },
+          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -6450,6 +6886,60 @@
               "maxItems": 10,
               "title": "Support Levels",
               "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "projection_mode",
+            "required": false,
+            "schema": {
+              "default": "full",
+              "enum": [
+                "full",
+                "seeds",
+                "neighbors"
+              ],
+              "title": "Projection Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependency_scope",
+            "required": false,
+            "schema": {
+              "default": "detected",
+              "enum": [
+                "adaptive",
+                "internal",
+                "detected"
+              ],
+              "title": "Dependency Scope",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "seed_limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 24,
+              "minimum": 1,
+              "title": "Seed Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "neighbor_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 220,
+              "minimum": 0,
+              "title": "Neighbor Offset",
+              "type": "integer"
             }
           },
           {
