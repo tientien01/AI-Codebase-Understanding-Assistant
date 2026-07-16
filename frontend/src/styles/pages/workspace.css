@@ -2049,22 +2049,33 @@
 
 /* UI-022: source and value-flow continuity inside Code Explorer. */
 .code-explorer-reader.trace-open {
-  grid-template-columns: minmax(440px, 1.15fr) minmax(390px, .85fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
-.code-explorer-reader.trace-open .code-explorer-intelligence { grid-column: 1 / -1; }
+.code-explorer-reader.trace-open .code-explorer-intelligence { grid-column: 1; }
 
 .code-explorer-trace-panel {
-  position: sticky;
-  top: 8px;
+  position: static;
+  grid-column: 1;
+  height: clamp(320px, 42vh, 520px);
+  min-height: 240px;
   min-width: 0;
-  max-height: calc(100vh - 126px);
+  max-height: min(72vh, 760px);
   overflow: auto;
+  overscroll-behavior: contain;
+  resize: vertical;
   border: 1px solid #2a4e57;
   border-radius: 11px;
   padding: 9px;
   background: #08141e;
+}
+
+.code-explorer-trace-panel:has(.embedded-collapsed) {
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  resize: none;
 }
 
 .embedded-value-trace-header {
@@ -2091,12 +2102,44 @@
   font-size: 10px;
 }
 
+.embedded-value-trace-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 3px 2px;
+  color: #93a9b8;
+  font-size: 11px;
+}
+
+.embedded-value-trace-summary strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #dff8f4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.embedded-value-trace.embedded-collapsed > :not(.embedded-value-trace-header):not(.embedded-value-trace-summary) {
+  display: none;
+}
+
 .embedded-value-trace .dependency-toolbar { flex-wrap: wrap; }
 .embedded-value-trace .dependency-toolbar-title { display: grid; min-width: 140px; }
 .embedded-value-trace .dependency-search { flex-basis: 100%; }
-.embedded-value-trace .dependency-stage-shell { min-height: 480px; }
-.embedded-value-trace .dependency-stage-viewport { min-height: 450px; max-height: 540px; }
-.embedded-value-trace .graph-progressive-canvas { min-height: 450px; }
+.embedded-value-trace .dependency-stage-shell { min-height: 360px; }
+.embedded-value-trace .dependency-stage-viewport { min-height: 330px; max-height: 480px; }
+.embedded-value-trace .graph-progressive-canvas { min-height: 330px; }
+.embedded-value-trace .dependency-stage-shell.inspector-open .dependency-stage-viewport { margin-right: 0; }
+.embedded-value-trace .dependency-inspector {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 100%;
+  max-height: none;
+  margin-top: 8px;
+  box-shadow: none;
+}
 
 /* UI-017: graph-first workspace and direct canvas manipulation. */
 .workspace-main:has(.graph-explorer-page) .content { padding: 10px 14px 16px; }
@@ -2210,7 +2253,6 @@
   .graph-explorer-workspace,
   .code-explorer-reader.trace-open,
   .impact-result-groups { grid-template-columns: 1fr; }
-  .code-explorer-trace-panel { position: static; max-height: none; }
   .graph-inspector { position: static; }
 }
 

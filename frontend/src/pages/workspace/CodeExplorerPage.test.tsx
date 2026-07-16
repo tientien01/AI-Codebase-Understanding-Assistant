@@ -58,6 +58,17 @@ describe('CodeExplorerPage', () => {
     expect(screen.getByText('Trace result panel')).toBeTruthy()
     expect(screen.getByLabelText(/Source content for backend\/app\/routes.py/)).toBeTruthy()
   })
+
+  it('dismisses the identifier chooser backed by a selected route line', () => {
+    const onClearSelectedLine = vi.fn()
+    render(<CodeExplorerPage repositoryId="repo-code" fileTree={fileTree} selectedFilePath="backend/app/routes.py" selectedLine={1} fileContent={fileContent} overview={overview} onSelectFile={vi.fn()} onClearSelectedLine={onClearSelectedLine} />)
+
+    expect(screen.getByLabelText('Trace value from selected source line')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Close identifier chooser' }))
+
+    expect(onClearSelectedLine).toHaveBeenCalledOnce()
+    expect(screen.queryByLabelText('Trace value from selected source line')).toBeNull()
+  })
 })
 
 const fileTree: FileTreeNode[] = [

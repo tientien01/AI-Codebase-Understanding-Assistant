@@ -50,6 +50,15 @@ describe('App routing', () => {
     )
   })
 
+  it('closes the identifier chooser by removing its selected line from the URL', async () => {
+    renderApp(['/repositories/repo-1/code?path=src%2Fauth.ts&line=2'])
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Close identifier chooser' }))
+
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/code?path=src%2Fauth.ts'))
+    expect(screen.queryByLabelText('Trace value from selected source line')).toBeNull()
+  })
+
   it('loads evidence only from the repository and evidence identities in a direct URL', async () => {
     renderApp(['/repositories/repo-1/evidence/evidence%2F9'])
 

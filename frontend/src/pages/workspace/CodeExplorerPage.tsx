@@ -16,6 +16,7 @@ export function CodeExplorerPage({
   tracePanel,
   onSelectFile,
   onSelectLine,
+  onClearSelectedLine,
   onTraceValue,
 }: {
   repositoryId: string
@@ -27,11 +28,13 @@ export function CodeExplorerPage({
   tracePanel?: ReactNode
   onSelectFile: (filePath: string) => void
   onSelectLine?: (filePath: string, line: number) => void
+  onClearSelectedLine?: () => void
   onTraceValue?: (context: ValueTraceContext) => void
 }) {
   const [fileQuery, setFileQuery] = useState('')
   const [displayContent, setDisplayContent] = useState<FileContent | null>(fileContent)
   const [traceTarget, setTraceTarget] = useState<{ filePath: string; line: number }>()
+  const [dismissedSelectedLine, setDismissedSelectedLine] = useState<string>()
   const sourceRef = useRef<HTMLPreElement>(null)
   const visibleTree = useMemo(() => filterTree(fileTree, fileQuery), [fileQuery, fileTree])
   const activeContent = fileContent ?? displayContent
@@ -39,7 +42,10 @@ export function CodeExplorerPage({
   const endpoints = (overview?.endpoints ?? []).filter((endpoint) => endpoint.file_path === activeContent?.file_path)
   const hasIntelligence = symbols.length > 0 || endpoints.length > 0
   const isLoadingSelection = Boolean(selectedFilePath && activeContent?.file_path && selectedFilePath !== activeContent.file_path)
-  const traceLine = traceTarget && traceTarget.filePath === activeContent?.file_path ? traceTarget.line : selectedLine
+  const selectedLineKey = activeContent && selectedLine ? `${activeContent.file_path}:${selectedLine}` : undefined
+  const traceLine = traceTarget && traceTarget.filePath === activeContent?.file_path
+    ? traceTarget.line
+    : selectedLineKey !== dismissedSelectedLine ? selectedLine : undefined
   const traceIdentifiers = useMemo(
     () => traceLine && activeContent ? identifiersOnLine(activeContent.lines[traceLine - 1] ?? '') : [],
     [activeContent, traceLine],
@@ -112,7 +118,17 @@ export function CodeExplorerPage({
             {traceLine && activeContent ? <div className="code-value-trace-bar" role="region" aria-label="Trace value from selected source line">
               <div><Icon name="share" /><span>Line {traceLine}</span><strong>{traceIdentifiers.length ? 'Choose an identifier to trace' : 'No identifier was detected on this line'}</strong></div>
               {traceIdentifiers.length ? <div className="code-value-token-list">{traceIdentifiers.map((value) => <button type="button" key={value} onClick={() => onTraceValue?.({ kind: 'token', filePath: activeContent.file_path, line: traceLine, value })}><Icon name="share" size={12} /> {value}</button>)}</div> : null}
-              <button type="button" className="code-value-trace-close" aria-label="Close value trace actions" onClick={() => setTraceTarget(undefined)}>×</button>
+              <button
+                type="button"
+                className="code-value-trace-close"
+                aria-label="Close identifier chooser"
+                title="Close identifier chooser"
+                onClick={() => {
+                  setTraceTarget(undefined)
+                  setDismissedSelectedLine(selectedLineKey)
+                  onClearSelectedLine?.()
+                }}
+              >×</button>
             </div> : null}
             <pre className="code-block" ref={sourceRef} tabIndex={0} aria-busy={isLoadingSelection} aria-label={activeContent ? `Source content for ${activeContent.file_path}` : 'Source content'} onScroll={(event) => activeContent && saveSourceScroll(repositoryId, activeContent.file_path, event.currentTarget.scrollTop)}>
               {activeContent ? activeContent.lines.map((line, index) => {
@@ -127,12 +143,14 @@ export function CodeExplorerPage({
                     aria-label={`Select line ${lineNumber} for value trace`}
                     onClick={() => {
                       setTraceTarget({ filePath: activeContent.file_path, line: lineNumber })
+                      setDismissedSelectedLine(undefined)
                       onSelectLine?.(activeContent.file_path, lineNumber)
                     }}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault()
                         setTraceTarget({ filePath: activeContent.file_path, line: lineNumber })
+                        setDismissedSelectedLine(undefined)
                         onSelectLine?.(activeContent.file_path, lineNumber)
                       }
                     }}

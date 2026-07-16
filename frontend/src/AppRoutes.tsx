@@ -104,6 +104,7 @@ type AppRoutesProps = {
   deleteAllRepositories: () => void
   loadFileContent: (repositoryId: string, filePath: string, line?: number) => void
   selectCodeLine: (filePath: string, line: number) => void
+  clearCodeLine: () => void
   sendChatMessage: (event?: FormEvent) => void
   openEvidence: (citation: Citation) => void
   selectApiEndpoint: (endpointKey: string) => void
@@ -280,7 +281,7 @@ export function AppRoutes(props: AppRoutesProps) {
     ) : null
     return (
       <AssistantWorkspace
-        main={<CodeExplorerPage repositoryId={selectedRepository?.id ?? 'unselected'} fileTree={fileTree} selectedFilePath={selectedFilePath} selectedLine={route.line} fileContent={fileContent} overview={overview} tracePanel={tracePanel} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} onSelectLine={props.selectCodeLine} onTraceValue={props.traceValue} />}
+        main={<CodeExplorerPage repositoryId={selectedRepository?.id ?? 'unselected'} fileTree={fileTree} selectedFilePath={selectedFilePath} selectedLine={route.line} fileContent={fileContent} overview={overview} tracePanel={tracePanel} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} onSelectLine={props.selectCodeLine} onClearSelectedLine={props.clearCodeLine} onTraceValue={props.traceValue} />}
         {...props}
       />
     )

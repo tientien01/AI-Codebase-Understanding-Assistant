@@ -1413,6 +1413,7 @@ function ProgressiveValueFlow({
   const [searchValue, setSearchValue] = useState('')
   const [zoom, setZoom] = useState(0.9)
   const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [embeddedCollapsed, setEmbeddedCollapsed] = useState(false)
   const [expandingNodeId, setExpandingNodeId] = useState<string>()
   const [expansionByKey, setExpansionByKey] = useState<Record<string, GraphExpansion>>({})
   const [positionCache, setPositionCache] = useState(() => new Map<string, Position>())
@@ -1526,8 +1527,10 @@ function ProgressiveValueFlow({
     viewport.scrollTo?.({ top: 0, left: 0 })
   }
 
-  return <div className={`graph-explorer-page progressive-request-flow-page progressive-value-flow-page ${embedded ? 'embedded-value-trace' : ''} ${hasTraceContext ? '' : 'value-trace-no-context'}`}>
-    {embedded ? <div className="embedded-value-trace-header"><div><span>Source investigation</span><h2>Value Trace</h2></div><div><button type="button" onClick={onOpenFullGraph}><Icon name="expand" size={13} /> Open full graph</button><button type="button" aria-label="Close embedded value trace" onClick={onCloseEmbedded}>×</button></div></div> : <PageTitle title="Value Trace" subtitle="Investigate one source value or callable scope without browsing every indexed variable." />}
+  return <div className={`graph-explorer-page progressive-request-flow-page progressive-value-flow-page ${embedded ? 'embedded-value-trace' : ''} ${embeddedCollapsed ? 'embedded-collapsed' : ''} ${hasTraceContext ? '' : 'value-trace-no-context'}`}>
+    {embedded ? <div className="embedded-value-trace-header"><div><span>Source investigation</span><h2>Value Trace</h2></div><div><button type="button" aria-expanded={!embeddedCollapsed} aria-label={embeddedCollapsed ? 'Expand embedded value trace' : 'Collapse embedded value trace'} onClick={() => setEmbeddedCollapsed((value) => !value)}>{embeddedCollapsed ? 'Expand' : 'Minimize'}</button><button type="button" onClick={onOpenFullGraph}><Icon name="expand" size={13} /> Open full graph</button><button type="button" aria-label="Close embedded value trace" title="Close Value Trace" onClick={onCloseEmbedded}>×</button></div></div> : <PageTitle title="Value Trace" subtitle="Investigate one source value or callable scope without browsing every indexed variable." />}
+
+    {embedded && embeddedCollapsed ? <div className="embedded-value-trace-summary" role="status"><strong>{rootNode ? valueNodeName(rootNode) : hasTraceContext ? valueTraceContextLabel(traceContext) : 'No value selected'}</strong><span>{nodes.length} visible values · {edges.length} relations</span></div> : null}
 
     {!embedded ? <nav className="graph-view-nav graph-view-nav-compact" aria-label="Relationship views">
       <button type="button" className="graph-view-home" onClick={() => onGraphView('project-map')}><Icon name="grid" size={15} /> Choose question</button>

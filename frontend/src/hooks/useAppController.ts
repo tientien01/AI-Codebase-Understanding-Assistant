@@ -187,6 +187,14 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     navigate(pathForPage('evidence', selectedRepository.id, { evidenceId: citation.evidence_id }))
   }
 
+  function clearCodeLine() {
+    if (!selectedRepository || route.status !== 'valid' || route.page !== 'code') return
+    navigate(pathForPage('code', selectedRepository.id, {
+      filePath: selectedFilePath,
+      codeTrace: codeTraceRoot,
+    }), { replace: true })
+  }
+
   function selectApiEndpoint(endpointKey: string) {
     if (!selectedRepository) return
     navigate(pathForPage('api', selectedRepository.id, { endpointKey }))
@@ -484,6 +492,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     deleteAllRepositories,
     loadFileContent: openFile,
     selectCodeLine,
+    clearCodeLine,
     reloadRepositories: repositoriesQuery.refetch,
     retryActivePage: pageQuery.query ? () => { void pageQuery.refetch() } : undefined,
     sendChatMessage,
