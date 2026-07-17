@@ -13,7 +13,7 @@
 | Deep code analysis | `backend/app/services/code_analysis/` |
 | Canonical Python adapter/IR boundary | `backend/app/services/code_analysis/adapters/python_adapter.py`, `models.py`, `pipeline.py`; current-state projection in `backend/app/services/parsing/canonical_python_parser.py` |
 | Canonical Python reference resolver | `backend/app/services/code_analysis/resolver.py`; typed compatibility projection in `backend/app/services/code_analysis/cpg/emitter.py` |
-| Reference-derived graph candidate normalization | `backend/app/services/code_analysis/graph_candidates.py`; in-memory audit/report state in `backend/app/services/index_models.py` |
+| Reference-derived graph candidate normalization | `backend/app/services/code_analysis/graph_candidates.py`; duplicate-definition-safe symbol identity in `backend/app/services/code_analysis/stable_ids.py` across CPG/Tree-sitter/fallback parsers; in-memory audit/report state in `backend/app/services/index_models.py` |
 | Deterministic capability readiness calculator | `backend/app/services/code_analysis/capability_readiness.py`; output reuses `backend/app/services/indexing/validation_service.py::CapabilityReadiness` |
 | Graph/projections | `backend/app/services/graph/` |
 | Typed retrieval and ranking | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`, `ranking.py`; sparse/dense search adapters in `vector_search_service.py`; compatibility facade in `retrieval_service.py` |

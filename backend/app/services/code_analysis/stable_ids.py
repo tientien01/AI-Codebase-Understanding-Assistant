@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 
 
 def stable_hash(*parts: object, length: int = 16) -> str:
@@ -14,6 +15,16 @@ def stable_file_id(repository_id: str, file_path: str) -> str:
 
 def stable_symbol_id(repository_id: str, file_path: str, qualified_name: str, symbol_kind: str) -> str:
     return f"symbol_{stable_hash(repository_id, file_path, qualified_name, symbol_kind)}"
+
+
+def unique_definition_id(base_id: str, existing_ids: Iterable[str]) -> str:
+    """Disambiguate repeated same-name definitions without using line numbers."""
+    matches = {
+        item
+        for item in existing_ids
+        if item == base_id or item.startswith(f"{base_id}_definition_")
+    }
+    return base_id if base_id not in matches else f"{base_id}_definition_{len(matches) + 1}"
 
 
 def stable_chunk_id(repository_id: str, file_path: str, chunk_type: str, anchor_key: str, content_hash: str) -> str:

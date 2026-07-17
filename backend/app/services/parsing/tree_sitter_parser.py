@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
-from app.services.code_analysis.stable_ids import stable_chunk_id, stable_node_id, stable_symbol_id
+from app.services.code_analysis.stable_ids import stable_chunk_id, stable_node_id, stable_symbol_id, unique_definition_id
 from app.services.index_models import FileRecord, RepositoryState, SymbolRecord
 from app.services.language_registry import LanguageDefinition
 from app.services.parsing.base import LanguageParser
@@ -96,7 +96,10 @@ class TreeSitterLanguageParser(LanguageParser):
         symbol_type = SYMBOL_NODE_TYPES[node.type]
         repository.symbols.append(
             SymbolRecord(
-                id=stable_symbol_id(repository.id, file_record.path, name, symbol_type),
+                id=unique_definition_id(
+                    stable_symbol_id(repository.id, file_record.path, name, symbol_type),
+                    (item.id for item in repository.symbols),
+                ),
                 name=name,
                 symbol_type=symbol_type,
                 file_path=file_record.path,

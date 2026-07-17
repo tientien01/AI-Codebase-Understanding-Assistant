@@ -50,6 +50,7 @@ class RepositoryStore:
             return [self._load_repository_state(session, repository) for repository in repositories]
 
     def save_repository(self, repository: RepositoryState) -> None:
+        self._validate_unique_index_ids(repository)
         with SessionLocal.begin() as session:
             session.merge(
                 RepositoryORM(
@@ -606,6 +607,12 @@ class RepositoryStore:
     def _delete_index_records(self, session, repository_id: str) -> None:
         for model in (FileRecordORM, SymbolRecordORM, EndpointRecordORM, ChunkRecordORM, GraphNodeORM, GraphEdgeORM):
             session.execute(delete(model).where(model.repository_id == repository_id))
+
+    @staticmethod
+    def _validate_unique_index_ids(repository: RepositoryState) -> None:
+        symbol_ids = [item.id for item in repository.symbols]
+        if len(symbol_ids) != len(set(symbol_ids)):
+            raise ValueError("Repository index contains duplicate symbol IDs")
 
     @staticmethod
     def _citation_id(claim_id: str, evidence_id: str) -> str:

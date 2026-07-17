@@ -290,6 +290,11 @@ class IndexingService:
         working_repository = deepcopy(repository)
         try:
             self._index_repository(working_repository, job, control, previous_status, force_reindex)
+            if control.authority_check is not None:
+                control.authority_check()
+            # Commit the candidate before exposing it through the in-memory active
+            # repository. A failed transaction must leave the previous version live.
+            self.repositories.persist_repository(working_repository)
         except IndexingAuthorityLost:
             raise
         except IndexingCancelled:
@@ -328,10 +333,7 @@ class IndexingService:
             if raise_errors:
                 raise
         else:
-            if control.authority_check is not None:
-                control.authority_check()
             self.repositories.replace_repository_index(repository, working_repository)
-            self.repositories.persist_repository(repository)
             self.store.mark_stale_evidence(repository.id, repository.current_index_version)
             self.evidence.clear_repository(repository.id)
         finally:
@@ -341,6 +343,26 @@ class IndexingService:
     def get_index_status(self, repository_id: str) -> IndexStatusResponse:
         repository = self.repositories.get_repository(repository_id)
         job = self.store.get_latest_indexing_job(repository.id)
+
+        # Older compatibility builds could mark the job complete before the
+        # repository transaction committed. Fail that unpublished candidate so
+        # the repository is truthful and a clean retry is allowed.
+        if (
+            repository.status == "indexing"
+            and repository.current_index_version == 0
+            and job
+            and job.status in SUCCESSFUL_INDEX_JOB_STATUSES
+            and job.index_version > 0
+        ):
+            repository.status = "failed"
+            repository.current_step = "index_failed_unpublished_candidate"
+            repository.finished_at = job.finished_at
+            job.status = "failed"
+            job.current_step = repository.current_step
+            job.error_code = "INDEX_PUBLISH_FAILED"
+            job.error_message = "Completed candidate was not activated"
+            self.store.save_indexing_job(job)
+            self.repositories.persist_repository_metadata(repository)
 
         # Migrate re-index attempts started by older application versions,
         # which temporarily hid an already activated version behind `indexing`.

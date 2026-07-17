@@ -140,6 +140,10 @@ lint, all 115 frontend tests across 17 files, TypeScript compilation and product
 build. Coverage distinguishes accepted provider output, deterministic fallback and
 server-declared sparse/hybrid retrieval without configuration inference.
 
+BUG-002 adds seven focused regressions for stable unique repeated-definition IDs,
+duplicate persistence rejection and database-before-memory index activation. The
+combined code-analysis/indexing-service gate passes 50 tests.
+
 ## Collection boundary
 
 Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The EVA-002 clean local-profile run collected 289 project tests, passed 260 and skipped 29 existing integration-profile tests; no imported repository test participated.

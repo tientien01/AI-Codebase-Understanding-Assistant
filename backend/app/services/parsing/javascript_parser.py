@@ -4,7 +4,7 @@ import re
 
 from app.schemas.api import GraphEdgeDTO, GraphNodeDTO
 from app.services.chunking_service import ChunkingService
-from app.services.code_analysis.stable_ids import stable_node_id, stable_symbol_id
+from app.services.code_analysis.stable_ids import stable_node_id, stable_symbol_id, unique_definition_id
 from app.services.index_models import FileRecord, RepositoryState, SymbolRecord
 from app.services.parsing.base import LanguageParser
 from app.services.parsing.client_call_extractor import JavaScriptClientCallExtractor
@@ -38,7 +38,10 @@ class JavaScriptTypeScriptParser(LanguageParser):
             symbol_type = "component" if name[:1].isupper() else "function"
             repository.symbols.append(
                 SymbolRecord(
-                    id=stable_symbol_id(repository.id, file_record.path, name, symbol_type),
+                    id=unique_definition_id(
+                        stable_symbol_id(repository.id, file_record.path, name, symbol_type),
+                        (item.id for item in repository.symbols),
+                    ),
                     name=name,
                     symbol_type=symbol_type,
                     file_path=file_record.path,
