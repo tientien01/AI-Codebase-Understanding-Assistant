@@ -74,7 +74,16 @@ export function useServerMutations(repositoryId: string | undefined, indexVersio
     },
   })
 
-  return { reindex, jobAction, deleteRepository, deleteAllRepositories, expandGraph, impact, chat }
+  const deleteConversation = useMutation({
+    mutationFn: ({ targetRepositoryId, conversationId }: DeleteConversationInput) =>
+      serverApi.deleteConversation(targetRepositoryId, conversationId),
+    onSuccess: async (_response, input) => {
+      queryClient.removeQueries({ queryKey: queryKeys.conversation(input.targetRepositoryId, input.conversationId) })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.conversations(input.targetRepositoryId) })
+    },
+  })
+
+  return { reindex, jobAction, deleteRepository, deleteAllRepositories, expandGraph, impact, chat, deleteConversation }
 }
 
 type JobActionInput = {
@@ -95,4 +104,9 @@ type ChatInput = {
   message: string
   context?: AssistantRequestContext
   conversationId?: string
+}
+
+type DeleteConversationInput = {
+  targetRepositoryId: string
+  conversationId: string
 }

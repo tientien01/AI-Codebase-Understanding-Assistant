@@ -70,6 +70,24 @@ def get_conversation(
         ) from error
 
 
+@router.delete(
+    "/{repository_id}/conversations/{conversation_id}",
+)
+def delete_conversation(
+    repository_id: str,
+    conversation_id: str,
+    service: AssistantUseCases = Depends(get_assistant_use_cases),
+) -> dict[str, bool]:
+    try:
+        service.delete_conversation(repository_id, conversation_id)
+    except ConversationNotFoundError as error:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "conversation_not_found", "message": "Conversation was not found."},
+        ) from error
+    return {"deleted": True}
+
+
 @router.get("/{repository_id}/evidence/{evidence_id}", response_model=EvidenceDTO)
 def get_evidence(
     repository_id: str,

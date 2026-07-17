@@ -155,6 +155,9 @@ class AssistantUseCases:
     def get_conversation(self, repository_id: str, conversation_id: str, limit: int):
         return self.chat_service.get_conversation(repository_id, conversation_id, limit)
 
+    def delete_conversation(self, repository_id: str, conversation_id: str) -> None:
+        self.chat_service.delete_conversation(repository_id, conversation_id)
+
     def validate_evidence(self, repository_id: str, evidence_ids: list[str]) -> EvidenceValidationResponse:
         repository = self.repositories.get_repository(repository_id)
         return self.evidence.validate_evidence(repository, evidence_ids)

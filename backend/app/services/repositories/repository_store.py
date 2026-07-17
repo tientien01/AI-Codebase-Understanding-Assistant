@@ -432,7 +432,10 @@ class RepositoryStore:
             ids = session.scalars(
                 select(ConversationORM.id)
                 .join(AgentTraceORM, AgentTraceORM.conversation_id == ConversationORM.id)
-                .where(ConversationORM.repository_id == repository_id)
+                .where(
+                    ConversationORM.repository_id == repository_id,
+                    ConversationORM.status != "deleted",
+                )
                 .group_by(ConversationORM.id)
                 .order_by(func.max(AgentTraceORM.started_at).desc(), ConversationORM.id.desc())
                 .limit(limit)
@@ -444,7 +447,11 @@ class RepositoryStore:
     ) -> ConversationTranscriptRecord | None:
         with SessionLocal() as session:
             conversation = session.get(ConversationORM, conversation_id)
-            if conversation is None or conversation.repository_id != repository_id:
+            if (
+                conversation is None
+                or conversation.repository_id != repository_id
+                or conversation.status == "deleted"
+            ):
                 return None
             traces = session.scalars(
                 select(AgentTraceORM)
@@ -502,6 +509,20 @@ class RepositoryStore:
                 self._conversation_summary(session, repository_id, conversation_id),
                 tuple(messages[:limit]),
             )
+
+    def delete_conversation(self, repository_id: str, conversation_id: str) -> bool:
+        """Hide an owned conversation while retaining its audit-linked records."""
+        with SessionLocal.begin() as session:
+            result = session.execute(
+                update(ConversationORM)
+                .where(
+                    ConversationORM.id == conversation_id,
+                    ConversationORM.repository_id == repository_id,
+                    ConversationORM.status != "deleted",
+                )
+                .values(status="deleted")
+            )
+            return bool(result.rowcount)
 
     def _conversation_summary(
         self, session, repository_id: str, conversation_id: str

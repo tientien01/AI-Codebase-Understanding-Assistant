@@ -25,6 +25,7 @@ import { pathForPage } from '../routing/routes'
 import type { AppRoute } from '../routing/routes'
 import type {
   AssistantRequestContext,
+  ChatMessage,
   ChatResponse,
   Citation,
   ApiEndpoint,
@@ -69,6 +70,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   const [graphViewFallback, setGraphViewFallback] = useState<GraphView>('project-map')
   const [graphProjectionControls, setGraphProjectionControls] = useState(defaultGraphProjection)
   const [chatInput, setChatInput] = useState('How does the login flow work?')
+  const [pendingChatQuestion, setPendingChatQuestion] = useState<string>()
   const [activeConversation, setActiveConversation] = useState<{ repositoryId: string; conversationId: string }>()
   const [chatOutcomes, setChatOutcomes] = useState<Record<string, Pick<ChatResponse, 'generation_mode' | 'provider_state' | 'retrieval_mode'>>>({})
   const [searchQueryDraft, setSearchQueryDraft] = useState('login auth token')
@@ -173,7 +175,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     ['overview', 'code', 'assistant'].includes(page),
   )
   const chatTranscriptQuery = useChatTranscriptQuery(selectedRepository, activeConversationId)
-  const chatMessages = (chatTranscriptQuery.data?.messages ?? []).map((message) => ({
+  const chatMessages: ChatMessage[] = (chatTranscriptQuery.data?.messages ?? []).map((message) => ({
     messageId: message.message_id,
     role: message.role,
     content: message.content,
@@ -185,6 +187,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     providerState: chatOutcomes[message.message_id]?.provider_state,
     retrievalMode: chatOutcomes[message.message_id]?.retrieval_mode,
   }))
+  if (pendingChatQuestion) chatMessages.push({ role: 'user', content: pendingChatQuestion })
   const mutations = useServerMutations(selectedRepository?.id, selectedRepository?.current_index_version)
 
   const importController = useImportController({
@@ -335,6 +338,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     if (!selectedRepository || !chatInput.trim()) return
     const userText = chatInput.trim()
     setChatInput('')
+    setPendingChatQuestion(userText)
     const result = await runAction(() => mutations.chat.mutateAsync({
       targetRepositoryId: selectedRepository.id,
       indexVersion: selectedRepository.current_index_version,
@@ -342,7 +346,11 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
       context: chatContext,
       conversationId: activeConversationId,
     }))
-    if (!result.ok) return
+    setPendingChatQuestion(undefined)
+    if (!result.ok) {
+      setChatInput(userText)
+      return
+    }
     setChatOutcomes((current) => ({ ...current, [result.data.message_id]: result.data }))
     const conversationId = result.data.conversation_id
     setActiveConversation({ repositoryId: selectedRepository.id, conversationId })
@@ -364,6 +372,17 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     if (page === 'assistant') {
       navigate(pathForPage('assistant', selectedRepository.id, { conversationId }))
     }
+  }
+
+  async function deleteConversation(conversationId: string) {
+    if (!selectedRepository) return
+    if (!window.confirm('Delete this conversation from chat history?')) return
+    const result = await runAction(() => mutations.deleteConversation.mutateAsync({
+      targetRepositoryId: selectedRepository.id,
+      conversationId,
+    }))
+    if (!result.ok) return
+    if (activeConversationId === conversationId) startNewChat()
   }
 
   async function runSearch(event?: FormEvent) {
@@ -546,6 +565,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     conversations: conversationListQuery.data?.items ?? [],
     activeConversationId,
     activeConversationStale: chatTranscriptQuery.data?.conversation?.is_stale ?? false,
+    chatPending: mutations.chat.isPending,
     chatReplayLoading: chatTranscriptQuery.isPending && Boolean(activeConversationId),
     chatReplayError: chatTranscriptQuery.isError,
     chatContext,
@@ -580,6 +600,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     sendChatMessage,
     startNewChat,
     selectConversation,
+    deleteConversation,
     openEvidence,
     selectApiEndpoint,
     openApiFlow,

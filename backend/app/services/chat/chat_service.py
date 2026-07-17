@@ -253,6 +253,11 @@ class ChatService:
             raise ConversationNotFoundError
         return self._transcript_dto(transcript, repository.current_index_version)
 
+    def delete_conversation(self, repository_id: str, conversation_id: str) -> None:
+        self.repositories.get_repository(repository_id)
+        if not self.repositories.store.delete_conversation(repository_id, conversation_id):
+            raise ConversationNotFoundError
+
     def _persist(
         self,
         repository_id: str,

@@ -68,6 +68,11 @@ export const serverApi = {
       `${API_V1}/repositories/${repositoryId}/conversations/${encodeURIComponent(conversationId)}?limit=200`,
       { signal },
     ),
+  deleteConversation: (repositoryId: string, conversationId: string) =>
+    requestJson<{ deleted: boolean }>(
+      `${API_V1}/repositories/${repositoryId}/conversations/${encodeURIComponent(conversationId)}`,
+      { method: 'DELETE' },
+    ),
   chat: (
     repositoryId: string,
     message: string,

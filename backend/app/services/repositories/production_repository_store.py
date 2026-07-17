@@ -412,6 +412,22 @@ class ProductionRepositoryStore:
                 self._conversation_summary(session, repository_id, conversation_id), tuple(replay)
             )
 
+    def delete_conversation(self, repository_id: str, conversation_id: str) -> bool:
+        """Soft-delete an owned operator conversation without discarding audit evidence."""
+        conversations = self.t["conversations"]
+        with self.Session.begin() as session:
+            result = session.execute(
+                update(conversations)
+                .where(
+                    conversations.c.id == conversation_id,
+                    conversations.c.repository_id == repository_id,
+                    conversations.c.principal_id == "principal_local_operator",
+                    conversations.c.status != "deleted",
+                )
+                .values(status="deleted", updated_at=datetime.now(UTC))
+            )
+            return bool(result.rowcount)
+
     def _conversation_summary(
         self, session, repository_id: str, conversation_id: str
     ) -> ConversationSummaryRecord:

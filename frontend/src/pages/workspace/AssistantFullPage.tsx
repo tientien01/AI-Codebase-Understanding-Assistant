@@ -10,6 +10,7 @@ export function AssistantFullPage({
   conversations,
   activeConversationId,
   activeConversationStale,
+  pending,
   replayLoading,
   replayError,
   onInput,
@@ -17,6 +18,7 @@ export function AssistantFullPage({
   onEvidence,
   onNewChat,
   onSelectConversation,
+  onDeleteConversation,
 }: {
   input: string
   messages: ChatMessage[]
@@ -24,6 +26,7 @@ export function AssistantFullPage({
   conversations: ConversationSummary[]
   activeConversationId?: string
   activeConversationStale: boolean
+  pending: boolean
   replayLoading: boolean
   replayError: boolean
   onInput: (value: string) => void
@@ -31,6 +34,7 @@ export function AssistantFullPage({
   onEvidence: (citation: Citation) => void
   onNewChat: () => void
   onSelectConversation: (conversationId: string) => void
+  onDeleteConversation: (conversationId: string) => void
 }) {
   return (
     <div>
@@ -42,6 +46,7 @@ export function AssistantFullPage({
             conversations={conversations}
             activeConversationId={activeConversationId}
             onSelect={onSelectConversation}
+            onDelete={onDeleteConversation}
           />
         </aside>
         <AssistantChat
@@ -49,6 +54,7 @@ export function AssistantFullPage({
           messages={messages}
           disabled={disabled}
           activeConversationStale={activeConversationStale}
+          pending={pending}
           replayLoading={replayLoading}
           replayError={replayError}
           onInput={onInput}

@@ -12,6 +12,7 @@ type AssistantChatProps = {
   conversations?: ConversationSummary[]
   activeConversationId?: string
   activeConversationStale?: boolean
+  pending?: boolean
   replayLoading?: boolean
   replayError?: boolean
   full?: boolean
@@ -21,6 +22,7 @@ type AssistantChatProps = {
   onRemoveContext?: () => void
   onNewChat?: () => void
   onSelectConversation?: (conversationId: string) => void
+  onDeleteConversation?: (conversationId: string) => void
 }
 
 export function AssistantPanel(props: Omit<AssistantChatProps, 'full'>) {
@@ -86,6 +88,7 @@ export function CollapsibleAssistantPanel(props: Omit<AssistantChatProps, 'full'
                 props.onSelectConversation?.(conversationId)
                 setShowHistory(false)
               }}
+              onDelete={(conversationId) => props.onDeleteConversation?.(conversationId)}
             />
           ) : null}
           {!showHistory && !props.messages.length ? (
@@ -120,6 +123,7 @@ export function AssistantChat({
   disabled,
   context,
   activeConversationStale,
+  pending = false,
   replayLoading,
   replayError,
   full = false,
@@ -148,6 +152,15 @@ export function AssistantChat({
         {messages.map((message, index) => (
           <ChatMessageCard message={message} index={index} key={`${message.role}-${index}`} onEvidence={onEvidence} />
         ))}
+        {pending ? (
+          <article className="chat-message assistant assistant-thinking" role="status" aria-label="AI is analyzing the question">
+            <div className="chat-message-author">
+              <span className="chat-avatar"><Icon name="spark" size={14} /></span>
+              <strong>Assistant</strong>
+            </div>
+            <p><span className="thinking-dots" aria-hidden="true"><i /><i /><i /></span> Analyzing the question and checking evidence…</p>
+          </article>
+        ) : null}
       </div>
       <form className="chat-form" onSubmit={onSubmit}>
         {context ? (
@@ -161,12 +174,12 @@ export function AssistantChat({
           </div>
         ) : null}
         <textarea
-          disabled={disabled}
+          disabled={disabled || pending}
           rows={3}
           value={input}
           onChange={(event) => onInput(event.target.value)}
           onKeyDown={submitOnEnter}
-          placeholder={disabled ? 'Index a repository before chatting.' : 'Ask anything about your codebase...'}
+          placeholder={disabled ? 'Index a repository before chatting.' : pending ? 'AI is preparing an evidence-backed answer…' : 'Ask anything about your codebase...'}
           aria-label="Message AI Assistant"
         />
         <div className="chat-composer-actions">
@@ -175,7 +188,7 @@ export function AssistantChat({
             <button type="button" disabled title="Attachments are not available yet" aria-label="Attach a file"><Icon name="paperclip" size={16} /></button>
           </div>
           <span>Enter to send · Shift+Enter for a new line</span>
-          <button className="primary chat-send" disabled={disabled || !input.trim()} aria-label="Send message">
+          <button className="primary chat-send" disabled={disabled || pending || !input.trim()} aria-label="Send message">
             <Icon name="send" size={17} />
           </button>
         </div>
@@ -188,28 +201,38 @@ export function ConversationHistory({
   conversations,
   activeConversationId,
   onSelect,
+  onDelete,
 }: {
   conversations: ConversationSummary[]
   activeConversationId?: string
   onSelect: (conversationId: string) => void
+  onDelete: (conversationId: string) => void
 }) {
   return (
     <nav className="assistant-history" aria-label="Saved conversations">
       <strong>History</strong>
       {!conversations.length ? <p>No saved conversations yet.</p> : null}
       {conversations.map((conversation) => (
-        <button
-          type="button"
-          key={conversation.conversation_id}
-          className={conversation.conversation_id === activeConversationId ? 'active' : ''}
-          aria-current={conversation.conversation_id === activeConversationId ? 'page' : undefined}
-          onClick={() => onSelect(conversation.conversation_id)}
-        >
-          <span>{conversation.title || 'Untitled conversation'}</span>
-          <small>
-            {conversation.message_count} messages{conversation.is_stale ? ' · older index' : ''}
-          </small>
-        </button>
+        <div className="assistant-history-item" key={conversation.conversation_id}>
+          <button
+            type="button"
+            className={conversation.conversation_id === activeConversationId ? 'active' : ''}
+            aria-current={conversation.conversation_id === activeConversationId ? 'page' : undefined}
+            onClick={() => onSelect(conversation.conversation_id)}
+          >
+            <span>{conversation.title || 'Untitled conversation'}</span>
+            <small>
+              {conversation.message_count} messages{conversation.is_stale ? ' · older index' : ''}
+            </small>
+          </button>
+          <button
+            className="assistant-history-delete"
+            type="button"
+            aria-label={`Delete conversation ${conversation.title || 'Untitled conversation'}`}
+            title="Delete conversation"
+            onClick={() => onDelete(conversation.conversation_id)}
+          >×</button>
+        </div>
       ))}
     </nav>
   )

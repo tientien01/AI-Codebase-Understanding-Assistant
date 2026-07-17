@@ -68,6 +68,7 @@ type AppRoutesProps = {
   conversations: ConversationSummary[]
   activeConversationId?: string
   activeConversationStale: boolean
+  chatPending: boolean
   chatReplayLoading: boolean
   chatReplayError: boolean
   chatContext?: AssistantRequestContext
@@ -117,6 +118,7 @@ type AppRoutesProps = {
   sendChatMessage: (event?: FormEvent) => void
   startNewChat: () => void
   selectConversation: (conversationId: string) => void
+  deleteConversation: (conversationId: string) => void
   openEvidence: (citation: Citation) => void
   selectApiEndpoint: (endpointKey: string) => void
   openApiFlow: (endpoint: ApiEndpoint) => void
@@ -339,6 +341,7 @@ export function AppRoutes(props: AppRoutesProps) {
             conversations={props.conversations}
             activeConversationId={props.activeConversationId}
             activeConversationStale={props.activeConversationStale}
+            pending={props.chatPending}
             replayLoading={props.chatReplayLoading}
             replayError={props.chatReplayError}
             disabled={!canChat(selectedRepository) || props.chatReplayError}
@@ -347,6 +350,7 @@ export function AppRoutes(props: AppRoutesProps) {
             onEvidence={props.openEvidence}
             onNewChat={props.startNewChat}
             onSelectConversation={props.selectConversation}
+            onDeleteConversation={props.deleteConversation}
           />
         )}
         side={<EvidenceSummary />}
@@ -423,7 +427,7 @@ function EvaluationRoute({ repository }: { repository?: Repository }) {
   )
 }
 
-function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, chatContext, conversations, activeConversationId, activeConversationStale, chatReplayLoading, chatReplayError, setChatInput, clearChatContext, sendChatMessage, startNewChat, selectConversation, openEvidence }: AppRoutesProps & { main: ReactNode }) {
+function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, chatContext, conversations, activeConversationId, activeConversationStale, chatPending, chatReplayLoading, chatReplayError, setChatInput, clearChatContext, sendChatMessage, startNewChat, selectConversation, deleteConversation, openEvidence }: AppRoutesProps & { main: ReactNode }) {
   return (
     <WorkspacePage
       main={main}
@@ -436,6 +440,7 @@ function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages,
           conversations={conversations}
           activeConversationId={activeConversationId}
           activeConversationStale={activeConversationStale}
+          pending={chatPending}
           replayLoading={chatReplayLoading}
           replayError={chatReplayError}
           disabled={!canChat(selectedRepository) || chatReplayError}
@@ -444,6 +449,7 @@ function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages,
           onRemoveContext={clearChatContext}
           onNewChat={startNewChat}
           onSelectConversation={selectConversation}
+          onDeleteConversation={deleteConversation}
           onSubmit={sendChatMessage}
           onEvidence={openEvidence}
         />
