@@ -4,7 +4,7 @@ Status: Approved
 Owner: Project maintainer  
 Approved: 2026-07-16
 
-Delivery state: AGT-006 verified locally; AGT-007, RET-004, RET-005 and UI-024 remain draft and require separate promotion.
+Delivery state: AGT-006 and AGT-007 are verified locally; RET-004, RET-005 and UI-024 remain draft and require separate promotion.
 
 ## Outcome
 

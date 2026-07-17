@@ -1,7 +1,7 @@
 # UI-006 Background Import UX Report
 
-Status: UX implementation verified; mandatory full backend gate blocked by unrelated frozen-fixture mismatch
-Date: 2026-07-14
+Status: Completed by owner-authorized documentation closure; UX implementation verified
+Date: 2026-07-17
 
 The accepted target is an explicit Prepare Preview action, immediate session acknowledgement, server-owned acquisition stages, truthful elapsed time, retained Import context, safe cancellation, and unchanged background indexing semantics.
 
@@ -14,6 +14,14 @@ The accepted target is an explicit Prepare Preview action, immediate session ack
 - Real Chromium Prepare Preview: POST/status polling/preview all returned 200; 63 total, 34 indexable, 29 skipped; no console/page errors.
 - Real Chromium Start Indexing: completed 34/34 in 0.7 seconds with 55 symbols, 9 endpoints, 134 chunks and 3,700 graph nodes; test repository deletion returned 200; no console/page errors after the activity-key fix.
 - Full backend: 288 passed, 31 skipped, 18 failed only under the pre-existing frozen evaluation fixture CRLF/checksum mismatch.
+
+On 2026-07-17 the project owner confirmed that the unrelated frozen-fixture issue
+had been handled and authorized closing UI-006 through a documentation-only update.
+AGT-007 verification subsequently confirmed the expected tracked LF hash in a
+canonical clone and passed all 373 backend tests there; the main Windows checkout
+still converts that file to CRLF and reproduces the same 18 failures. The earlier
+counts remain the exact UI-006 run record, and this closure does not misattribute
+the line-ending condition to UI-006.
 
 The first blank-page report was caused by `useImportPreviewQuery` and `useImportSessionStatusQuery` receiving each other's `enabled` expression. The TypeScript build caught the undefined variable; the corrected hooks now build and render `/import` in Chromium.
 

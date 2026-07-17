@@ -42,6 +42,16 @@ The AGT-003 trace-persistence gate passed **6 tests**, its assistant/evidence/re
 
 The AGT-004 provider-evidence gate passed **7 tests**, its assistant/evidence/retrieval/service regression passed **121 tests**, and the canonical-LF local-profile full suite passed **342 tests with 31 integration-profile tests skipped**. The matrix verifies exact selected source content, active owner/index binding, source hash/range/blocked checks, all-or-nothing context budgeting, current-source re-read for selected saved evidence, untrusted-source prompt delimiting, provider-outage fallback, citation allowlisting and source exclusion from persisted traces. The default fake provider remains deliberately unconfigured; real-provider answer quality, latency, cost and accepted thresholds remain unverified.
 
+The AGT-007 focused Ollama/provider/citation gate passed **36 tests**, including
+**19 native Ollama adapter cases**. Its combined assistant/evidence/retrieval/service
+regression passed **151 tests**. A canonical-LF local-profile clone passed the full
+suite with **373 tests passed and 31 integration-profile tests skipped**. The main
+Windows checkout passed 355 and reproduced the known 18 frozen evaluation-fixture
+CRLF failures; no AGT-007 test failed. The matrix verifies loopback/model/timeout
+validation, model readiness, non-streaming JSON payloads, no tools, bounded failure,
+malformed/empty response rejection, citation allowlisting and deterministic fallback.
+No live Ollama model quality, latency or resource claim is made.
+
 The AGT-005 context gate passed **5 focused tests** and the assistant/retrieval/API-contract gate passed **81 tests**. A canonical-LF full local-profile run passed **347 tests with 31 integration-profile tests skipped**. The main Windows checkout passed 329 tests and exposed the same 18 evaluation-fixture failures caused by CRLF hash drift in `backend/auth_service.py`; no AGT-005 test failed. Frontend typecheck, lint, all **113 tests across 16 files**, and production build pass. The matrix covers request bounds/raw-source exclusion, owner/hash/range/symbol rejection before retrieval, context-biased retrieval with unchanged classification, stable 422 mapping, Code/Overview context display and removal, exact request serialization and context-free compatibility.
 
 The EVA-001 clean-environment gate passed **19 targeted tests**, its evaluation/retrieval/evidence/assistant compatibility regression passed **95 tests**, and the local-profile full suite passed **247 tests with 29 integration-profile tests skipped**. The matrix validates content-addressed dataset/fixture identities, bounded dataset/candidate/file inputs, exact/lexical/semantic/graph/negative/ambiguous cases, source hash/range/path safety, three same-input baselines, hand-computed metric formulas, input-order invariance, frozen run identities, reviewed aggregate regressions, checksums and CLI export. Deterministic semantic observations do not establish real provider quality, production latency/load, answer quality or accepted release thresholds.
@@ -64,6 +74,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 | `assistant/test_sufficiency_citation_repair.py` | 10 | question-specific sufficiency, controlled repair decisions, heuristic refusal, current/selected claim-citation binding, duplicate/scope/stale/cross-owner rejection and provider fail-closed behavior |
 | `assistant/test_trace_persistence.py` | 6 | atomic local persistence/rollback, redaction, allowlist rejection, ordered owned replay, ChatService fail-closed behavior and accepted production trace schema mapping |
 | `assistant/test_provider_evidence_context.py` | 7 | selected/current whole source context, hash/range/blocked/budget rejection, saved-evidence source reads, prompt-injection delimiting, provider fallback, citation restriction and trace privacy |
+| `assistant/test_ollama_provider.py` | 19 | loopback/model validation, ready/missing/unavailable states, native bounded JSON chat shape, malformed/empty/tool rejection, grounded context, citation allowlisting and deterministic fallback |
 | `assistant/test_request_context.py` | 5 | bounded page/file/line/symbol shape, raw-source exclusion, owner/hash/range/symbol validation, retrieval anchoring, stable API rejection and pre-retrieval failure |
 | `evaluation/` | 32 | versioned bounded dataset/fixture validation, hand-computed retrieval metrics, three baseline methods, reproducible checksums, content-addressed CI smoke policy, identity/integrity rules, deterministic diagnostics and CLI pass/fail export |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |

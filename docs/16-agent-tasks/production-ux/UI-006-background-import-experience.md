@@ -1,11 +1,11 @@
 ---
 id: UI-006
 title: Make GitHub acquisition explicit, staged, and non-blocking
-status: in_progress
+status: completed
 priority: P0
 phase: 6
 owner: project-maintainer
-last_verified: 2026-07-14
+last_verified: 2026-07-17
 depends_on: [UI-002, SEC-001]
 requirements: []
 contracts:
@@ -86,5 +86,11 @@ Replace the blocking generic GitHub-import loading screen with an explicit prepa
 After the owner observed a blank page and requested automated verification, the frontend build/typecheck, lint and all 55 Vitest tests passed. Focused backend import/security/service and API contract coverage passed 68 tests. Two headless Chromium runs exercised the real `Hoang-Sang/recommend_hotel` URL through Prepare Preview and Start Indexing: 63 files were acquired, 34 were indexed, 29 were truthfully skipped, the index completed in 0.7 seconds, cleanup returned 200, and the final run had no console/page errors. The import page now exposes the single implemented indexing pipeline, removes inactive profile controls, uses source-aware four-step preparation for GitHub/ZIP/folder, filters common generated folders locally and uploads browser folders in bounded 200-file batches under a server-owned session. ZIP archives retain path, entry-count, expanded-size and compression-ratio gates, but a truthfully declared oversized source file is now skipped rather than rejecting an otherwise indexable archive; a streamed-size mismatch still fails closed. The owner retained visual UX acceptance. The full backend suite has 288 passes and 31 skips; its 18 failures are the pre-existing frozen evaluation fixture CRLF/checksum mismatch, so this task remains `in_progress` rather than claiming a clean mandatory full gate.
 
 ## Rollback
+
+The project owner confirmed on 2026-07-17 that the unrelated frozen-fixture issue
+had been handled and explicitly authorized this documentation-only closure. During
+AGT-007 verification the main Windows checkout still materialized that tracked LF
+fixture as CRLF, while a hash-verified canonical-LF clone passed all 373 backend
+tests. The UI-006 implementation and focused evidence above are unchanged.
 
 Restore the synchronous route call and automatic-preview hook behavior, remove the status endpoint/query, and retain the underlying SEC-001/BUG-001 acquisition controls.

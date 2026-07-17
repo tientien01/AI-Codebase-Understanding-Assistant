@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     llm_provider: str = "fake"
     llm_model: str = "fake-chat-model"
     llm_api_key: str = ""
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_timeout_seconds: float = 30.0
     embedding_provider: str = "fake"
     embedding_model: str = "fake-embedding-model"
     embedding_api_key: str = ""
@@ -103,6 +105,8 @@ class Settings(BaseSettings):
             raise ValueError("Operator access and audit lifetimes must be positive")
         if self.session_idle_seconds > self.session_absolute_seconds:
             raise ValueError("SESSION_IDLE_SECONDS cannot exceed SESSION_ABSOLUTE_SECONDS")
+        if not 0 < self.ollama_timeout_seconds <= 120:
+            raise ValueError("OLLAMA_TIMEOUT_SECONDS must be greater than zero and at most 120")
         if self.app_env == "production" and self.api_auth_token.strip():
             raise ValueError("Production profile forbids the shared API_AUTH_TOKEN")
         required_access_settings = {
