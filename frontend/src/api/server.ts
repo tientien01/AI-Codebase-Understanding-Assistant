@@ -22,6 +22,10 @@ import type {
   ImportSessionStatus,
 } from '../types/api'
 
+// Leave headroom around the maximum 15-minute Ollama generation timeout for
+// readiness, retrieval, citation validation, and conversation persistence.
+const CHAT_TIMEOUT_MS = 20 * 60_000
+
 export const serverApi = {
   repositories: (signal?: AbortSignal) => requestJson<Repository[]>(`${API_V1}/repositories`, { signal }),
   settings: (signal?: AbortSignal) => requestJson<SettingsResponse>(`${API_V1}/settings`, { signal }),
@@ -87,6 +91,7 @@ export const serverApi = {
         ...(conversationId ? { conversation_id: conversationId } : {}),
         ...(context ? { context } : {}),
       }),
+      CHAT_TIMEOUT_MS,
     ),
   createGithubImport: (url: string, name?: string) =>
     requestJson<{ import_session_id: string; status: string }>(`${API_V1}/import-sessions/github`, jsonRequest({ url, name })),

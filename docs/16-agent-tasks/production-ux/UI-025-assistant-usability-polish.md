@@ -16,14 +16,17 @@ technology_docs: []
 baseline_docs:
   - docs/14-implementation-baseline/source-map.md
 allowed_paths:
+  - backend/app/core/config.py
   - backend/app/api/v1/routes/assistant.py
   - backend/app/services/application/use_cases.py
   - backend/app/services/chat/chat_service.py
   - backend/app/services/chat/llm_client.py
+  - backend/app/services/chat/ollama_client.py
   - backend/app/services/repositories/repository_port.py
   - backend/app/services/repositories/repository_store.py
   - backend/app/services/repositories/production_repository_store.py
   - frontend/src/AppRoutes.tsx
+  - frontend/src/api/client.ts
   - frontend/src/api/server.ts
   - frontend/src/components/chat/AssistantChat.tsx
   - frontend/src/config/navigation.ts
@@ -50,6 +53,7 @@ production_gates:
   - An owned conversation can be removed from visible history through a confirmed action.
   - Assistant prompts request direct natural-language explanations while preserving citation validation.
   - Impact, Search, and Evaluation remain deep-linkable but are hidden from workspace navigation.
+  - Local chat may wait for a configured 15-minute Ollama generation without extending unrelated API timeouts.
 evidence_outputs: []
 ---
 
@@ -71,6 +75,7 @@ Make the existing grounded assistant feel responsive and easier to inspect witho
 - Repository-owned per-conversation soft deletion and frontend confirmation/control.
 - Prompt wording for direct, natural, appropriately detailed answers in the user's language.
 - Hide Impact, Search, and Evaluation from sidebar navigation only.
+- Align the browser chat timeout with the accepted 900-second local Ollama ceiling.
 
 ## Out of scope
 
@@ -86,6 +91,7 @@ The owner explicitly requested no automated test/build run for this rapid local 
 - Evidence renders stable source line numbers, wraps source text, and labels why it was retrieved.
 - Conversation deletion requires confirmation, rejects cross-repository IDs, invalidates cached history, and exits a deleted active route.
 - Navigation omits the three requested entries without deleting their routes.
+- Chat uses a dedicated browser timeout longer than the maximum configured Ollama timeout; other API requests retain their short default timeout.
 - No dependency, model, schema, or migration change occurs.
 
 ## Rollback
@@ -99,3 +105,5 @@ Update this task, the task register, and frontend UX README. Record that automat
 ## Implementation note
 
 Implemented locally on 2026-07-17. The requested source and documentation changes are complete, and static `git diff --check` passes. Automated frontend/backend tests and production build were intentionally not run at the owner's request; runtime acceptance remains owner-verifiable, so this task stays `in_progress` and no production evidence is claimed.
+
+Follow-up owner feedback raised the local Ollama ceiling from 120 to 900 seconds and assigned chat a dedicated 20-minute browser timeout. The extra five minutes cover local readiness, retrieval, validation, and persistence around a maximum-duration generation; unrelated API calls retain the 30-second default.

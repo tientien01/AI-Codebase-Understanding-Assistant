@@ -11,7 +11,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 MAX_RESPONSE_BYTES = 1_048_576
-MAX_TIMEOUT_SECONDS = 120.0
+MAX_TIMEOUT_SECONDS = 900.0
 MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 
 
@@ -113,7 +113,7 @@ class OllamaClient:
         self.base_url = validate_ollama_base_url(base_url)
         self.model = validate_ollama_model(model)
         if not 0 < timeout_seconds <= MAX_TIMEOUT_SECONDS:
-            raise ValueError("Ollama timeout must be greater than zero and at most 120 seconds")
+            raise ValueError("Ollama timeout must be greater than zero and at most 900 seconds")
         self.timeout_seconds = float(timeout_seconds)
         self._transport = transport or self._request_json
 
