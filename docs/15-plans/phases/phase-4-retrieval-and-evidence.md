@@ -1,6 +1,6 @@
 # Phase 4 — Retrieval and Evidence
 
-Status: Approved; RET-001 through RET-003 and the EVA-001 deterministic evaluation foundation are verified, while accepted thresholds, provider/load qualification and release evidence remain incomplete
+Status: Approved; RET-001 through RET-004 and the EVA-001 deterministic evaluation foundation are verified, while production-scale thresholds, load qualification and release evidence remain incomplete
 
 ## Outcome
 
@@ -8,7 +8,7 @@ Queries use measurable typed retrieval and ranking, and only validated repositor
 
 ## Tasks
 
-`RET-001` through `RET-003` and `EVA-001` foundation work.
+`RET-001` through `RET-004` and `EVA-001` foundation work.
 
 ## Entry
 
@@ -34,3 +34,11 @@ Reproducible evaluation run, ranking regression, evidence validation suite, cont
 `RET-003` validates current owned source/hash/range/security/support before promotion, creates content-bound deterministic evidence IDs, selects diverse whole spans within an inspectable token budget, and preserves explicit limited/insufficient outcomes. It does not satisfy claim-level support validation, versioned evaluation datasets, accepted quality/latency thresholds or load gates.
 
 `EVA-001` adds a content-addressed six-case retrieval dataset, reviewed exact/keyword, deterministic semantic-fixture and hybrid baselines, metric formulas, negative/ambiguous coverage and a reproducible checksummed runner. It does not claim real embedding/provider quality, answer correctness, production latency/load, accepted numeric thresholds or CI release blocking; those remain later evaluation/release work.
+
+`RET-004` runs three real local `embeddinggemma` repetitions over those exact
+candidate inputs. The versioned sparse+dense hybrid improves macro Recall@3 from
+0.6667 to 1.0 and reciprocal rank from 0.8 to 0.9 without reducing the measured
+insufficient-evidence accuracy. Query p95 is 334.5 ms, maximum corpus embedding time
+is 1.37 s and observed model memory is 680,379,023 bytes on the recorded Windows
+capacity profile. The reviewed benchmark policy accepts RET-005 prototyping; this is
+not a production-scale load, answer-quality or release-threshold qualification.

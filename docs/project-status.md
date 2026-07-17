@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 7 has verified SEC-001 and SEC-002; operations delivery remains open |
-| Active task | AGT-007 completed locally; Phase 6 task metadata still lists ARCH-001, UI-011 and UI-020 in progress and requires owner reconciliation |
-| Next task candidate | Promote RET-004 for a real Ollama sparse/dense/hybrid benchmark, or continue the operations sequence |
+| Active task | RET-004 completed locally; Phase 6 task metadata still requires owner reconciliation |
+| Next task candidate | Promote RET-005 for a versioned dense embedding index, or continue the operations sequence |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -47,6 +47,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Assistant conversations now expose repository-owned bounded history/replay, retain the server-issued identity across follow-ups, and restore deep-linked transcripts after refresh. A deterministic eight-message/1,000-token projection helps resolve follow-up intent without becoming evidence; stale assistant text is excluded and current-index citation gates remain authoritative. AGT-006 passes 61 focused backend/API regressions, 114 frontend tests and a 354-pass canonical-LF full backend gate.
 - Optional chat now has a dependency-free native Ollama adapter restricted to a validated loopback HTTP origin, installed model identity, bounded timeout and response size. Readiness never pulls or mutates models; non-streaming JSON receives only validated AGT-004 evidence context, and outage/malformed/invalid-citation cases preserve deterministic fallback. AGT-007 passes 36 focused tests, 151 combined regressions and a 373-pass canonical-LF full backend gate; live-model quality remains unverified.
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
+- A real three-repetition local `embeddinggemma` benchmark now compares sparse, dense and weighted-RRF hybrid retrieval on the exact EVA-001 inputs. Hybrid Recall@3 improves from 0.6667 to 1.0 and reciprocal rank from 0.8 to 0.9; query p95 is 334.5 ms, maximum corpus embedding is 1.37 s and observed model memory is 680,379,023 bytes. All reviewed RET-004 adoption checks pass, authorizing RET-005 prototyping without claiming production-scale or answer-quality qualification.
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
 - TanStack Query now owns current frontend repository/workspace reads, mutation results, import previews and scoped chat transcripts. Repository/index-version keys, cancellation, bounded classified retry, terminal/hidden polling, scoped invalidation, cached refresh retention and explicit recovery states pass the UI-002 targeted/full/lint/typecheck/clean-build gates.
@@ -68,7 +69,7 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 ## Immediate sequence
 
 1. Reconcile the remaining Phase 6 `in_progress` task metadata before selecting unrelated implementation work.
-2. Authorize RET-004 only when a real Ollama sparse/dense/hybrid benchmark is desired; keep RET-005 and UI-024 draft until their predecessor evidence exists.
+2. Promote RET-005 only when a versioned persistent dense index is desired; keep UI-024 draft until its predecessor delivery and separate authorization exist.
 
 ## Status update rule
 

@@ -4,7 +4,7 @@ Status: Approved
 Owner: Project maintainer  
 Approved: 2026-07-16
 
-Delivery state: AGT-006 and AGT-007 are verified locally; RET-004, RET-005 and UI-024 remain draft and require separate promotion.
+Delivery state: AGT-006, AGT-007 and RET-004 are verified locally; RET-004 accepts `embeddinggemma` hybrid adoption for RET-005, while RET-005 and UI-024 remain draft and require separate promotion.
 
 ## Outcome
 

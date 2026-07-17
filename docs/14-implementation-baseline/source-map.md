@@ -18,7 +18,7 @@
 | Graph/projections | `backend/app/services/graph/` |
 | Typed retrieval and ranking | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`, `ranking.py`; compatibility facade in `retrieval_service.py` |
 | Validated evidence selection and context budgeting | `backend/app/services/evidence/selection.py`; persistence/citation projection in `evidence_service.py` |
-| Versioned retrieval evaluation and CI smoke gate | `backend/app/services/evaluation/`; immutable dataset in `evaluation/datasets/retrieval-v1/`; gate policy in `evaluation/gates/eva-002-ci.json`; synthetic fixture in `tests/fixtures/retrieval_benchmark_repo/`; named job in `.github/workflows/ci.yml` |
+| Versioned retrieval evaluation, real local embedding benchmark and CI smoke gate | `backend/app/services/evaluation/`, including `ollama_embeddings.py` and `ollama_benchmark.py`; immutable dataset in `evaluation/datasets/retrieval-v1/`; RET-004 raw result in `evaluation/results/`; gate policy in `evaluation/gates/eva-002-ci.json`; synthetic fixture in `tests/fixtures/retrieval_benchmark_repo/`; named job in `.github/workflows/ci.yml` |
 | Bounded assistant, request context, stateful conversation memory, sufficiency, citation validation, provider evidence and trace contracts | `backend/app/services/chat/workflow_contracts.py`, `request_context.py`, `conversation_memory.py`, `tool_registry.py`, `sufficiency.py`, `citation_validation.py`, `provider_context.py`, `trace_persistence.py`; compatibility orchestration/provider boundary in `agent_workflow_service.py`, `chat_service.py`, `llm_client.py`; loopback-only native Ollama transport in `ollama_client.py` |
 | Impact | `backend/app/services/impact/` |
 | Persistence | `backend/app/db/`, `services/repositories/repository_store.py` |
@@ -62,6 +62,13 @@ Capability readiness can now be calculated deterministically from declared valid
 Retrieval now crosses one immutable request/candidate contract with repository/index ownership, controlled retriever names, stable identities/ranks/reasons/support and a deterministic typed query classifier. Exact, lexical, symbol, endpoint, metadata, graph/context and optional local-semantic adapters feed a content-addressed `ranking-config/v1` and deterministic weighted reciprocal-rank fusion. Ranked candidates are validated against the current source snapshot before deterministic whole-span selection within an inspectable token budget; only selected blocks are persisted and projected as citations. Claim extraction, claim-support validation and evaluation thresholds remain later boundaries.
 
 Retrieval evaluation now validates a content-addressed six-case `evaluation-case/v1` dataset and its inert synthetic source hashes/ranges, then compares exact/keyword, naive semantic top-k and deterministic hybrid methods on identical candidate observations. It exports per-case results, reviewed metric formulas, frozen run identities and semantic/report checksums. Semantic candidates are fixtures rather than provider measurements; numeric release thresholds, answer judging, load and provider-quality evidence remain later gates.
+
+RET-004 now adds a benchmark-only loopback Ollama embedding client and a checksummed
+three-repetition runner over the same EVA-001 candidate inputs. It freezes the real
+`embeddinggemma` digest/dimension, exact text preprocessing, sparse/dense/weighted-RRF
+configuration, per-case quality, provider timing and `/api/ps` memory. The accepted
+result authorizes RET-005 prototyping only; no production vector index, embedding
+configuration default, API or retrieval path changes in this slice.
 
 The EVA-002 `evaluation-gate/v1` boundary binds the frozen dataset, fixture, raw result and method configuration identities to reviewed smoke-only metric floors. It emits ordered fail-closed diagnostics and a content-addressed decision. The named CI job runs existing graph/readiness, incremental/equivalence, assistant and evaluation suites before applying that policy. This is deterministic regression protection, not accepted production-quality or release-threshold evidence.
 

@@ -56,6 +56,15 @@ The AGT-005 context gate passed **5 focused tests** and the assistant/retrieval/
 
 The EVA-001 clean-environment gate passed **19 targeted tests**, its evaluation/retrieval/evidence/assistant compatibility regression passed **95 tests**, and the local-profile full suite passed **247 tests with 29 integration-profile tests skipped**. The matrix validates content-addressed dataset/fixture identities, bounded dataset/candidate/file inputs, exact/lexical/semantic/graph/negative/ambiguous cases, source hash/range/path safety, three same-input baselines, hand-computed metric formulas, input-order invariance, frozen run identities, reviewed aggregate regressions, checksums and CLI export. Deterministic semantic observations do not establish real provider quality, production latency/load, answer quality or accepted release thresholds.
 
+RET-004 adds **10 focused fake-provider tests** for bounded loopback embedding
+identity/payload/vector validation, cosine scoring, same-input repetitions, hybrid
+adoption and fail-closed identity/resource decisions. The focused gate passes 10,
+the metric-plus-RET-004 correction gate passes 15, the evaluation/retrieval gate
+passes 76 and the final canonical-LF full backend gate passes **384 tests with 31
+integration-profile skips**. A real three-repetition `embeddinggemma` run records
+per-case results and accepts RET-005 prototyping. Entity-deduplicated relevance now
+prevents repeated dense spans from inflating nDCG above 1.0.
+
 The EVA-002 clean-environment gate passed **13 targeted policy tests**, its combined evaluation/graph/readiness/incremental/equivalence/assistant suite passed **93 tests**, and the local-profile full suite passed **260 tests with 29 integration-profile tests skipped**. The matrix verifies content-addressed smoke configuration, identity/integrity binding, controlled finite unique rules, order invariance, completed-case enforcement, missing/errored/non-finite/below-floor failures, deterministic decision checksum and CLI exit behavior. The named GitHub Actions smoke job passed for commit `2aba763` in both push and pull-request triggers; this does not establish production thresholds.
 
 | Module | Tests | Main coverage |
@@ -76,7 +85,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 | `assistant/test_provider_evidence_context.py` | 7 | selected/current whole source context, hash/range/blocked/budget rejection, saved-evidence source reads, prompt-injection delimiting, provider fallback, citation restriction and trace privacy |
 | `assistant/test_ollama_provider.py` | 19 | loopback/model validation, ready/missing/unavailable states, native bounded JSON chat shape, malformed/empty/tool rejection, grounded context, citation allowlisting and deterministic fallback |
 | `assistant/test_request_context.py` | 5 | bounded page/file/line/symbol shape, raw-source exclusion, owner/hash/range/symbol validation, retrieval anchoring, stable API rejection and pre-retrieval failure |
-| `evaluation/` | 32 | versioned bounded dataset/fixture validation, hand-computed retrieval metrics, three baseline methods, reproducible checksums, content-addressed CI smoke policy, identity/integrity rules, deterministic diagnostics and CLI pass/fail export |
+| `evaluation/` | 43 | versioned bounded dataset/fixture validation, entity-deduplicated retrieval metrics, deterministic baselines, bounded Ollama embedding protocol/benchmark, reproducible checksums, content-addressed CI smoke policy, identity/integrity rules, deterministic diagnostics and CLI pass/fail export |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_graph_projection.py` | 7 | server maxima, truncation/count consistency, filter/support/direction/depth traversal, missing roots, deterministic 1,000-node ordering, active-version conflict mapping |
@@ -111,7 +120,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
 - Frontend coverage includes 114 Vitest tests across 16 files spanning routing/application, API client, import, server-state policy, bounded graph, contextual assistant requests, stateful conversation replay and workspace components. UI-004 has six deterministic Chromium tests; UI-005 adds four Settings/Evaluation Chromium tests covering success, permission, retry recovery, unavailable capability and repository/index context. Axe serious/critical checks cover both UI-005 primary surfaces. Broader MSW API contracts and accepted release performance budgets remain absent.
 - SEC-001 now has adversarial archive/folder/Git acquisition coverage. Parser isolation, content secret scanning, rate/abuse load, auth, container/network, dependency scan, backup/restore, and broader release evidence remain absent.
-- EVA-001 adds a versioned deterministic retrieval dataset and keyword/semantic-fixture/hybrid comparison, but no claim-level support benchmark, real embedding/provider run, accepted quality/latency threshold, answer judge or load qualification.
+- EVA-001 and RET-004 provide deterministic baselines plus a real local `embeddinggemma` sparse/dense/hybrid comparison, but no production vector index, claim-level answer benchmark, production-scale threshold, answer judge or load qualification.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
 - AGT-003 adds atomic redacted conversation/structured-trace persistence and owned internal replay, but no semantic entailment model/benchmark, public history API, automated retention executor or accepted agent threshold.
 - AGT-004 gives the optional provider exact validated selected source spans instead of citation metadata alone, but does not qualify a real provider, add frontend entity context/history, or introduce any source modification capability.

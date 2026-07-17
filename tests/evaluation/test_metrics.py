@@ -63,6 +63,15 @@ def test_duplicate_span_and_false_answerability_are_measured_explicitly() -> Non
     assert metrics.insufficient_evidence_correct == 0.0
 
 
+def test_duplicate_relevant_entity_cannot_inflate_ndcg_above_one() -> None:
+    ranked = [Item("expected", "file:a"), Item("expected", "file:b")]
+
+    metrics = score_retrieval(ranked, frozenset({"expected"}), k=2, should_answer=True)
+
+    assert metrics.recall_at_k == 1.0
+    assert metrics.ndcg_at_k == 1.0
+
+
 def test_metric_k_must_be_positive() -> None:
     with pytest.raises(ValueError, match="positive"):
         score_retrieval([], frozenset(), k=0, should_answer=False)

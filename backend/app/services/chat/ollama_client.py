@@ -31,6 +31,74 @@ class _NoRedirectHandler(HTTPRedirectHandler):
         return None
 
 
+def validate_ollama_base_url(value: str) -> str:
+    """Return a canonical loopback HTTP origin or reject unsafe provider routing."""
+
+    parsed = urlparse(value.strip())
+    if (
+        parsed.scheme != "http"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+        or parsed.path not in ("", "/")
+    ):
+        raise ValueError("Ollama base URL must be a credential-free loopback HTTP origin")
+    try:
+        is_loopback = ipaddress.ip_address(parsed.hostname).is_loopback
+    except ValueError:
+        is_loopback = parsed.hostname.lower() == "localhost"
+    if not is_loopback:
+        raise ValueError("Ollama base URL must use localhost or a loopback IP literal")
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError("Ollama base URL has an invalid port") from exc
+    authority = f"[{parsed.hostname}]" if ":" in parsed.hostname else parsed.hostname
+    if port is not None:
+        authority = f"{authority}:{port}"
+    return f"http://{authority}"
+
+
+def validate_ollama_model(value: str) -> str:
+    model = value.strip()
+    if not MODEL_PATTERN.fullmatch(model) or ".." in model or "//" in model:
+        raise ValueError("Ollama model identity is invalid")
+    return model
+
+
+def request_ollama_json(
+    method: str,
+    url: str,
+    payload: dict[str, object] | None,
+    timeout_seconds: float,
+    *,
+    max_response_bytes: int = MAX_RESPONSE_BYTES,
+) -> dict[str, object]:
+    """Issue one bounded no-redirect request to an already validated Ollama URL."""
+
+    body = None if payload is None else json.dumps(payload, separators=(",", ":")).encode()
+    request = Request(
+        url,
+        data=body,
+        method=method,
+        headers={"Accept": "application/json", "Content-Type": "application/json"},
+    )
+    opener = build_opener(_NoRedirectHandler())
+    try:
+        with opener.open(request, timeout=timeout_seconds) as response:
+            raw = response.read(max_response_bytes + 1)
+    except HTTPError as exc:
+        raise RuntimeError("Ollama request failed") from exc
+    if len(raw) > max_response_bytes:
+        raise ValueError("Ollama response exceeds the size limit")
+    decoded = json.loads(raw)
+    if not isinstance(decoded, dict):
+        raise ValueError("Ollama response must be a JSON object")
+    return decoded
+
+
 class OllamaClient:
     """Minimal native Ollama adapter restricted to a loopback HTTP endpoint."""
 
@@ -42,8 +110,8 @@ class OllamaClient:
         timeout_seconds: float,
         transport: OllamaTransport | None = None,
     ) -> None:
-        self.base_url = self._validate_base_url(base_url)
-        self.model = self._validate_model(model)
+        self.base_url = validate_ollama_base_url(base_url)
+        self.model = validate_ollama_model(model)
         if not 0 < timeout_seconds <= MAX_TIMEOUT_SECONDS:
             raise ValueError("Ollama timeout must be greater than zero and at most 120 seconds")
         self.timeout_seconds = float(timeout_seconds)
@@ -85,41 +153,6 @@ class OllamaClient:
         return content
 
     @staticmethod
-    def _validate_base_url(value: str) -> str:
-        parsed = urlparse(value.strip())
-        if (
-            parsed.scheme != "http"
-            or not parsed.hostname
-            or parsed.username is not None
-            or parsed.password is not None
-            or parsed.query
-            or parsed.fragment
-            or parsed.path not in ("", "/")
-        ):
-            raise ValueError("Ollama base URL must be a credential-free loopback HTTP origin")
-        try:
-            is_loopback = ipaddress.ip_address(parsed.hostname).is_loopback
-        except ValueError:
-            is_loopback = parsed.hostname.lower() == "localhost"
-        if not is_loopback:
-            raise ValueError("Ollama base URL must use localhost or a loopback IP literal")
-        try:
-            port = parsed.port
-        except ValueError as exc:
-            raise ValueError("Ollama base URL has an invalid port") from exc
-        authority = f"[{parsed.hostname}]" if ":" in parsed.hostname else parsed.hostname
-        if port is not None:
-            authority = f"{authority}:{port}"
-        return f"http://{authority}"
-
-    @staticmethod
-    def _validate_model(value: str) -> str:
-        model = value.strip()
-        if not MODEL_PATTERN.fullmatch(model) or ".." in model or "//" in model:
-            raise ValueError("Ollama model identity is invalid")
-        return model
-
-    @staticmethod
     def _model_names(payload: dict[str, object]) -> set[str]:
         raw_models = payload.get("models")
         if not isinstance(raw_models, list):
@@ -146,22 +179,4 @@ class OllamaClient:
         payload: dict[str, object] | None,
         timeout_seconds: float,
     ) -> dict[str, object]:
-        body = None if payload is None else json.dumps(payload, separators=(",", ":")).encode()
-        request = Request(
-            url,
-            data=body,
-            method=method,
-            headers={"Accept": "application/json", "Content-Type": "application/json"},
-        )
-        opener = build_opener(_NoRedirectHandler())
-        try:
-            with opener.open(request, timeout=timeout_seconds) as response:
-                raw = response.read(MAX_RESPONSE_BYTES + 1)
-        except HTTPError as exc:
-            raise RuntimeError("Ollama request failed") from exc
-        if len(raw) > MAX_RESPONSE_BYTES:
-            raise ValueError("Ollama response exceeds the size limit")
-        decoded = json.loads(raw)
-        if not isinstance(decoded, dict):
-            raise ValueError("Ollama response must be a JSON object")
-        return decoded
+        return request_ollama_json(method, url, payload, timeout_seconds)

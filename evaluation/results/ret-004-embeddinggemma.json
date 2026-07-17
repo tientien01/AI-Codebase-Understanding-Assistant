@@ -1,0 +1,3356 @@
+{
+  "adoption": {
+    "accepted": true,
+    "checks": {
+      "corpus_embedding_within_budget": true,
+      "insufficient_evidence_no_regression": true,
+      "minimum_quality_gain": true,
+      "model_memory_observed": true,
+      "model_memory_within_budget": true,
+      "query_p95_within_budget": true,
+      "recall_at_3_no_regression": true,
+      "reciprocal_rank_no_regression": true
+    },
+    "decision": "adopt_for_ret_005",
+    "policy": {
+      "max_corpus_embedding_ms": 30000.0,
+      "max_model_memory_bytes": 2147483648,
+      "max_query_p95_ms": 2000.0,
+      "minimum_quality_gain": 0.01
+    }
+  },
+  "capacity_profile": {
+    "concurrency": 1,
+    "logical_cpu_count": 14,
+    "machine": "AMD64",
+    "os": "Windows",
+    "os_release": "10",
+    "python": "3.11.9"
+  },
+  "code_revision": "RET-004-local",
+  "completed_at": "2026-07-17T13:27:55.232931+00:00",
+  "dataset_id": "retrieval-v1",
+  "dataset_revision": "sha256:734b850ed37fcc2a7fa5aaf6f6903c2c1cbc3a5b85db68ecfa1cc024546ecc49",
+  "embedding_dimension": 768,
+  "fixture_id": "retrieval_benchmark_repo",
+  "fixture_revision": "sha256:535617ad5e9d94d55d1f4a627498e84f72a8caa0a9f87934962884a55e6b03c9",
+  "index_version_id": "idx_ret_004",
+  "limitations": [
+    "The six-case synthetic EVA-001 dataset is a benchmark foundation, not a production release threshold.",
+    "Ollama process memory is the bounded /api/ps snapshot; host-wide peak RSS and energy are not measured.",
+    "This task records an RET-005 adoption decision but does not change production retrieval or indexing."
+  ],
+  "method_config_ids": {
+    "ollama_dense": "ret004cfg_1e629bcca7da8513eec21076",
+    "sparse": "ret004cfg_7b905cffdd59be62270d9360",
+    "sparse_dense_hybrid": "ret004cfg_c25932574fc38a6cf32f7e3d"
+  },
+  "model": {
+    "capabilities": [
+      "embedding"
+    ],
+    "configured_model": "embeddinggemma",
+    "digest": "85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1",
+    "resolved_model": "embeddinggemma:latest",
+    "size_bytes": 621875917
+  },
+  "preprocessing": {
+    "batch_limit": 64,
+    "candidate_text": "exact chunk_content UTF-8",
+    "query_text": "exact case question UTF-8",
+    "schema_version": "ret-004-preprocessing/v1",
+    "similarity": "cosine",
+    "truncate": false
+  },
+  "provider": "ollama-local",
+  "raw_results_checksum": "sha256:876078fe4f3575f96a590e4e6e129d68336eb1c6230aa70e1bba90ae7759bfe1",
+  "repetitions": [
+    {
+      "corpus_embedding_ms": 1142.9504,
+      "methods": {
+        "ollama_dense": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.111111111111,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.926185950714,
+              "precision_at_k": 0.666666666667,
+              "recall_at_k": 1.0,
+              "reciprocal_rank": 0.9,
+              "source_diversity": 0.722222222222
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 273.9989,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.357914932673,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.296384392158,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.666666666667,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 0.333333333333
+                }
+              },
+              "query_embedding_ms": 284.2608,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_lexical_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 241.446,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_token"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.491950075115,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.438756110081,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.393809475508,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 234.3604,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.451211671148,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_user_lookup_distractor"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.32270661858,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 258.8381,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 2,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.630929753571,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 0.5,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 238.6116,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.557425369765,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_token_purpose"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.432665370957,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_1e629bcca7da8513eec21076"
+        },
+        "sparse": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.693855745205,
+              "precision_at_k": 0.333333333333,
+              "recall_at_k": 0.666666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "symbol"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "symbol"
+                  ],
+                  "score": 0.245967741934,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route",
+                    "cand_lexical_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "exact",
+                    "lexical"
+                  ],
+                  "score": 0.500000000002,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.469278726023,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_7b905cffdd59be62270d9360"
+        },
+        "sparse_dense_hybrid": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.926185950714,
+              "precision_at_k": 0.533333333333,
+              "recall_at_k": 1.0,
+              "reciprocal_rank": 0.9,
+              "source_diversity": 0.833333333333
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 273.9989,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048915917504,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048651507139,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 284.2608,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route",
+                    "cand_lexical_login_route",
+                    "cand_semantic_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.081182376,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 241.446,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048915917504,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_token"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016393442623,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.015873015873,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 234.3604,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.049180327869,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_user_lookup_distractor"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016129032258,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 258.8381,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 2,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.630929753571,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 0.5,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 238.6116,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.049180327869,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_token_purpose"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016129032258,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_c25932574fc38a6cf32f7e3d"
+        }
+      },
+      "provider_duration_ns": 2598836600,
+      "query_latency_p95_ms": 284.2608,
+      "repetition": 1
+    },
+    {
+      "corpus_embedding_ms": 1372.3024,
+      "methods": {
+        "ollama_dense": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.111111111111,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.926185950714,
+              "precision_at_k": 0.666666666667,
+              "recall_at_k": 1.0,
+              "reciprocal_rank": 0.9,
+              "source_diversity": 0.722222222222
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 334.4827,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.357914932673,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.296384392158,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.666666666667,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 0.333333333333
+                }
+              },
+              "query_embedding_ms": 244.5636,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_lexical_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 249.1607,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_token"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.491950075115,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.438756110081,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.393809475508,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 232.5072,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.451211671148,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_user_lookup_distractor"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.32270661858,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 259.748,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 2,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.630929753571,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 0.5,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 253.2234,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.557425369765,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_token_purpose"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.432665370957,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_1e629bcca7da8513eec21076"
+        },
+        "sparse": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.693855745205,
+              "precision_at_k": 0.333333333333,
+              "recall_at_k": 0.666666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "symbol"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "symbol"
+                  ],
+                  "score": 0.245967741934,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route",
+                    "cand_lexical_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "exact",
+                    "lexical"
+                  ],
+                  "score": 0.500000000002,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.469278726023,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_7b905cffdd59be62270d9360"
+        },
+        "sparse_dense_hybrid": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.926185950714,
+              "precision_at_k": 0.533333333333,
+              "recall_at_k": 1.0,
+              "reciprocal_rank": 0.9,
+              "source_diversity": 0.833333333333
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 334.4827,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048915917504,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048651507139,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 244.5636,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route",
+                    "cand_lexical_login_route",
+                    "cand_semantic_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.081182376,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 249.1607,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048915917504,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_token"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016393442623,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.015873015873,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 232.5072,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.049180327869,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_user_lookup_distractor"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016129032258,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 259.748,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 2,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.630929753571,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 0.5,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 253.2234,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.049180327869,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_token_purpose"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016129032258,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_c25932574fc38a6cf32f7e3d"
+        }
+      },
+      "provider_duration_ns": 2813063700,
+      "query_latency_p95_ms": 334.4827,
+      "repetition": 2
+    },
+    {
+      "corpus_embedding_ms": 1231.4049,
+      "methods": {
+        "ollama_dense": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.111111111111,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.926185950714,
+              "precision_at_k": 0.666666666667,
+              "recall_at_k": 1.0,
+              "reciprocal_rank": 0.9,
+              "source_diversity": 0.722222222222
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 255.197,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.357914932673,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.296384392158,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.666666666667,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 0.333333333333
+                }
+              },
+              "query_embedding_ms": 260.7552,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_lexical_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.366501071658,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 249.2801,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_token"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.491950075115,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.438756110081,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.393809475508,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 245.4345,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.451211671148,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_user_lookup_distractor"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.32270661858,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 254.1578,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 2,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.630929753571,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 0.5,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 234.1395,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.557425369765,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_token_purpose"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.432665370957,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_1e629bcca7da8513eec21076"
+        },
+        "sparse": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.693855745205,
+              "precision_at_k": 0.333333333333,
+              "recall_at_k": 0.666666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "symbol"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "symbol"
+                  ],
+                  "score": 0.245967741934,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route",
+                    "cand_lexical_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "exact",
+                    "lexical"
+                  ],
+                  "score": 0.500000000002,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.469278726023,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 0.0,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "lexical"
+                  ],
+                  "score": 0.250000000001,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_7b905cffdd59be62270d9360"
+        },
+        "sparse_dense_hybrid": {
+          "aggregates": {
+            "1": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.8,
+              "precision_at_k": 0.8,
+              "recall_at_k": 0.566666666667,
+              "reciprocal_rank": 0.8,
+              "source_diversity": 0.833333333333
+            },
+            "3": {
+              "duplicate_rate": 0.0,
+              "insufficient_evidence_correct": 0.5,
+              "ndcg_at_k": 0.926185950714,
+              "precision_at_k": 0.533333333333,
+              "recall_at_k": 1.0,
+              "reciprocal_rank": 0.9,
+              "source_diversity": 0.833333333333
+            }
+          },
+          "cases": [
+            {
+              "candidate_input_ids": [
+                "cand_symbol_ambiguous_auth",
+                "cand_symbol_ambiguous_find"
+              ],
+              "case_id": "ambiguous-user-operation",
+              "category": "ambiguous",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.5,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": 0.0,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.666666666667,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 255.197,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048915917504,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_symbol_ambiguous_find"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048651507139,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_exact_login_route",
+                "cand_lexical_login_route",
+                "cand_semantic_login_route"
+              ],
+              "case_id": "exact-login-route",
+              "category": "exact",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 260.7552,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_exact_login_route",
+                    "cand_lexical_login_route",
+                    "cand_semantic_login_route"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.081182376,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_graph_flow_auth",
+                "cand_graph_flow_token",
+                "cand_lexical_flow_endpoint"
+              ],
+              "case_id": "graph-login-flow",
+              "category": "graph_path",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 0.333333333333,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 249.2801,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_flow_endpoint"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "endpoint:v1:POST:/login",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.048915917504,
+                  "source_key": "file:v1:backend/routes.py",
+                  "start_line": 5
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_token"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016393442623,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_graph_flow_auth"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.015873015873,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_auth_service",
+                "cand_semantic_user_lookup_distractor"
+              ],
+              "case_id": "lexical-authentication-service",
+              "category": "lexical",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 1.0,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 1,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 1.0,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 1.0,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 245.4345,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_auth_service"
+                  ],
+                  "end_line": 7,
+                  "entity_key": "symbol:v1:AuthService.authenticate_user",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.049180327869,
+                  "source_key": "file:v1:backend/auth_service.py",
+                  "start_line": 1
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_user_lookup_distractor"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:find_user",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016129032258,
+                  "source_key": "file:v1:backend/user_service.py",
+                  "start_line": 1
+                }
+              ]
+            },
+            {
+              "candidate_input_ids": [],
+              "case_id": "negative-password-reset",
+              "category": "negative",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 1,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": 1.0,
+                  "k": 3,
+                  "ndcg_at_k": null,
+                  "precision_at_k": null,
+                  "recall_at_k": null,
+                  "reciprocal_rank": null,
+                  "source_diversity": 0.0
+                }
+              },
+              "query_embedding_ms": 254.1578,
+              "results": []
+            },
+            {
+              "candidate_input_ids": [
+                "cand_lexical_architecture_token",
+                "cand_semantic_token_purpose"
+              ],
+              "case_id": "semantic-token-purpose",
+              "category": "semantic",
+              "metrics": {
+                "1": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": null,
+                  "insufficient_evidence_correct": null,
+                  "k": 1,
+                  "ndcg_at_k": 0.0,
+                  "precision_at_k": 0.0,
+                  "recall_at_k": 0.0,
+                  "reciprocal_rank": 0.0,
+                  "source_diversity": 1.0
+                },
+                "3": {
+                  "duplicate_rate": 0.0,
+                  "exact_target_rank": 2,
+                  "insufficient_evidence_correct": null,
+                  "k": 3,
+                  "ndcg_at_k": 0.630929753571,
+                  "precision_at_k": 0.333333333333,
+                  "recall_at_k": 1.0,
+                  "reciprocal_rank": 0.5,
+                  "source_diversity": 1.0
+                }
+              },
+              "query_embedding_ms": 234.1395,
+              "results": [
+                {
+                  "candidate_ids": [
+                    "cand_lexical_architecture_token"
+                  ],
+                  "end_line": 4,
+                  "entity_key": "document:v1:authentication-flow",
+                  "retrievers": [
+                    "ollama_dense",
+                    "sparse"
+                  ],
+                  "score": 0.049180327869,
+                  "source_key": "file:v1:docs/architecture.md",
+                  "start_line": 4
+                },
+                {
+                  "candidate_ids": [
+                    "cand_semantic_token_purpose"
+                  ],
+                  "end_line": 3,
+                  "entity_key": "symbol:v1:create_access_token",
+                  "retrievers": [
+                    "ollama_dense"
+                  ],
+                  "score": 0.016129032258,
+                  "source_key": "file:v1:backend/token_service.py",
+                  "start_line": 1
+                }
+              ]
+            }
+          ],
+          "method_config_id": "ret004cfg_c25932574fc38a6cf32f7e3d"
+        }
+      },
+      "provider_duration_ns": 2672459100,
+      "query_latency_p95_ms": 260.7552,
+      "repetition": 3
+    }
+  ],
+  "report_checksum": "sha256:2bec4e6394c2b14a9bb383b934168262d5078c955acfb6d10574f7daa90d303a",
+  "repository_id": "repo_eva_001_fixture",
+  "schema_version": "ollama-embedding-benchmark/v1",
+  "started_at": "2026-07-17T13:27:46.799268+00:00",
+  "summary": {
+    "corpus_embedding_max_ms": 1372.3024,
+    "model_memory": {
+      "context_length": 2048,
+      "size_bytes": 680379023,
+      "size_vram_bytes": 0
+    },
+    "model_memory_observed_bytes": 680379023,
+    "provider_cost": 0,
+    "quality_at_3": {
+      "ollama_dense": {
+        "duplicate_rate": 0.111111111111,
+        "insufficient_evidence_correct": 0.5,
+        "ndcg_at_k": 0.926185950714,
+        "precision_at_k": 0.666666666667,
+        "recall_at_k": 1.0,
+        "reciprocal_rank": 0.9,
+        "source_diversity": 0.722222222222
+      },
+      "sparse": {
+        "duplicate_rate": 0.0,
+        "insufficient_evidence_correct": 0.5,
+        "ndcg_at_k": 0.693855745205,
+        "precision_at_k": 0.333333333333,
+        "recall_at_k": 0.666666666667,
+        "reciprocal_rank": 0.8,
+        "source_diversity": 0.833333333333
+      },
+      "sparse_dense_hybrid": {
+        "duplicate_rate": 0.0,
+        "insufficient_evidence_correct": 0.5,
+        "ndcg_at_k": 0.926185950714,
+        "precision_at_k": 0.533333333333,
+        "recall_at_k": 1.0,
+        "reciprocal_rank": 0.9,
+        "source_diversity": 0.833333333333
+      }
+    },
+    "query_latency_p95_ms": 334.4827
+  }
+}
