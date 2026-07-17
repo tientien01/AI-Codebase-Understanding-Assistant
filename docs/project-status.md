@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 7 has verified SEC-001 and SEC-002; operations delivery remains open |
-| Active task | RET-005 completed locally; Phase 6 task metadata still requires owner reconciliation |
-| Next task candidate | Promote UI-024 for truthful assistant provider/index readiness, or continue the operations sequence |
+| Active task | UI-024 completed locally; Phase 6 task metadata still requires owner reconciliation |
+| Next task candidate | Continue the operations sequence after owner reconciliation |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -49,6 +49,7 @@ This page is the operational front door. It reports verified progress; it does n
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
 - A real three-repetition local `embeddinggemma` benchmark now compares sparse, dense and weighted-RRF hybrid retrieval on the exact EVA-001 inputs. Hybrid Recall@3 improves from 0.6667 to 1.0 and reciprocal rank from 0.8 to 0.9; query p95 is 334.5 ms, maximum corpus embedding is 1.37 s and observed model memory is 680,379,023 bytes. All reviewed RET-004 adoption checks pass, authorizing RET-005 prototyping without claiming production-scale or answer-quality qualification.
 - A canonical immutable dense artifact now binds repository/index ownership, resolved model digest, dimension, preprocessing and chunk hashes. Its explicit semantic adapter rechecks provider identity and fails back to sparse for missing, stale, corrupt, malformed or unavailable dense state. RET-005 passes 10 focused tests, 81 canonical-LF evaluation/retrieval regressions and a 394-pass canonical-LF full backend gate; production worker composition, automatic activation and ANN-scale qualification remain open.
+- Assistant messages now disclose only server-declared generation/provider/retrieval outcomes. Ollama/provider, deterministic, fallback and sparse/hybrid labels are distinct; historical messages without declarations remain unlabeled. UI-024 passes 65 backend assistant tests, frontend lint, 115 frontend tests and the production build.
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
 - TanStack Query now owns current frontend repository/workspace reads, mutation results, import previews and scoped chat transcripts. Repository/index-version keys, cancellation, bounded classified retry, terminal/hidden polling, scoped invalidation, cached refresh retention and explicit recovery states pass the UI-002 targeted/full/lint/typecheck/clean-build gates.

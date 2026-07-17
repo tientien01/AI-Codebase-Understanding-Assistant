@@ -77,6 +77,7 @@ class ChatService:
                 citations=[],
                 evidence_sufficient=False,
                 missing_evidence=result.missing_evidence,
+                retrieval_mode=self._retrieval_mode(),
             )
             return self._persist(
                 repository.id, repository.current_index_version, message, response, result, memory=memory
@@ -99,6 +100,9 @@ class ChatService:
                 answer=generated.answer,
                 citations=result.citations,
                 evidence_sufficient=True,
+                generation_mode="ollama" if generated.provider == "ollama" else "provider",
+                provider_state="ready",
+                retrieval_mode=self._retrieval_mode(),
             )
             return self._persist(
                 repository.id,
@@ -118,6 +122,11 @@ class ChatService:
             citations=result.citations,
             evidence_sufficient=result.evidence_sufficient,
             missing_evidence=result.missing_evidence,
+            generation_mode=(
+                "deterministic_fallback" if self._provider_configured() else "deterministic"
+            ),
+            provider_state="degraded" if self._provider_configured() else "unavailable",
+            retrieval_mode=self._retrieval_mode(),
         )
         return self._persist(
             repository.id, repository.current_index_version, message, response, result, memory=memory
@@ -142,6 +151,7 @@ class ChatService:
                 citations=[],
                 evidence_sufficient=False,
                 missing_evidence=["No selected evidence ids"],
+                retrieval_mode=self._retrieval_mode(),
             )
             return self._persist(
                 repository.id, repository.current_index_version, message, response, None, memory=memory
@@ -158,6 +168,7 @@ class ChatService:
                 citations=[],
                 evidence_sufficient=False,
                 missing_evidence=[f"{item.evidence_id}: {item.reason or 'invalid'}" for item in invalid_items],
+                retrieval_mode=self._retrieval_mode(),
             )
             return self._persist(
                 repository.id, repository.current_index_version, message, response, None, memory=memory
@@ -186,6 +197,9 @@ class ChatService:
                 answer=generated.answer,
                 citations=citations,
                 evidence_sufficient=True,
+                generation_mode="ollama" if generated.provider == "ollama" else "provider",
+                provider_state="ready",
+                retrieval_mode=self._retrieval_mode(),
             )
             return self._persist(
                 repository.id,
@@ -205,6 +219,11 @@ class ChatService:
             citations=citations,
             evidence_sufficient=agent_result.evidence_sufficient,
             missing_evidence=agent_result.missing_evidence,
+            generation_mode=(
+                "deterministic_fallback" if self._provider_configured() else "deterministic"
+            ),
+            provider_state="degraded" if self._provider_configured() else "unavailable",
+            retrieval_mode=self._retrieval_mode(),
         )
         return self._persist(
             repository.id,
@@ -296,6 +315,12 @@ class ChatService:
                 conversation_context=memory.text,
             )
         return self.llm.generate_grounded_answer(message, question_type, provider_context)
+
+    def _retrieval_mode(self) -> str:
+        return "hybrid" if self.retrieval.vector_search.__class__.__name__ == "DenseVectorSearchService" else "sparse"
+
+    def _provider_configured(self) -> bool:
+        return bool(getattr(self.llm, "is_configured", False))
 
     @staticmethod
     def _summary_dto(

@@ -135,6 +135,11 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - AGT-005 adds visible removable Code source context and Overview page context, but not graph/API context, conversation replay, multi-turn memory, attachments or provider qualification.
 - AGT-006 adds repository-owned bounded history/replay and deterministic multi-turn intent memory, but not Ollama/provider qualification, dense embeddings, retention execution or accepted agent thresholds.
 
+UI-024 passes 26 provider-focused backend tests, the 65-test assistant suite, frontend
+lint, all 115 frontend tests across 17 files, TypeScript compilation and production
+build. Coverage distinguishes accepted provider output, deterministic fallback and
+server-declared sparse/hybrid retrieval without configuration inference.
+
 ## Collection boundary
 
 Root `pytest.ini` sets `testpaths = tests` and excludes storage, dependency, virtualenv, and build directories. The EVA-002 clean local-profile run collected 289 project tests, passed 260 and skipped 29 existing integration-profile tests; no imported repository test participated.

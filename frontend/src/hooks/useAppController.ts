@@ -25,6 +25,7 @@ import { pathForPage } from '../routing/routes'
 import type { AppRoute } from '../routing/routes'
 import type {
   AssistantRequestContext,
+  ChatResponse,
   Citation,
   ApiEndpoint,
   GraphData,
@@ -69,6 +70,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   const [graphProjectionControls, setGraphProjectionControls] = useState(defaultGraphProjection)
   const [chatInput, setChatInput] = useState('How does the login flow work?')
   const [activeConversation, setActiveConversation] = useState<{ repositoryId: string; conversationId: string }>()
+  const [chatOutcomes, setChatOutcomes] = useState<Record<string, Pick<ChatResponse, 'generation_mode' | 'provider_state' | 'retrieval_mode'>>>({})
   const [searchQueryDraft, setSearchQueryDraft] = useState('login auth token')
   const [impactTargetType, setImpactTargetType] = useState('symbol')
   const [impactTargetRefDraft, setImpactTargetRefDraft] = useState('login')
@@ -179,6 +181,9 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     evidenceSufficient: message.evidence_sufficient,
     indexVersion: message.index_version,
     createdAt: message.created_at,
+    generationMode: chatOutcomes[message.message_id]?.generation_mode,
+    providerState: chatOutcomes[message.message_id]?.provider_state,
+    retrievalMode: chatOutcomes[message.message_id]?.retrieval_mode,
   }))
   const mutations = useServerMutations(selectedRepository?.id, selectedRepository?.current_index_version)
 
@@ -338,6 +343,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
       conversationId: activeConversationId,
     }))
     if (!result.ok) return
+    setChatOutcomes((current) => ({ ...current, [result.data.message_id]: result.data }))
     const conversationId = result.data.conversation_id
     setActiveConversation({ repositoryId: selectedRepository.id, conversationId })
     if (page === 'assistant') {

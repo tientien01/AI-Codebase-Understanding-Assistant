@@ -4,7 +4,7 @@ Status: Approved
 Owner: Project maintainer  
 Approved: 2026-07-16
 
-Delivery state: AGT-006, AGT-007, RET-004 and RET-005 are verified locally; the versioned dense artifact retains sparse fallback, while UI-024 remains draft and requires separate promotion.
+Delivery state: AGT-006, AGT-007, RET-004, RET-005 and UI-024 are verified locally; the sequence is complete at its declared local-evidence boundary.
 
 ## Outcome
 
@@ -32,7 +32,7 @@ Deliver a replayable, bounded conversational assistant that can run through a lo
 4. **RET-005 — Versioned dense embedding index**
    - Verified 2026-07-17; immutable compatibility-bound artifact and explicit dense semantic adapter preserve sparse fallback.
 5. **UI-024 — Assistant provider and readiness UX**
-   - Truthful per-answer/provider/index state: deterministic, Ollama, hybrid or fallback; loading/degraded/stale states.
+   - Verified 2026-07-17; current answers render server-declared deterministic, Ollama/provider, fallback and sparse/hybrid outcomes while loading/error/stale states remain explicit.
 
 Only one task may be `ready` or `in_progress` at a time. Later tasks remain `draft` until predecessor evidence and any required technology decision are accepted.
 

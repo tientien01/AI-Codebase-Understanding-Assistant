@@ -316,6 +316,9 @@ def test_chat_passes_source_context_only_when_complete_and_trace_does_not_persis
     response = service.chat(state.id, "Explain run")
 
     assert response.answer == "Provider-grounded answer"
+    assert response.generation_mode == "provider"
+    assert response.provider_state == "ready"
+    assert response.retrieval_mode == "sparse"
     assert llm.contexts == [context]
     assert SELECTED_CONTENT not in repr(store.turns[0])
 
@@ -332,6 +335,8 @@ def test_chat_passes_source_context_only_when_complete_and_trace_does_not_persis
     )  # type: ignore[assignment]
     fallback = service.chat(state.id, "Explain run again")
     assert fallback.answer == "Deterministic answer"
+    assert fallback.generation_mode == "deterministic"
+    assert fallback.provider_state == "unavailable"
     assert llm.contexts == [context]
 
 

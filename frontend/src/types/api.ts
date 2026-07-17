@@ -184,6 +184,9 @@ export type ChatMessage = {
   evidenceSufficient?: boolean
   indexVersion?: number
   createdAt?: string
+  generationMode?: ChatResponse['generation_mode']
+  providerState?: ChatResponse['provider_state']
+  retrievalMode?: ChatResponse['retrieval_mode']
 }
 
 export type ChatResponse = {
@@ -194,6 +197,9 @@ export type ChatResponse = {
   citations: Citation[]
   evidence_sufficient: boolean
   missing_evidence: string[]
+  generation_mode: 'deterministic' | 'ollama' | 'provider' | 'deterministic_fallback'
+  provider_state: 'ready' | 'degraded' | 'unavailable'
+  retrieval_mode: 'sparse' | 'hybrid'
 }
 
 export type ConversationSummary = {

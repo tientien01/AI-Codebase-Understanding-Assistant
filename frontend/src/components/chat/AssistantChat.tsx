@@ -254,12 +254,27 @@ function ChatMessageCard({ message, index, onEvidence }: { message: ChatMessage;
         </details>
       ) : null}
       {message.evidenceSufficient === false ? <span className="badge amber">Insufficient evidence</span> : null}
+      {message.role === 'assistant' && message.generationMode ? (
+        <div className="assistant-outcome" aria-label="Assistant response outcome">
+          <span className={`badge ${message.providerState === 'degraded' ? 'amber' : ''}`}>
+            {generationLabel(message.generationMode)}
+          </span>
+          {message.retrievalMode ? <span className="badge">{message.retrievalMode === 'hybrid' ? 'Hybrid retrieval' : 'Sparse retrieval'}</span> : null}
+        </div>
+      ) : null}
     </article>
   )
 }
 
 function fileName(path: string) {
   return path.split(/[\\/]/).pop() ?? path
+}
+
+function generationLabel(mode: NonNullable<ChatMessage['generationMode']>) {
+  if (mode === 'ollama') return 'Ollama'
+  if (mode === 'provider') return 'AI provider'
+  if (mode === 'deterministic_fallback') return 'Deterministic fallback'
+  return 'Deterministic'
 }
 
 function assistantContextLabel(context: AssistantRequestContext) {

@@ -89,6 +89,9 @@ class ChatResponse(BaseModel):
     citations: list[CitationDTO]
     evidence_sufficient: bool
     missing_evidence: list[str] = Field(default_factory=list)
+    generation_mode: Literal["deterministic", "ollama", "provider", "deterministic_fallback"] = "deterministic"
+    provider_state: Literal["ready", "degraded", "unavailable"] = "unavailable"
+    retrieval_mode: Literal["sparse", "hybrid"] = "sparse"
 
 
 class ConversationMessageDTO(BaseModel):
