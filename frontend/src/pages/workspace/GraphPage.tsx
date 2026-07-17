@@ -125,7 +125,6 @@ type GraphPageProps = {
   onAnalyzeArea: (scopePath: string) => void
   onExpandNode?: (nodeId: string, direction: GraphProjectionInput['direction'], neighborOffset?: number) => Promise<GraphData | null>
   onOpenSource?: (node: GraphNode) => void
-  onOpenImpact?: (node: GraphNode) => void
   onTraceValue?: (context: ValueTraceContext) => void
   embedded?: boolean
   onCloseEmbedded?: () => void
@@ -175,7 +174,6 @@ function LegacyGraphPage({
   onProjection,
   onAnalyzeArea,
   onOpenSource,
-  onOpenImpact,
 }: GraphPageProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string>()
   const [zoom, setZoom] = useState(0.9)
@@ -514,7 +512,6 @@ function LegacyGraphPage({
                   <div className="graph-inspector-actions">
                     <button className="primary wide" type="button" disabled={!activeNode.file_path} onClick={() => onOpenSource?.(activeNode)}>Open Source</button>
                     <button type="button" onClick={() => applyFocus(activeNode.id)}>Focus relationships</button>
-                    <button type="button" onClick={() => onOpenImpact?.(activeNode)}>Analyze Impact</button>
                     {activeNode.coverage !== 'deep_indexed' && activeNode.coverage !== 'skipped' ? (
                       <button type="button" onClick={() => onAnalyzeArea(activeNode.scope_path || activeNode.file_path || '')}>Analyze area</button>
                     ) : null}
@@ -549,7 +546,6 @@ function ProgressiveDependencyGraph({
   onAnalyzeArea,
   onExpandNode,
   onOpenSource,
-  onOpenImpact,
 }: GraphPageProps) {
   const [visibleGraph, setVisibleGraph] = useState<GraphData | null>(graph)
   const [selectedNodeId, setSelectedNodeId] = useState<string>()
@@ -803,7 +799,6 @@ function ProgressiveDependencyGraph({
             <div className="graph-inspector-actions">
               <button className="primary wide" type="button" disabled={!activeNode.file_path} onClick={() => onOpenSource?.(activeNode)}>Open Source</button>
               {canContinueExpansion(activeNode.id, direction, seedById.get(activeNode.id), expansionByKey[expansionKey(activeNode.id)]) ? <button type="button" onClick={() => { void selectAndExpand(activeNode.id) }}>{expansionByKey[expansionKey(activeNode.id)]?.next_neighbor_offset != null ? `Load ${expansionByKey[expansionKey(activeNode.id)]?.remaining_neighbors} more` : `Show ${direction === 'incoming' ? 'dependents' : direction === 'outgoing' ? 'dependencies' : 'both directions'}`}</button> : <button type="button" disabled>No more relations</button>}
-              <button type="button" onClick={() => onOpenImpact?.(activeNode)}>Analyze Impact</button>
               {activeNode.coverage !== 'deep_indexed' && activeNode.coverage !== 'skipped' ? <button type="button" onClick={() => onAnalyzeArea(activeNode.scope_path || activeNode.file_path || '')}>Analyze area</button> : null}
             </div>
           </aside>

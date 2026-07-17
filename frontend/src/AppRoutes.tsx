@@ -125,6 +125,7 @@ type AppRoutesProps = {
   runSearch: (event?: FormEvent) => void
   runImpactAnalysis: (event?: FormEvent) => void
   openImpact: (targetType: string, targetRef: string) => void
+  projectSearchQuery?: string
   analyzeGraphArea: (scopePath: string) => void
   changeGraphView: (view: GraphView) => void
   traceValue: (context: ValueTraceContext) => void
@@ -197,6 +198,7 @@ export function AppRoutes(props: AppRoutesProps) {
         onDelete={props.deleteRepository}
         onDeleteAll={props.deleteAllRepositories}
         onViewIndexJobs={() => props.setPage('indexing')}
+        searchQuery={props.projectSearchQuery}
       />
     )
   }
@@ -299,7 +301,6 @@ export function AppRoutes(props: AppRoutesProps) {
         onExpandNode={props.expandGraphNode}
         onAnalyzeArea={props.analyzeGraphArea}
         onOpenSource={(node) => node.file_path && selectedRepository && props.loadFileContent(selectedRepository.id, node.file_path, node.start_line)}
-        onOpenImpact={(node) => props.openImpact(impactTargetTypeFor(node.type), node.id)}
         onTraceValue={props.traceValue}
         onReturnToSource={props.returnToTraceSource}
       />
@@ -376,16 +377,11 @@ export function AppRoutes(props: AppRoutesProps) {
     )
   }
   if (page === 'search') return <WorkspacePage main={<SearchPage query={searchQuery} results={searchResults} onQuery={props.setSearchQuery} onSearch={props.runSearch} onEvidence={props.openEvidence} />} side={<SearchFilters />} />
-  if (page === 'evidence') return <WorkspacePage main={<EvidencePage evidence={selectedEvidence} />} side={<EvidenceSummary />} />
+  if (page === 'evidence') return <WorkspacePage main={<EvidencePage evidence={selectedEvidence} onOpenCode={(filePath, line) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath, line)} />} side={null} />
   if (page === 'evaluation') {
     return <EvaluationRoute repository={selectedRepository} />
   }
   return <SettingsRoute isWorkspace={isWorkspacePage} />
-}
-
-function impactTargetTypeFor(nodeType: string) {
-  if (['file', 'endpoint', 'model', 'schema'].includes(nodeType)) return nodeType
-  return 'symbol'
 }
 
 function SettingsRoute({ isWorkspace }: { isWorkspace: boolean }) {

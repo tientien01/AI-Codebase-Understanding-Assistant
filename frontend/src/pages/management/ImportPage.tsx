@@ -66,14 +66,14 @@ export function ImportPage({
               {mode === 'github' && (
                 <label>
                   Repository URL
-                  <input value={githubUrl} onChange={(event) => onGithubUrlChange(event.target.value)} />
+                  <input required type="url" value={githubUrl} onChange={(event) => onGithubUrlChange(event.target.value)} placeholder="https://github.com/owner/repository" />
                   <span>Paste a public GitHub repository URL, then choose Prepare Preview.</span>
                 </label>
               )}
               {mode === 'folder' && (
                 <label>
                   Local folder
-                  <input type="file" multiple ref={(input) => input?.setAttribute('webkitdirectory', 'true')} onChange={(event) => onFolderFiles(Array.from(event.target.files ?? []))} />
+                  <input required type="file" multiple ref={(input) => input?.setAttribute('webkitdirectory', 'true')} onChange={(event) => onFolderFiles(Array.from(event.target.files ?? []))} />
                   <span>{folderSelectedCount
                     ? `${folderSelectedCount} selected · ${folderCount} to upload · ${folderExcludedCount} excluded`
                     : 'Choose a folder to upload.'}</span>
@@ -82,13 +82,14 @@ export function ImportPage({
               {mode === 'zip' && (
                 <label>
                   Zip file
-                  <input type="file" accept=".zip" onChange={(event) => onZipFile(event.target.files?.[0] ?? null)} />
+                  <input required type="file" accept=".zip" onChange={(event) => onZipFile(event.target.files?.[0] ?? null)} />
                   <span>{zipFileName || 'Choose a repository zip.'}</span>
                 </label>
               )}
               <label>
                 Project name
-                <input value={projectName} onChange={(event) => onNameChange(event.target.value)} />
+                <input required value={projectName} onChange={(event) => onNameChange(event.target.value)} placeholder="e.g. what2eat" aria-describedby="project-name-help" />
+                <span id="project-name-help">Required. Use a short name you will recognize in the project list.</span>
               </label>
             </div>
             <div className="standard-pipeline" aria-label="Indexing behavior">

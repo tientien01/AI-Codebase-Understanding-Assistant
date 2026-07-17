@@ -2314,8 +2314,36 @@
 .draggable-graph-node:active { cursor: grabbing; }
 
 @media (min-width: 1301px) {
-  .dependency-stage-shell.inspector-open .dependency-stage-viewport { margin-right: 360px; }
+  .dependency-stage-shell.inspector-open .dependency-stage-viewport { margin-right: 0; }
 }
+
+.assistant-conversation { min-width: 0; }
+.assistant-new-chat-label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #2f4670;
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: linear-gradient(135deg, #122448, #101a2d);
+  color: #edf3ff;
+  font-weight: 800;
+}
+.assistant-new-chat-label span { color: #9eb0ca; font-size: 12px; font-weight: 500; }
+
+.evidence-viewer-grid { grid-template-columns: minmax(250px, .55fr) minmax(0, 1.45fr); align-items: start; }
+.evidence-location { display: grid; gap: 8px; margin-bottom: 16px; }
+.evidence-location strong { overflow-wrap: anywhere; color: #f0f5ff; font-size: 15px; }
+.evidence-location > span:last-child { color: #9eacc0; font-size: 12px; }
+.evidence-metadata { display: grid; gap: 8px; margin-bottom: 16px; border-top: 1px solid #263850; border-bottom: 1px solid #263850; padding: 13px 0; }
+
+.settings-grid-simple { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.project-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; color: #9ba9be; font-size: 13px; }
+.project-pagination span { margin-right: auto; }
+.project-pagination strong { color: #e3ebf7; font-size: 12px; }
+
+input:invalid:not(:placeholder-shown) { border-color: #bd5964; box-shadow: 0 0 0 3px rgba(189, 89, 100, .12); }
 
 @media (max-width: 1180px) {
   .dependency-toolbar { flex-wrap: wrap; }
@@ -2437,7 +2465,11 @@
   .impact-summary-cards { grid-template-columns: 1fr; }
   .evaluation-grid,
   .settings-grid,
+  .settings-grid-simple,
+  .evidence-viewer-grid,
   .pattern-list { grid-template-columns: 1fr; }
+  .project-pagination { align-items: stretch; flex-wrap: wrap; justify-content: flex-start; }
+  .project-pagination span { width: 100%; }
   .readiness-context { grid-template-columns: 1fr; }
 }
 

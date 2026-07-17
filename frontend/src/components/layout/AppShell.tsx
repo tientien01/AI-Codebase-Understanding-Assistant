@@ -148,11 +148,15 @@ export function TopBar({
   mode,
   page,
   repository,
+  projectSearchQuery,
+  onProjectSearchChange,
 }: {
   mode: 'management' | 'workspace'
   page: Page
   repository?: Repository
   status: IndexStatus | null
+  projectSearchQuery?: string
+  onProjectSearchChange?: (value: string) => void
 }) {
   return (
     <header className="topbar">
@@ -167,7 +171,14 @@ export function TopBar({
       )}
       <label className="global-search-shell">
         <Icon name="search" />
-        <input className="global-search" placeholder={mode === 'workspace' ? 'Search anything...' : 'Search projects...'} />
+        <input
+          className="global-search"
+          placeholder={mode === 'workspace' ? 'Search anything...' : 'Search projects...'}
+          value={mode === 'management' ? projectSearchQuery : undefined}
+          onChange={mode === 'management' ? (event) => onProjectSearchChange?.(event.target.value) : undefined}
+          aria-label={mode === 'management' ? 'Search projects' : 'Workspace search is not available'}
+          readOnly={mode === 'workspace'}
+        />
         <kbd>Ctrl K</kbd>
       </label>
       {mode === 'management' ? (

@@ -371,7 +371,7 @@ class AgentWorkflowService:
             )
             return AgentWorkflowResult(
                 question_type=plan.question_type,
-                answer="Chua du bang chung de tra loi chac chan. He thong khong tim thay file, symbol hoac relation phu hop trong index hien tai.",
+                answer="There is not enough evidence to answer confidently. The current index does not contain a matching file, symbol, or relation.",
                 citations=[],
                 evidence_sufficient=False,
                 missing_evidence=list(context.missing_requirements) or ["Expected code or document evidence"],
@@ -591,7 +591,7 @@ class AgentWorkflowService:
         )
         return AgentWorkflowResult(
             question_type=plan.question_type,
-            answer="Yeu cau khong the tiep tuc trong gioi han workflow hien tai.",
+            answer="The request could not continue within the current workflow limits.",
             citations=[],
             evidence_sufficient=False,
             missing_evidence=list(reasons),

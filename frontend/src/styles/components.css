@@ -50,6 +50,11 @@ select {
   padding: 12px 13px;
 }
 
+select option {
+  background: #0d1421;
+  color: #dbe5f4;
+}
+
 textarea {
   min-height: 160px;
   resize: vertical;

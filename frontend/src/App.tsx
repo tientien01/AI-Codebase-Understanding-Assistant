@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AppRoutes } from './AppRoutes'
 import { AsyncStateNotice } from './components/common/AsyncState'
@@ -18,6 +18,7 @@ function App() {
     [location.pathname, location.search],
   )
   const controller = useAppController(route, navigate)
+  const [projectSearchQuery, setProjectSearchQuery] = useState('')
 
   if (location.pathname === '/') return <Navigate replace to="/projects" />
 
@@ -69,7 +70,7 @@ function App() {
     if (isBlockingAsyncState(controller.pageState)) {
       return <AsyncStateNotice state={controller.pageState} onRetry={controller.retryActivePage} />
     }
-    return <AppRoutes {...controller} route={route} />
+    return <AppRoutes {...controller} route={route} projectSearchQuery={projectSearchQuery} />
   })()
 
   return (
@@ -95,6 +96,8 @@ function App() {
           page={controller.page}
           repository={controller.selectedRepository}
           status={controller.indexStatus}
+          projectSearchQuery={projectSearchQuery}
+          onProjectSearchChange={setProjectSearchQuery}
         />
         {controller.apiError && <div className="error-banner">{controller.apiError}</div>}
         <section className="content">

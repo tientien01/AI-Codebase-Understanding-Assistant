@@ -49,7 +49,9 @@ export function AssistantFullPage({
             onDelete={onDeleteConversation}
           />
         </aside>
-        <AssistantChat
+        <section className="assistant-conversation" aria-label="Current conversation">
+          {!activeConversationId && <div className="assistant-new-chat-label">New Chat <span>This repository has no selected conversation yet.</span></div>}
+          <AssistantChat
           input={input}
           messages={messages}
           disabled={disabled}
@@ -60,8 +62,9 @@ export function AssistantFullPage({
           onInput={onInput}
           onSubmit={onSubmit}
           onEvidence={onEvidence}
-          full
-        />
+            full
+          />
+        </section>
       </div>
     </div>
   )
