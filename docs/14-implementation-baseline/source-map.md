@@ -16,9 +16,9 @@
 | Reference-derived graph candidate normalization | `backend/app/services/code_analysis/graph_candidates.py`; in-memory audit/report state in `backend/app/services/index_models.py` |
 | Deterministic capability readiness calculator | `backend/app/services/code_analysis/capability_readiness.py`; output reuses `backend/app/services/indexing/validation_service.py::CapabilityReadiness` |
 | Graph/projections | `backend/app/services/graph/` |
-| Typed retrieval and ranking | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`, `ranking.py`; compatibility facade in `retrieval_service.py` |
+| Typed retrieval and ranking | `backend/app/services/retrieval/contracts.py`, `query_classifier.py`, `retrievers.py`, `ranking.py`; sparse/dense search adapters in `vector_search_service.py`; compatibility facade in `retrieval_service.py` |
 | Validated evidence selection and context budgeting | `backend/app/services/evidence/selection.py`; persistence/citation projection in `evidence_service.py` |
-| Versioned retrieval evaluation, real local embedding benchmark and CI smoke gate | `backend/app/services/evaluation/`, including `ollama_embeddings.py` and `ollama_benchmark.py`; immutable dataset in `evaluation/datasets/retrieval-v1/`; RET-004 raw result in `evaluation/results/`; gate policy in `evaluation/gates/eva-002-ci.json`; synthetic fixture in `tests/fixtures/retrieval_benchmark_repo/`; named job in `.github/workflows/ci.yml` |
+| Versioned embeddings, retrieval evaluation and CI smoke gate | Shared bounded Ollama adapter plus immutable dense artifact builder/loader in `backend/app/services/embeddings/`; evaluation runner in `backend/app/services/evaluation/`; immutable dataset in `evaluation/datasets/retrieval-v1/`; RET-004 raw result in `evaluation/results/`; gate policy in `evaluation/gates/eva-002-ci.json`; synthetic fixture in `tests/fixtures/retrieval_benchmark_repo/`; named job in `.github/workflows/ci.yml` |
 | Bounded assistant, request context, stateful conversation memory, sufficiency, citation validation, provider evidence and trace contracts | `backend/app/services/chat/workflow_contracts.py`, `request_context.py`, `conversation_memory.py`, `tool_registry.py`, `sufficiency.py`, `citation_validation.py`, `provider_context.py`, `trace_persistence.py`; compatibility orchestration/provider boundary in `agent_workflow_service.py`, `chat_service.py`, `llm_client.py`; loopback-only native Ollama transport in `ollama_client.py` |
 | Impact | `backend/app/services/impact/` |
 | Persistence | `backend/app/db/`, `services/repositories/repository_store.py` |
@@ -63,12 +63,20 @@ Retrieval now crosses one immutable request/candidate contract with repository/i
 
 Retrieval evaluation now validates a content-addressed six-case `evaluation-case/v1` dataset and its inert synthetic source hashes/ranges, then compares exact/keyword, naive semantic top-k and deterministic hybrid methods on identical candidate observations. It exports per-case results, reviewed metric formulas, frozen run identities and semantic/report checksums. Semantic candidates are fixtures rather than provider measurements; numeric release thresholds, answer judging, load and provider-quality evidence remain later gates.
 
-RET-004 now adds a benchmark-only loopback Ollama embedding client and a checksummed
+RET-004 added a loopback Ollama embedding client and a checksummed
 three-repetition runner over the same EVA-001 candidate inputs. It freezes the real
 `embeddinggemma` digest/dimension, exact text preprocessing, sparse/dense/weighted-RRF
 configuration, per-case quality, provider timing and `/api/ps` memory. The accepted
-result authorizes RET-005 prototyping only; no production vector index, embedding
-configuration default, API or retrieval path changes in this slice.
+result authorized RET-005 prototyping.
+
+RET-005 promotes that validated adapter into a shared embedding boundary and adds a
+canonical immutable `dense-embedding-index/v1` artifact. Repository/index ownership,
+resolved model digest, dimension, preprocessing version and exact chunk hashes gate
+loading and query use. A typed dense search adapter feeds semantic candidates only
+while those identities and the provider remain compatible; missing, stale, corrupt
+or unavailable state returns no semantic candidates and leaves sparse retrieval
+active. Production indexing-worker composition, automatic activation/configuration,
+ANN storage and production-scale load qualification remain outside this slice.
 
 The EVA-002 `evaluation-gate/v1` boundary binds the frozen dataset, fixture, raw result and method configuration identities to reviewed smoke-only metric floors. It emits ordered fail-closed diagnostics and a content-addressed decision. The named CI job runs existing graph/readiness, incremental/equivalence, assistant and evaluation suites before applying that policy. This is deterministic regression protection, not accepted production-quality or release-threshold evidence.
 

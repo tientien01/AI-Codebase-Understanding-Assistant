@@ -1,6 +1,6 @@
 # Phase 4 — Retrieval and Evidence
 
-Status: Approved; RET-001 through RET-004 and the EVA-001 deterministic evaluation foundation are verified, while production-scale thresholds, load qualification and release evidence remain incomplete
+Status: Approved; RET-001 through RET-005 and the EVA-001 deterministic evaluation foundation are verified, while production-scale thresholds, load qualification and release evidence remain incomplete
 
 ## Outcome
 
@@ -8,7 +8,7 @@ Queries use measurable typed retrieval and ranking, and only validated repositor
 
 ## Tasks
 
-`RET-001` through `RET-004` and `EVA-001` foundation work.
+`RET-001` through `RET-005` and `EVA-001` foundation work.
 
 ## Entry
 
@@ -42,3 +42,9 @@ insufficient-evidence accuracy. Query p95 is 334.5 ms, maximum corpus embedding 
 is 1.37 s and observed model memory is 680,379,023 bytes on the recorded Windows
 capacity profile. The reviewed benchmark policy accepts RET-005 prototyping; this is
 not a production-scale load, answer-quality or release-threshold qualification.
+
+`RET-005` adds a canonical immutable dense embedding artifact and explicit semantic
+query adapter. Compatibility is fail-closed across repository/index ownership,
+resolved model digest, vector dimension, preprocessing and chunk hashes; unavailable,
+stale or corrupt dense state preserves sparse retrieval. Production worker wiring,
+automatic activation and scale qualification remain later work.

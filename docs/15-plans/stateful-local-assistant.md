@@ -4,7 +4,7 @@ Status: Approved
 Owner: Project maintainer  
 Approved: 2026-07-16
 
-Delivery state: AGT-006, AGT-007 and RET-004 are verified locally; RET-004 accepts `embeddinggemma` hybrid adoption for RET-005, while RET-005 and UI-024 remain draft and require separate promotion.
+Delivery state: AGT-006, AGT-007, RET-004 and RET-005 are verified locally; the versioned dense artifact retains sparse fallback, while UI-024 remains draft and requires separate promotion.
 
 ## Outcome
 
@@ -30,7 +30,7 @@ Deliver a replayable, bounded conversational assistant that can run through a lo
 3. **RET-004 — Ollama dense embedding benchmark**
    - Same-input sparse/dense/hybrid evaluation covering quality, latency, indexing time and memory. No production replacement.
 4. **RET-005 — Versioned dense embedding index**
-   - Created/promoted only if RET-004 records an accepted adoption decision. Sparse fallback remains available.
+   - Verified 2026-07-17; immutable compatibility-bound artifact and explicit dense semantic adapter preserve sparse fallback.
 5. **UI-024 — Assistant provider and readiness UX**
    - Truthful per-answer/provider/index state: deterministic, Ollama, hybrid or fallback; loading/degraded/stale states.
 

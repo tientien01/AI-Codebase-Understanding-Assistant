@@ -4,7 +4,10 @@ from collections import Counter
 from dataclasses import dataclass
 from math import sqrt
 import re
+from typing import Literal, Protocol
 
+from app.services.embeddings.dense_index import DenseEmbeddingIndex, EmbeddingProvider
+from app.services.embeddings.ollama import cosine_similarity
 from app.services.index_models import ChunkRecord, RepositoryState
 
 
@@ -13,6 +16,13 @@ class VectorSearchMatch:
     chunk: ChunkRecord
     score: float
     matched_terms: list[str]
+    vector_kind: Literal["sparse", "dense"] = "sparse"
+
+
+class VectorSearchProvider(Protocol):
+    def search(
+        self, repository: RepositoryState, query: str, limit: int = 10
+    ) -> list[VectorSearchMatch]: ...
 
 
 class LocalVectorSearchService:
@@ -72,3 +82,51 @@ class LocalVectorSearchService:
 
     def _matched_terms(self, left: Counter[str], right: Counter[str]) -> list[str]:
         return sorted((set(left) & set(right)), key=lambda token: (-left[token], token))[:8]
+
+
+class DenseVectorSearchService:
+    """Query one validated dense artifact; provider failure disables this view."""
+
+    def __init__(self, index: DenseEmbeddingIndex, provider: EmbeddingProvider) -> None:
+        self.index = index
+        self.provider = provider
+
+    def search(
+        self, repository: RepositoryState, query: str, limit: int = 10
+    ) -> list[VectorSearchMatch]:
+        expected_index_id = f"idx_compat_{repository.current_index_version}"
+        if (
+            repository.id != self.index.repository_id
+            or expected_index_id != self.index.index_version_id
+            or limit <= 0
+            or not query.strip()
+        ):
+            return []
+        current_chunks = {item.id: item for item in repository.chunks}
+        if sorted((item.id, item.content_hash) for item in repository.chunks) != [
+            (item.chunk_id, item.content_hash) for item in self.index.chunks
+        ]:
+            return []
+        try:
+            identity = self.provider.identity()
+            if (
+                identity.resolved_model != self.index.model.resolved_model
+                or identity.digest != self.index.model.digest
+            ):
+                return []
+            batch = self.provider.embed((query,))
+            if batch.dimension != self.index.model.dimension or len(batch.vectors) != 1:
+                return []
+            matches = [
+                VectorSearchMatch(
+                    chunk=current_chunks[item.chunk_id],
+                    score=cosine_similarity(batch.vectors[0], item.vector),
+                    matched_terms=[],
+                    vector_kind="dense",
+                )
+                for item in self.index.chunks
+            ]
+        except Exception:
+            return []
+        matches = [item for item in matches if item.score > 0]
+        return sorted(matches, key=lambda item: (-item.score, item.chunk.id))[:limit]

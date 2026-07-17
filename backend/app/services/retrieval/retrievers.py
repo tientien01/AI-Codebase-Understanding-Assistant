@@ -15,7 +15,7 @@ from app.services.retrieval.contracts import (
     SupportType,
     candidate_id,
 )
-from app.services.retrieval.vector_search_service import LocalVectorSearchService
+from app.services.retrieval.vector_search_service import VectorSearchProvider
 
 
 STOPWORDS = {
@@ -395,7 +395,7 @@ class GraphRetriever(BaseRetriever):
 class SemanticRetriever(BaseRetriever):
     name = RetrieverName.SEMANTIC
 
-    def __init__(self, scorer: RetrievalScorer, vector_search: LocalVectorSearchService) -> None:
+    def __init__(self, scorer: RetrievalScorer, vector_search: VectorSearchProvider) -> None:
         super().__init__(scorer)
         self.vector_search = vector_search
 
@@ -407,8 +407,16 @@ class SemanticRetriever(BaseRetriever):
                 result_type="file" if match.chunk.chunk_type in {"file_summary", "semantic_summary"} else match.chunk.chunk_type,
                 title=match.chunk.symbol_name or Path(match.chunk.file_path).name,
                 matched_terms=tuple(match.matched_terms),
-                reason_codes=("semantic_sparse_vector_match",),
-                compatibility_source="semantic_vector",
+                reason_codes=(
+                    "semantic_dense_vector_match"
+                    if match.vector_kind == "dense"
+                    else "semantic_sparse_vector_match",
+                ),
+                compatibility_source=(
+                    "semantic_dense"
+                    if match.vector_kind == "dense"
+                    else "semantic_vector"
+                ),
                 support_type=SupportType.HEURISTIC,
             )
             for match in self.vector_search.search(repository, request.query, limit=max(request.limit * 2, 10))

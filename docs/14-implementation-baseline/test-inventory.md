@@ -65,6 +65,14 @@ integration-profile skips**. A real three-repetition `embeddinggemma` run record
 per-case results and accepts RET-005 prototyping. Entity-deduplicated relevance now
 prevents repeated dense spans from inflating nDCG above 1.0.
 
+RET-005 adds **10 focused tests** for canonical ordering/serialization, immutable
+publication, verified loading, model/version/preprocessing/chunk compatibility,
+provider failure, corruption, typed dense semantic candidates and sparse fallback.
+The canonical-LF evaluation/retrieval regression passes **81 tests** and the final
+backend gate passes **394 tests with 31 integration-profile skips**. The first full
+run exposed one unrelated equal-timestamp conversation-ordering flake; the single
+declared retry passed without code changes.
+
 The EVA-002 clean-environment gate passed **13 targeted policy tests**, its combined evaluation/graph/readiness/incremental/equivalence/assistant suite passed **93 tests**, and the local-profile full suite passed **260 tests with 29 integration-profile tests skipped**. The matrix verifies content-addressed smoke configuration, identity/integrity binding, controlled finite unique rules, order invariance, completed-case enforcement, missing/errored/non-finite/below-floor failures, deterministic decision checksum and CLI exit behavior. The named GitHub Actions smoke job passed for commit `2aba763` in both push and pull-request triggers; this does not establish production thresholds.
 
 | Module | Tests | Main coverage |
@@ -76,7 +84,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 | `intelligence/test_resolver_accuracy.py` | 5 | typed reference ownership/outcomes, relative/internal imports, aliases, local/class calls, ambiguity, unresolved reasons and deterministic ordering |
 | `intelligence/test_graph_candidates.py` | 4 | candidate provenance, zero-critical valid pipeline, inverse/duplicate audit, critical invalid matrix and deterministic normalization |
 | `intelligence/test_capability_readiness.py` | 11 | all readiness states, artifact/profile/validation/freshness/provider/dependency rules, activation summary, determinism and fail-closed input contracts |
-| `retrieval/test_typed_retrieval.py` | 16 | typed classification/request/candidates, all retriever adapters, stable identities/ranks/hybrid projection, ownership rejection and insufficient-evidence negatives |
+| `retrieval/test_typed_retrieval.py` and `test_dense_embedding_index.py` | 20 | typed classification/request/candidates, sparse/dense semantic adapters, stable identities/ranks/hybrid projection, ownership/model/chunk rejection and insufficient-evidence/fallback negatives |
 | `retrieval/test_ranking.py` | 18 | canonical ranking config identity/validation, hand-computed RRF, filters/limits, dedup/merge, support/tie order, raw-scale/input-order invariance and bounded projection |
 | `evidence/test_evidence_context.py` | 14 | ownership/freshness/source/hash/range/blocked/support validation, stable evidence IDs, idempotent persistence, diversity, whole-block budgets, omissions, insufficient coverage and workflow projection |
 | `assistant/test_bounded_workflow_tools.py` | 12 | canonical workflow configuration, typed tool interchange, immutable allowlist identity, ownership/version rejection, exact/hybrid routing, budgets, cancellation, deduplication, safe failures and prompt-like input isolation |
@@ -85,7 +93,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 | `assistant/test_provider_evidence_context.py` | 7 | selected/current whole source context, hash/range/blocked/budget rejection, saved-evidence source reads, prompt-injection delimiting, provider fallback, citation restriction and trace privacy |
 | `assistant/test_ollama_provider.py` | 19 | loopback/model validation, ready/missing/unavailable states, native bounded JSON chat shape, malformed/empty/tool rejection, grounded context, citation allowlisting and deterministic fallback |
 | `assistant/test_request_context.py` | 5 | bounded page/file/line/symbol shape, raw-source exclusion, owner/hash/range/symbol validation, retrieval anchoring, stable API rejection and pre-retrieval failure |
-| `evaluation/` | 43 | versioned bounded dataset/fixture validation, entity-deduplicated retrieval metrics, deterministic baselines, bounded Ollama embedding protocol/benchmark, reproducible checksums, content-addressed CI smoke policy, identity/integrity rules, deterministic diagnostics and CLI pass/fail export |
+| `embeddings/` and `evaluation/` | 49 | immutable compatibility-bound dense artifacts, versioned bounded dataset/fixture validation, entity-deduplicated retrieval metrics, deterministic baselines, bounded Ollama embedding protocol/benchmark, reproducible checksums, content-addressed CI smoke policy and CLI export |
 | `test_file_rules.py` | 5 | secret filtering, supported files, language detection/registry |
 | `test_service_boundaries.py` | 9 | API dependency boundaries, shared composition root, scanner/parser/graph/retrieval/LLM boundary behavior |
 | `test_graph_projection.py` | 7 | server maxima, truncation/count consistency, filter/support/direction/depth traversal, missing roots, deterministic 1,000-node ordering, active-version conflict mapping |
@@ -120,7 +128,7 @@ The EVA-002 clean-environment gate passed **13 targeted policy tests**, its comb
 - Capability readiness calculation is typed and deterministic, but current production manifest/worker composition has not yet supplied or persisted the calculated records.
 - Frontend coverage includes 114 Vitest tests across 16 files spanning routing/application, API client, import, server-state policy, bounded graph, contextual assistant requests, stateful conversation replay and workspace components. UI-004 has six deterministic Chromium tests; UI-005 adds four Settings/Evaluation Chromium tests covering success, permission, retry recovery, unavailable capability and repository/index context. Axe serious/critical checks cover both UI-005 primary surfaces. Broader MSW API contracts and accepted release performance budgets remain absent.
 - SEC-001 now has adversarial archive/folder/Git acquisition coverage. Parser isolation, content secret scanning, rate/abuse load, auth, container/network, dependency scan, backup/restore, and broader release evidence remain absent.
-- EVA-001 and RET-004 provide deterministic baselines plus a real local `embeddinggemma` sparse/dense/hybrid comparison, but no production vector index, claim-level answer benchmark, production-scale threshold, answer judge or load qualification.
+- EVA-001 through RET-005 provide deterministic baselines, a real local `embeddinggemma` comparison and an immutable dense artifact/query adapter, but no production worker composition, automatic dense activation, ANN backend, claim-level answer benchmark, production-scale threshold, answer judge or load qualification.
 - AGT-001 adds bounded typed single-round routing and tool execution, but no multi-round sufficiency repair, claim/citation validator, persistent trace or agent evaluation threshold.
 - AGT-003 adds atomic redacted conversation/structured-trace persistence and owned internal replay, but no semantic entailment model/benchmark, public history API, automated retention executor or accepted agent threshold.
 - AGT-004 gives the optional provider exact validated selected source spans instead of citation metadata alone, but does not qualify a real provider, add frontend entity context/history, or introduce any source modification capability.

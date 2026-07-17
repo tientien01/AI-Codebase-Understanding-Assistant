@@ -22,7 +22,10 @@ from app.services.retrieval.retrievers import (
     SemanticRetriever,
     SymbolRetriever,
 )
-from app.services.retrieval.vector_search_service import LocalVectorSearchService
+from app.services.retrieval.vector_search_service import (
+    LocalVectorSearchService,
+    VectorSearchProvider,
+)
 
 
 @dataclass(frozen=True)
@@ -44,7 +47,7 @@ class RetrievalService:
 
     def __init__(
         self,
-        vector_search: LocalVectorSearchService | None = None,
+        vector_search: VectorSearchProvider | None = None,
         classifier: QueryClassifier | None = None,
         ranking_configuration: RankingConfiguration | None = None,
     ) -> None:
