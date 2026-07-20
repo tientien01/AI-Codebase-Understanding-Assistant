@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from app.core.config import settings
 from app.schemas.api import (
     AssistantRequestContext,
     ChatResponse,
@@ -25,6 +26,7 @@ from app.services.chat.llm_client import LLMClient, LLMResult
 from app.services.chat.provider_context import ProviderEvidenceContext, ProviderEvidenceContextBuilder
 from app.services.chat.request_context import AssistantRequestContextValidator
 from app.services.chat.trace_persistence import build_persisted_turn, normalize_conversation_id
+from app.services.chat.workflow_contracts import WorkflowConfiguration
 from app.services.evidence.evidence_service import EvidenceService
 from app.services.repositories.repository_service import RepositoryService
 from app.services.retrieval.retrieval_service import RetrievalService
@@ -47,6 +49,10 @@ class ChatService:
         self.agent = AgentWorkflowService(
             retrieval,
             evidence,
+            configuration=WorkflowConfiguration(
+                context_token_budget=retrieval.ranking_configuration.context_token_budget,
+                max_elapsed_ms=int(settings.assistant_retrieval_timeout_seconds * 1_000),
+            ),
             provider_context_builder=self.provider_context_builder,
         )
 
@@ -83,11 +89,12 @@ class ChatService:
                 repository.id, repository.current_index_version, message, response, result, memory=memory
             )
 
+        provider_attempted = self._should_attempt_provider(result)
         generated = (
             self._generate_with_memory(
                 message, result.question_type, result.provider_context, memory
             )
-            if result.evidence_sufficient and result.provider_context is not None
+            if provider_attempted and result.provider_context is not None
             else None
         )
         if generated and self.agent.validate_generated_answer(
@@ -122,10 +129,8 @@ class ChatService:
             citations=result.citations,
             evidence_sufficient=result.evidence_sufficient,
             missing_evidence=result.missing_evidence,
-            generation_mode=(
-                "deterministic_fallback" if self._provider_configured() else "deterministic"
-            ),
-            provider_state="degraded" if self._provider_configured() else "unavailable",
+            generation_mode="deterministic_fallback" if provider_attempted else "deterministic",
+            provider_state="degraded" if provider_attempted else "unavailable",
             retrieval_mode=self._retrieval_mode(),
         )
         return self._persist(
@@ -182,9 +187,10 @@ class ChatService:
             evidences,
             self.agent.configuration.context_token_budget,
         )
+        provider_attempted = self._should_attempt_provider(agent_result)
         generated = (
             self._generate_with_memory(message, question_type, provider_context, memory)
-            if agent_result.evidence_sufficient and provider_context is not None
+            if provider_attempted and provider_context is not None
             else None
         )
         if generated and self.agent.validate_generated_answer(
@@ -219,10 +225,8 @@ class ChatService:
             citations=citations,
             evidence_sufficient=agent_result.evidence_sufficient,
             missing_evidence=agent_result.missing_evidence,
-            generation_mode=(
-                "deterministic_fallback" if self._provider_configured() else "deterministic"
-            ),
-            provider_state="degraded" if self._provider_configured() else "unavailable",
+            generation_mode="deterministic_fallback" if provider_attempted else "deterministic",
+            provider_state="degraded" if provider_attempted else "unavailable",
             retrieval_mode=self._retrieval_mode(),
         )
         return self._persist(
@@ -325,7 +329,19 @@ class ChatService:
         return "hybrid" if self.retrieval.vector_search.__class__.__name__ == "DenseVectorSearchService" else "sparse"
 
     def _provider_configured(self) -> bool:
-        return bool(getattr(self.llm, "is_configured", False))
+        configured = getattr(self.llm, "is_configured", None)
+        # Injected provider adapters used by callers may predate the readiness
+        # property. Their presence is an explicit configuration signal.
+        return True if configured is None else bool(configured)
+
+    def _should_attempt_provider(self, result: AgentWorkflowResult) -> bool:
+        """Return true only when this turn can cross the optional provider boundary."""
+
+        return bool(
+            self._provider_configured()
+            and result.evidence_sufficient
+            and result.provider_context is not None
+        )
 
     @staticmethod
     def _summary_dto(
