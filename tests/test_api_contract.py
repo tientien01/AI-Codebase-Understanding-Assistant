@@ -15,12 +15,17 @@ from app.schemas import api as compatibility_api
 OPENAPI_ARTIFACT = Path(__file__).parents[1] / "docs" / "06-api-and-integrations" / "artifacts" / "openapi-v1.json"
 EXPECTED_SCHEMA_EXPORTS = {
     "AccessOperationResponse",
+    "AssistantRequestContext",
     "ApiTokenCreateRequest",
     "ApiTokenIssuedResponse",
     "BootstrapRequest",
     "ChatRequest",
     "ChatResponse",
     "CitationDTO",
+    "ConversationListResponse",
+    "ConversationMessageDTO",
+    "ConversationSummaryDTO",
+    "ConversationTranscriptResponse",
     "EndpointDTO",
     "EndpointListResponse",
     "EvidenceDTO",
@@ -88,7 +93,7 @@ EXPECTED_SCHEMA_EXPORTS = {
 }
 EXPECTED_ROUTE_MODULE_COUNTS = {
     "app.api.v1.routes.auth": 6,
-    "app.api.v1.routes.assistant": 4,
+    "app.api.v1.routes.assistant": 6,
     "app.api.v1.routes.exploration": 4,
     "app.api.v1.routes.graph": 8,
     "app.api.v1.routes.import_sessions": 10,
@@ -139,8 +144,8 @@ def test_route_inventory_and_auth_dependencies_are_preserved() -> None:
         if f"{prefix}{route.path}".startswith("/api/v1")
     ]
 
-    assert len(registered_routes) == 53
-    assert len(versioned_routes) == 52
+    assert len(registered_routes) == 55
+    assert len(versioned_routes) == 54
     assert {
         f"{prefix}{route.path}"
         for prefix, route in registered_routes
@@ -163,7 +168,7 @@ def test_openapi_operation_ids_are_present_and_unique() -> None:
         if method in {"get", "post", "put", "patch", "delete"}
     ]
 
-    assert len(operation_ids) == 53
+    assert len(operation_ids) == 55
     assert len(operation_ids) == len(set(operation_ids))
 
 
@@ -192,6 +197,22 @@ def test_graph_projection_openapi_declares_bounded_inputs_and_disclosure_fields(
         "additional_starting_points",
         "expansion",
     } <= response_schema.keys()
+
+
+def test_conversation_openapi_declares_owned_bounded_history_reads() -> None:
+    document = app.openapi()
+    list_operation = document["paths"]["/api/v1/repositories/{repository_id}/conversations"]["get"]
+    replay_operation = document["paths"][
+        "/api/v1/repositories/{repository_id}/conversations/{conversation_id}"
+    ]["get"]
+
+    list_parameters = {item["name"]: item for item in list_operation["parameters"]}
+    replay_parameters = {item["name"]: item for item in replay_operation["parameters"]}
+    assert list_parameters["limit"]["schema"]["maximum"] == 50
+    assert replay_parameters["limit"]["schema"]["maximum"] == 200
+    assert list_operation["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
+        "/ConversationListResponse"
+    )
 
 
 def test_folder_import_openapi_declares_batched_session_flow() -> None:

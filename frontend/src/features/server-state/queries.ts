@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { serverApi } from '../../api/server'
-import type { ChatMessage, GraphProjectionInput, GraphView, Repository } from '../../types/api'
+import type { GraphProjectionInput, GraphView, Repository } from '../../types/api'
 import { queryKeys } from './keys'
 import { indexRefetchInterval, isTerminalJobStatus } from './policy'
 
@@ -118,13 +118,22 @@ export function useSearchResultsQuery(repository: Repository | undefined, query:
   })
 }
 
-export function useChatTranscriptQuery(repository: Repository | undefined) {
+export function useConversationListQuery(repository: Repository | undefined, enabled: boolean) {
   return useQuery({
-    queryKey: queryKeys.chat(repository?.id ?? 'unselected', repository?.current_index_version),
-    queryFn: async (): Promise<ChatMessage[]> => initialChatTranscript,
-    enabled: false,
-    initialData: initialChatTranscript,
-    staleTime: Number.POSITIVE_INFINITY,
+    queryKey: queryKeys.conversations(repository?.id ?? 'unselected'),
+    queryFn: ({ signal }) => serverApi.conversations(repository!.id, signal),
+    enabled: Boolean(repository && enabled),
+  })
+}
+
+export function useChatTranscriptQuery(
+  repository: Repository | undefined,
+  conversationId: string | undefined,
+) {
+  return useQuery({
+    queryKey: queryKeys.conversation(repository?.id ?? 'unselected', conversationId ?? 'new'),
+    queryFn: ({ signal }) => serverApi.conversation(repository!.id, conversationId!, signal),
+    enabled: Boolean(repository && conversationId),
   })
 }
 
@@ -149,5 +158,3 @@ export function useImportSessionStatusQuery(sessionId: string) {
     },
   })
 }
-
-const initialChatTranscript: ChatMessage[] = []

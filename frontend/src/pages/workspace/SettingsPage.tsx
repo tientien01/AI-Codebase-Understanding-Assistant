@@ -16,9 +16,7 @@ type SettingsPageProps = {
 export function SettingsPage({
   isWorkspace,
   settings,
-  ignorePatterns,
   settingsState,
-  ignorePatternsState,
   onRetry,
 }: SettingsPageProps) {
   const profileState = settings && !hasCompleteSafeProfile(settings)
@@ -30,48 +28,28 @@ export function SettingsPage({
       <PageTitle
         title="Settings"
         subtitle={isWorkspace
-          ? 'Effective, read-only workspace configuration reported by the server.'
-          : 'Effective, non-secret application configuration reported by the server.'}
+          ? 'The settings that affect this workspace right now.'
+          : 'A concise, non-secret summary of what affects your projects and AI answers.'}
       />
 
       <AsyncStateNotice state={profileState} onRetry={onRetry} />
       {!isBlockingAsyncState(profileState) && settings && (
-        <div className="settings-grid">
-          <Panel title="Indexing profile">
-            <ConfigRow label="Default profile" value={title(settings.indexing.default_profile)} />
-            <ConfigRow label="Maximum file size" value={megabytes(settings.indexing.max_file_size_mb)} />
-            <ConfigRow label="Maximum upload size" value={megabytes(settings.indexing.max_upload_size_mb)} />
+        <div className="settings-grid settings-grid-simple">
+          <Panel title="Project limits">
+            <ConfigRow label="Indexing profile" value={title(settings.indexing.default_profile)} />
+            <ConfigRow label="Largest file" value={megabytes(settings.indexing.max_file_size_mb)} />
+            <ConfigRow label="Upload limit" value={megabytes(settings.indexing.max_upload_size_mb)} />
           </Panel>
 
-          <Panel title="Provider readiness">
-            <ConfigRow label="LLM provider" value={reported(settings.providers.llm_provider)} />
-            <ConfigRow label="LLM model" value={reported(settings.providers.llm_model)} />
-            <ConfigRow label="LLM status" value={configured(settings.providers.llm_configured)} />
-            <ConfigRow label="Embedding provider" value={reported(settings.providers.embedding_provider)} />
-            <ConfigRow label="Embedding model" value={reported(settings.providers.embedding_model)} />
-            <ConfigRow label="Embedding status" value={configured(settings.providers.embedding_configured)} />
-            <ConfigRow label="Vector store" value={reported(settings.providers.vector_store_provider)} />
+          <Panel title="AI Assistant">
+            <ConfigRow label="Answer model" value={`${reported(settings.providers.llm_model)} (${reported(settings.providers.llm_provider)})`} />
+            <ConfigRow label="Availability" value={configured(settings.providers.llm_configured)} />
+            <p className="boundary-copy">Answers stay grounded in indexed source evidence. If the model is unavailable, the assistant clearly reports its fallback state.</p>
           </Panel>
 
-          <Panel title="Security invariants">
+          <Panel title="Safety">
             <ConfigRow label="Secret scanning" value={enabled(settings.security.secret_scanning_enabled)} />
-            <p className="boundary-copy">Security invariants are reported for visibility and cannot be disabled from this UI.</p>
-          </Panel>
-
-          <Panel title="Effective ignore patterns">
-            <AsyncStateNotice state={ignorePatternsState} onRetry={onRetry} />
-            {!isBlockingAsyncState(ignorePatternsState) && ignorePatterns && (
-              <ul className="pattern-list" aria-label="Effective ignore patterns">
-                {ignorePatterns.effective_patterns.map((pattern) => <li key={pattern}><code>{pattern}</code></li>)}
-              </ul>
-            )}
-          </Panel>
-
-          <Panel title="Changes and provider tests">
-            <AsyncStateNotice state={{
-              kind: 'unavailable',
-              message: 'Settings changes and provider tests are unavailable because PATCH /settings/preferences and POST /settings/providers/test are not implemented.',
-            }} />
+            <p className="boundary-copy">Sensitive configuration and ignored paths stay protected. These controls are read-only here.</p>
           </Panel>
         </div>
       )}
@@ -86,10 +64,6 @@ function hasCompleteSafeProfile(settings: SettingsResponse) {
     && settings.providers.llm_provider !== undefined
     && settings.providers.llm_model !== undefined
     && settings.providers.llm_configured !== undefined
-    && settings.providers.embedding_provider !== undefined
-    && settings.providers.embedding_model !== undefined
-    && settings.providers.embedding_configured !== undefined
-    && settings.providers.vector_store_provider !== undefined
     && settings.security.secret_scanning_enabled !== undefined
 }
 

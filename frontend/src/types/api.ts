@@ -177,11 +177,64 @@ export type Evidence = Citation & {
 }
 
 export type ChatMessage = {
+  messageId?: string
   role: 'user' | 'assistant'
   content: string
   citations?: Citation[]
   evidenceSufficient?: boolean
+  indexVersion?: number
+  createdAt?: string
+  generationMode?: ChatResponse['generation_mode']
+  providerState?: ChatResponse['provider_state']
+  retrievalMode?: ChatResponse['retrieval_mode']
 }
+
+export type ChatResponse = {
+  conversation_id: string
+  message_id: string
+  question_type: string
+  answer: string
+  citations: Citation[]
+  evidence_sufficient: boolean
+  missing_evidence: string[]
+  generation_mode: 'deterministic' | 'ollama' | 'provider' | 'deterministic_fallback'
+  provider_state: 'ready' | 'degraded' | 'unavailable'
+  retrieval_mode: 'sparse' | 'hybrid'
+}
+
+export type ConversationSummary = {
+  conversation_id: string
+  title?: string
+  status: string
+  message_count: number
+  latest_index_version: number
+  is_stale: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ConversationTranscript = {
+  conversation: ConversationSummary
+  messages: Array<{
+    message_id: string
+    role: 'user' | 'assistant'
+    content: string
+    index_version: number
+    created_at: string
+    citations: Citation[]
+    evidence_sufficient?: boolean
+  }>
+}
+
+export type AssistantRequestContext =
+  | { page: 'overview' }
+  | {
+      page: 'code'
+      file_path: string
+      start_line?: number
+      end_line?: number
+      symbol_name?: string
+    }
 
 export type GraphDirection = 'outgoing' | 'incoming' | 'both'
 export type GraphProjectionMode = 'full' | 'seeds' | 'neighbors'

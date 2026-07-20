@@ -7,6 +7,7 @@ import {
   toAsyncViewState,
   toMutationAsyncViewState,
   useChatTranscriptQuery,
+  useConversationListQuery,
   useDebouncedValue,
   useEvidenceQuery,
   useEndpointsQuery,
@@ -23,6 +24,9 @@ import {
 import { pathForPage } from '../routing/routes'
 import type { AppRoute } from '../routing/routes'
 import type {
+  AssistantRequestContext,
+  ChatMessage,
+  ChatResponse,
   Citation,
   ApiEndpoint,
   GraphData,
@@ -66,6 +70,9 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   const [graphViewFallback, setGraphViewFallback] = useState<GraphView>('project-map')
   const [graphProjectionControls, setGraphProjectionControls] = useState(defaultGraphProjection)
   const [chatInput, setChatInput] = useState('How does the login flow work?')
+  const [pendingChatQuestion, setPendingChatQuestion] = useState<string>()
+  const [activeConversation, setActiveConversation] = useState<{ repositoryId: string; conversationId: string }>()
+  const [chatOutcomes, setChatOutcomes] = useState<Record<string, Pick<ChatResponse, 'generation_mode' | 'provider_state' | 'retrieval_mode'>>>({})
   const [searchQueryDraft, setSearchQueryDraft] = useState('login auth token')
   const [impactTargetType, setImpactTargetType] = useState('symbol')
   const [impactTargetRefDraft, setImpactTargetRefDraft] = useState('login')
@@ -123,6 +130,29 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     ? route.filePath ?? defaultFilePath ?? ''
     : ''
   const fileContentQuery = useFileContentQuery(usableRepository, selectedFilePath || undefined, page === 'code')
+  const derivedChatContext = useMemo<AssistantRequestContext | undefined>(() => {
+    if (page === 'overview') return { page: 'overview' }
+    if (
+      page !== 'code'
+      || !selectedFilePath
+      || fileContentQuery.data?.file_path !== selectedFilePath
+    ) return undefined
+    const selectedLine = route.status === 'valid' && route.page === 'code' ? route.line : undefined
+    const selectedSymbol = selectedLine
+      ? fileContentQuery.data.symbols.find(
+          (symbol) => symbol.start_line <= selectedLine && selectedLine <= symbol.end_line,
+        )
+      : undefined
+    return {
+      page: 'code',
+      file_path: selectedFilePath,
+      ...(selectedLine ? { start_line: selectedLine, end_line: selectedLine } : {}),
+      ...(selectedSymbol?.symbol_name ? { symbol_name: selectedSymbol.symbol_name } : {}),
+    }
+  }, [fileContentQuery.data, page, route, selectedFilePath])
+  const derivedChatContextKey = derivedChatContext ? JSON.stringify(derivedChatContext) : undefined
+  const [dismissedChatContextKey, setDismissedChatContextKey] = useState<string>()
+  const chatContext = derivedChatContextKey !== dismissedChatContextKey ? derivedChatContext : undefined
   const evidenceQuery = useEvidenceQuery(
     usableRepository,
     route.status === 'valid' && route.page === 'evidence' ? route.evidenceId : undefined,
@@ -133,7 +163,31 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     debouncedSearchQuery,
     page === 'search' && Boolean(debouncedSearchQuery),
   )
-  const chatTranscriptQuery = useChatTranscriptQuery(selectedRepository)
+  const routeConversationId = route.status === 'valid' && route.page === 'assistant'
+    ? route.conversationId
+    : undefined
+  const activeConversationId = routeConversationId
+    ?? (activeConversation && activeConversation.repositoryId === selectedRepository?.id
+      ? activeConversation.conversationId
+      : undefined)
+  const conversationListQuery = useConversationListQuery(
+    selectedRepository,
+    ['overview', 'code', 'assistant'].includes(page),
+  )
+  const chatTranscriptQuery = useChatTranscriptQuery(selectedRepository, activeConversationId)
+  const chatMessages: ChatMessage[] = (chatTranscriptQuery.data?.messages ?? []).map((message) => ({
+    messageId: message.message_id,
+    role: message.role,
+    content: message.content,
+    citations: message.citations,
+    evidenceSufficient: message.evidence_sufficient,
+    indexVersion: message.index_version,
+    createdAt: message.created_at,
+    generationMode: chatOutcomes[message.message_id]?.generation_mode,
+    providerState: chatOutcomes[message.message_id]?.provider_state,
+    retrievalMode: chatOutcomes[message.message_id]?.retrieval_mode,
+  }))
+  if (pendingChatQuestion) chatMessages.push({ role: 'user', content: pendingChatQuestion })
   const mutations = useServerMutations(selectedRepository?.id, selectedRepository?.current_index_version)
 
   const importController = useImportController({
@@ -185,6 +239,14 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
   function openEvidence(citation: Citation) {
     if (!selectedRepository) return
     navigate(pathForPage('evidence', selectedRepository.id, { evidenceId: citation.evidence_id }))
+  }
+
+  function clearCodeLine() {
+    if (!selectedRepository || route.status !== 'valid' || route.page !== 'code') return
+    navigate(pathForPage('code', selectedRepository.id, {
+      filePath: selectedFilePath,
+      codeTrace: codeTraceRoot,
+    }), { replace: true })
   }
 
   function selectApiEndpoint(endpointKey: string) {
@@ -276,11 +338,51 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     if (!selectedRepository || !chatInput.trim()) return
     const userText = chatInput.trim()
     setChatInput('')
-    await runAction(() => mutations.chat.mutateAsync({
+    setPendingChatQuestion(userText)
+    const result = await runAction(() => mutations.chat.mutateAsync({
       targetRepositoryId: selectedRepository.id,
       indexVersion: selectedRepository.current_index_version,
       message: userText,
+      context: chatContext,
+      conversationId: activeConversationId,
     }))
+    setPendingChatQuestion(undefined)
+    if (!result.ok) {
+      setChatInput(userText)
+      return
+    }
+    setChatOutcomes((current) => ({ ...current, [result.data.message_id]: result.data }))
+    const conversationId = result.data.conversation_id
+    setActiveConversation({ repositoryId: selectedRepository.id, conversationId })
+    if (page === 'assistant') {
+      navigate(pathForPage('assistant', selectedRepository.id, { conversationId }), { replace: true })
+    }
+  }
+
+  function startNewChat() {
+    if (!selectedRepository) return
+    setActiveConversation(undefined)
+    setChatInput('')
+    if (page === 'assistant') navigate(pathForPage('assistant', selectedRepository.id))
+  }
+
+  function selectConversation(conversationId: string) {
+    if (!selectedRepository) return
+    setActiveConversation({ repositoryId: selectedRepository.id, conversationId })
+    if (page === 'assistant') {
+      navigate(pathForPage('assistant', selectedRepository.id, { conversationId }))
+    }
+  }
+
+  async function deleteConversation(conversationId: string) {
+    if (!selectedRepository) return
+    if (!window.confirm('Delete this conversation from chat history?')) return
+    const result = await runAction(() => mutations.deleteConversation.mutateAsync({
+      targetRepositoryId: selectedRepository.id,
+      conversationId,
+    }))
+    if (!result.ok) return
+    if (activeConversationId === conversationId) startNewChat()
   }
 
   async function runSearch(event?: FormEvent) {
@@ -459,7 +561,14 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     fileContent: fileContentQuery.data ?? null,
     selectedEvidence: evidenceQuery.data ?? null,
     chatInput,
-    chatMessages: chatTranscriptQuery.data,
+    chatMessages,
+    conversations: conversationListQuery.data?.items ?? [],
+    activeConversationId,
+    activeConversationStale: chatTranscriptQuery.data?.conversation?.is_stale ?? false,
+    chatPending: mutations.chat.isPending,
+    chatReplayLoading: chatTranscriptQuery.isPending && Boolean(activeConversationId),
+    chatReplayError: chatTranscriptQuery.isError,
+    chatContext,
     searchQuery,
     searchResults: searchResultsQuery.data?.results ?? [],
     impactTargetType,
@@ -471,6 +580,7 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     pageState,
     setPage,
     setChatInput,
+    clearChatContext: () => derivedChatContextKey && setDismissedChatContextKey(derivedChatContextKey),
     setSearchQuery,
     setImpactTargetType,
     setImpactTargetRef,
@@ -484,9 +594,13 @@ export function useAppController(route: AppRoute, navigate: NavigateFunction) {
     deleteAllRepositories,
     loadFileContent: openFile,
     selectCodeLine,
+    clearCodeLine,
     reloadRepositories: repositoriesQuery.refetch,
     retryActivePage: pageQuery.query ? () => { void pageQuery.refetch() } : undefined,
     sendChatMessage,
+    startNewChat,
+    selectConversation,
+    deleteConversation,
     openEvidence,
     selectApiEndpoint,
     openApiFlow,

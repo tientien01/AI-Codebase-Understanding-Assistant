@@ -1,6 +1,9 @@
 import { API_V1, requestJson } from './client'
 import type {
-  Citation,
+  ChatResponse,
+  ConversationSummary,
+  ConversationTranscript,
+  AssistantRequestContext,
   Evidence,
   EndpointListResponse,
   FileContent,
@@ -18,6 +21,10 @@ import type {
   SettingsResponse,
   ImportSessionStatus,
 } from '../types/api'
+
+// Leave headroom around the maximum 15-minute Ollama generation timeout for
+// readiness, retrieval, citation validation, and conversation persistence.
+const CHAT_TIMEOUT_MS = 20 * 60_000
 
 export const serverApi = {
   repositories: (signal?: AbortSignal) => requestJson<Repository[]>(`${API_V1}/repositories`, { signal }),
@@ -56,10 +63,35 @@ export const serverApi = {
       target_ref: targetRef,
       max_depth: 3,
     })),
-  chat: (repositoryId: string, message: string) =>
-    requestJson<{ answer: string; citations: Citation[]; evidence_sufficient: boolean }>(
+  conversations: (repositoryId: string, signal?: AbortSignal) =>
+    requestJson<{ items: ConversationSummary[] }>(
+      `${API_V1}/repositories/${repositoryId}/conversations?limit=50`, { signal },
+    ),
+  conversation: (repositoryId: string, conversationId: string, signal?: AbortSignal) =>
+    requestJson<ConversationTranscript>(
+      `${API_V1}/repositories/${repositoryId}/conversations/${encodeURIComponent(conversationId)}?limit=200`,
+      { signal },
+    ),
+  deleteConversation: (repositoryId: string, conversationId: string) =>
+    requestJson<{ deleted: boolean }>(
+      `${API_V1}/repositories/${repositoryId}/conversations/${encodeURIComponent(conversationId)}`,
+      { method: 'DELETE' },
+    ),
+  chat: (
+    repositoryId: string,
+    message: string,
+    context?: AssistantRequestContext,
+    conversationId?: string,
+  ) =>
+    requestJson<ChatResponse>(
       `${API_V1}/repositories/${repositoryId}/chat`,
-      jsonRequest({ message, options: { max_retrieval_rounds: 2 } }),
+      jsonRequest({
+        message,
+        options: { max_retrieval_rounds: 2 },
+        ...(conversationId ? { conversation_id: conversationId } : {}),
+        ...(context ? { context } : {}),
+      }),
+      CHAT_TIMEOUT_MS,
     ),
   createGithubImport: (url: string, name?: string) =>
     requestJson<{ import_session_id: string; status: string }>(`${API_V1}/import-sessions/github`, jsonRequest({ url, name })),

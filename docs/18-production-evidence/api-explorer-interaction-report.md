@@ -15,6 +15,7 @@ Branch: `agent/api-explorer-interactions`
 - Search covers path, handler, and source file; method filters are generated from the indexed methods.
 - Endpoint selection is keyboard reachable, visibly selected, persisted in `?endpoint=`, and restored by deep links/history.
 - API Detail follows the selected endpoint, identifies removed/stale endpoint links, and opens exact source or a bounded API-flow projection.
+- The endpoint table fills the primary workspace column; the previous nested two-column grid no longer reserves an unused 390px track.
 - Auth/schema controls are not claimed without deterministic parser evidence.
 - Generic TanStack Query cache eligibility no longer produces a global stale-data banner; only an explicit older-index state may do so.
 
@@ -26,7 +27,7 @@ Branch: `agent/api-explorer-interactions`
 | `backend\.venv\Scripts\python.exe -m pytest tests/test_api_contract.py tests/test_codebase_service.py -q` | 35 passed |
 | `backend\.venv\Scripts\python.exe -m pytest --ignore=tests/evaluation -q` | 303 passed, 31 environment-backed tests skipped |
 | `npm.cmd test -- --run src/App.test.tsx src/pages/workspace/ApiExplorerPage.test.tsx src/features/server-state/serverState.test.tsx` | 29 passed |
-| `npm.cmd test -- --run` | 106 passed |
+| `npm.cmd test -- --run` | 107 passed, including the full-width API Explorer structure regression |
 | `npm.cmd run lint` | passed |
 | `npx.cmd tsc -b --pretty false` | passed |
 | `npm.cmd run build` | passed; existing bundle-size warning only |
@@ -42,3 +43,7 @@ The complete backend invocation reached 316 passed and 31 skipped, with 18 evalu
 - Both push and pull-request workflow runs passed Backend tests, AI/graph/incremental regression, Frontend quality gates, UI-004 E2E/accessibility, and UI-005 E2E/accessibility.
 
 The first PR run exposed an existing UI-004 browser-gate mismatch also present on the latest `main` run: the test still targeted the removed generic graph heading/canvas and expected all request relations before choosing an entry point. UI-023 updates that owned gate to the accepted progressive request/dependency regions and select-before-expansion behavior; the rerun result is recorded on PR #40.
+
+## WHAT2EAT endpoint count audit
+
+The `trongtz/WHAT2EAT` `main` branch was inspected read-only through the GitHub API on 2026-07-16. Its FastAPI source declares 68 unique method/path operations: 33 GET, 20 POST, 10 PUT, and 5 DELETE. This consists of the root operation in `backend/main.py` plus 67 operations across 15 route modules; all 15 modules are registered once under `/api`, and no duplicate method/full-path pair was found. The displayed total of 68 therefore matches the repository source at the inspected revision, while intentionally excluding FastAPI-generated documentation/OpenAPI routes and implicit HEAD handling.

@@ -23,6 +23,8 @@ import {
 } from './pages/workspace'
 import type {
   ChatMessage,
+  ConversationSummary,
+  AssistantRequestContext,
   ApiEndpoint,
   Citation,
   Evidence,
@@ -63,6 +65,13 @@ type AppRoutesProps = {
   selectedEvidence: Evidence | null
   chatInput: string
   chatMessages: ChatMessage[]
+  conversations: ConversationSummary[]
+  activeConversationId?: string
+  activeConversationStale: boolean
+  chatPending: boolean
+  chatReplayLoading: boolean
+  chatReplayError: boolean
+  chatContext?: AssistantRequestContext
   searchQuery: string
   searchResults: SearchResult[]
   impactTargetType: string
@@ -84,6 +93,7 @@ type AppRoutesProps = {
   isPreviewLoading: boolean
   setPage: (page: Page) => void
   setChatInput: (value: string) => void
+  clearChatContext: () => void
   setSearchQuery: (value: string) => void
   setImpactTargetType: (value: string) => void
   setImpactTargetRef: (value: string) => void
@@ -104,13 +114,18 @@ type AppRoutesProps = {
   deleteAllRepositories: () => void
   loadFileContent: (repositoryId: string, filePath: string, line?: number) => void
   selectCodeLine: (filePath: string, line: number) => void
+  clearCodeLine: () => void
   sendChatMessage: (event?: FormEvent) => void
+  startNewChat: () => void
+  selectConversation: (conversationId: string) => void
+  deleteConversation: (conversationId: string) => void
   openEvidence: (citation: Citation) => void
   selectApiEndpoint: (endpointKey: string) => void
   openApiFlow: (endpoint: ApiEndpoint) => void
   runSearch: (event?: FormEvent) => void
   runImpactAnalysis: (event?: FormEvent) => void
   openImpact: (targetType: string, targetRef: string) => void
+  projectSearchQuery?: string
   analyzeGraphArea: (scopePath: string) => void
   changeGraphView: (view: GraphView) => void
   traceValue: (context: ValueTraceContext) => void
@@ -173,18 +188,6 @@ export function AppRoutes(props: AppRoutesProps) {
       />
     )
   }
-  if (route.detail === 'conversation') {
-    return (
-      <RouteRecoveryPage
-        title="Conversation replay is not available yet"
-        description="The conversation identity is preserved, but public owned-history loading is outside UI-001. Start from the current assistant without showing unrelated messages."
-        requestedPath={route.pathname}
-        actionPath={pathForPage('assistant', route.repositoryId)}
-        actionLabel="Open Assistant"
-      />
-    )
-  }
-
   if (page === 'projects') {
     return (
       <ProjectsPage
@@ -195,6 +198,7 @@ export function AppRoutes(props: AppRoutesProps) {
         onDelete={props.deleteRepository}
         onDeleteAll={props.deleteAllRepositories}
         onViewIndexJobs={() => props.setPage('indexing')}
+        searchQuery={props.projectSearchQuery}
       />
     )
   }
@@ -280,7 +284,7 @@ export function AppRoutes(props: AppRoutesProps) {
     ) : null
     return (
       <AssistantWorkspace
-        main={<CodeExplorerPage repositoryId={selectedRepository?.id ?? 'unselected'} fileTree={fileTree} selectedFilePath={selectedFilePath} selectedLine={route.line} fileContent={fileContent} overview={overview} tracePanel={tracePanel} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} onSelectLine={props.selectCodeLine} onTraceValue={props.traceValue} />}
+        main={<CodeExplorerPage repositoryId={selectedRepository?.id ?? 'unselected'} fileTree={fileTree} selectedFilePath={selectedFilePath} selectedLine={route.line} fileContent={fileContent} overview={overview} tracePanel={tracePanel} onSelectFile={(filePath) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath)} onSelectLine={props.selectCodeLine} onClearSelectedLine={props.clearCodeLine} onTraceValue={props.traceValue} />}
         {...props}
       />
     )
@@ -297,7 +301,6 @@ export function AppRoutes(props: AppRoutesProps) {
         onExpandNode={props.expandGraphNode}
         onAnalyzeArea={props.analyzeGraphArea}
         onOpenSource={(node) => node.file_path && selectedRepository && props.loadFileContent(selectedRepository.id, node.file_path, node.start_line)}
-        onOpenImpact={(node) => props.openImpact(impactTargetTypeFor(node.type), node.id)}
         onTraceValue={props.traceValue}
         onReturnToSource={props.returnToTraceSource}
       />
@@ -330,7 +333,30 @@ export function AppRoutes(props: AppRoutesProps) {
     )
   }
   if (page === 'assistant') {
-    return <WorkspacePage main={<AssistantFullPage input={chatInput} messages={chatMessages} disabled={!canChat(selectedRepository)} onInput={props.setChatInput} onSubmit={props.sendChatMessage} onEvidence={props.openEvidence} />} side={<EvidenceSummary />} />
+    return (
+      <WorkspacePage
+        main={(
+          <AssistantFullPage
+            input={chatInput}
+            messages={chatMessages}
+            conversations={props.conversations}
+            activeConversationId={props.activeConversationId}
+            activeConversationStale={props.activeConversationStale}
+            pending={props.chatPending}
+            replayLoading={props.chatReplayLoading}
+            replayError={props.chatReplayError}
+            disabled={!canChat(selectedRepository) || props.chatReplayError}
+            onInput={props.setChatInput}
+            onSubmit={props.sendChatMessage}
+            onEvidence={props.openEvidence}
+            onNewChat={props.startNewChat}
+            onSelectConversation={props.selectConversation}
+            onDeleteConversation={props.deleteConversation}
+          />
+        )}
+        side={<EvidenceSummary />}
+      />
+    )
   }
   if (page === 'impact') {
     return (
@@ -351,16 +377,11 @@ export function AppRoutes(props: AppRoutesProps) {
     )
   }
   if (page === 'search') return <WorkspacePage main={<SearchPage query={searchQuery} results={searchResults} onQuery={props.setSearchQuery} onSearch={props.runSearch} onEvidence={props.openEvidence} />} side={<SearchFilters />} />
-  if (page === 'evidence') return <WorkspacePage main={<EvidencePage evidence={selectedEvidence} />} side={<EvidenceSummary />} />
+  if (page === 'evidence') return <WorkspacePage main={<EvidencePage evidence={selectedEvidence} onOpenCode={(filePath, line) => selectedRepository && props.loadFileContent(selectedRepository.id, filePath, line)} />} side={null} />
   if (page === 'evaluation') {
     return <EvaluationRoute repository={selectedRepository} />
   }
   return <SettingsRoute isWorkspace={isWorkspacePage} />
-}
-
-function impactTargetTypeFor(nodeType: string) {
-  if (['file', 'endpoint', 'model', 'schema'].includes(nodeType)) return nodeType
-  return 'symbol'
 }
 
 function SettingsRoute({ isWorkspace }: { isWorkspace: boolean }) {
@@ -402,7 +423,7 @@ function EvaluationRoute({ repository }: { repository?: Repository }) {
   )
 }
 
-function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, setChatInput, sendChatMessage, openEvidence }: AppRoutesProps & { main: ReactNode }) {
+function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages, chatContext, conversations, activeConversationId, activeConversationStale, chatPending, chatReplayLoading, chatReplayError, setChatInput, clearChatContext, sendChatMessage, startNewChat, selectConversation, deleteConversation, openEvidence }: AppRoutesProps & { main: ReactNode }) {
   return (
     <WorkspacePage
       main={main}
@@ -411,9 +432,20 @@ function AssistantWorkspace({ main, selectedRepository, chatInput, chatMessages,
         <CollapsibleAssistantPanel
           input={chatInput}
           messages={chatMessages}
-          disabled={!canChat(selectedRepository)}
+          context={chatContext}
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          activeConversationStale={activeConversationStale}
+          pending={chatPending}
+          replayLoading={chatReplayLoading}
+          replayError={chatReplayError}
+          disabled={!canChat(selectedRepository) || chatReplayError}
           suggestions={['Explain the architecture', 'Trace the login flow', 'Where should I start reading?']}
           onInput={setChatInput}
+          onRemoveContext={clearChatContext}
+          onNewChat={startNewChat}
+          onSelectConversation={selectConversation}
+          onDeleteConversation={deleteConversation}
           onSubmit={sendChatMessage}
           onEvidence={openEvidence}
         />

@@ -1,4 +1,4 @@
-import { InDevelopmentInline, Panel, PreviewLine } from '../../components/common/ui'
+import { Panel, PreviewLine } from '../../components/common/ui'
 import type { ApiEndpoint, GraphData } from '../../types/api'
 
 export function GraphDetails({ graph }: { graph: GraphData | null }) {
@@ -76,7 +76,7 @@ export function EvidenceSummary() {
   return (
     <Panel title="Evidence">
       <p>Click a citation from chat or search to open the Evidence Viewer.</p>
-      <InDevelopmentInline text="Graph trace and answer-to-evidence mapping will improve with the agent workflow." />
+      <p className="evidence-side-note">Each citation opens the exact indexed file range and explains why it supports the answer.</p>
     </Panel>
   )
 }

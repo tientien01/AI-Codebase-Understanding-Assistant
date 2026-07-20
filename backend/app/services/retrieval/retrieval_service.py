@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from app.schemas.api import CitationDTO
 from app.services.index_models import ChunkRecord, RepositoryState
-from app.services.retrieval.contracts import RetrievalCandidate, RetrievalRequest
+from app.services.retrieval.contracts import QueryClassification, RetrievalCandidate, RetrievalRequest
 from app.services.retrieval.query_classifier import QueryClassifier
 from app.services.retrieval.ranking import (
     RankedCandidate,
@@ -22,7 +22,10 @@ from app.services.retrieval.retrievers import (
     SemanticRetriever,
     SymbolRetriever,
 )
-from app.services.retrieval.vector_search_service import LocalVectorSearchService
+from app.services.retrieval.vector_search_service import (
+    LocalVectorSearchService,
+    VectorSearchProvider,
+)
 
 
 @dataclass(frozen=True)
@@ -44,7 +47,7 @@ class RetrievalService:
 
     def __init__(
         self,
-        vector_search: LocalVectorSearchService | None = None,
+        vector_search: VectorSearchProvider | None = None,
         classifier: QueryClassifier | None = None,
         ranking_configuration: RankingConfiguration | None = None,
     ) -> None:
@@ -87,8 +90,9 @@ class RetrievalService:
         repository: RepositoryState,
         query: str,
         limit: int,
+        classification: QueryClassification | None = None,
     ) -> tuple[RetrievalRequest, list[RetrievalCandidate]]:
-        classification = self.classifier.classify(query)
+        classification = classification or self.classifier.classify(query)
         request = RetrievalRequest.for_repository(repository, query, limit, classification)
         if not RetrievalScorer().query_terms(query):
             return request, []
@@ -125,30 +129,31 @@ class RetrievalService:
         repository: RepositoryState,
         query: str,
         limit: int,
+        classification: QueryClassification | None = None,
     ) -> tuple[RetrievalRequest, list[RankedCandidate]]:
         """Return the owned request and inspectable ranked candidates."""
-        request, candidates = self.retrieve_candidates(repository, query, limit)
+        request, candidates = self.retrieve_candidates(repository, query, limit, classification)
         return request, self.ranker.rank(request, candidates)
 
     def generate_grounded_answer(self, question_type: str, message: str, citations: list[CitationDTO]) -> str:
         first = citations[0]
         if question_type == "flow_tracing":
             return (
-                f"Luong xu ly co evidence chinh tai {first.file_path}:{first.start_line}-{first.end_line}. "
-                "He thong tim cac endpoint, symbol va file lien quan trong index, sau do sap xep evidence theo do khop voi cau hoi. "
-                "Cac buoc chi nen xem la grounded trong pham vi citation duoc tra ve."
+                f"The primary supporting evidence is {first.file_path}:{first.start_line}-{first.end_line}. "
+                "The system finds related endpoints, symbols, and files in the index, then ranks evidence by its match to the question. "
+                "Treat this flow as grounded only within the returned citations."
             )
         if question_type == "debugging":
             return (
-                f"Bat dau debug tu {first.file_path}:{first.start_line}-{first.end_line}, sau do kiem tra cac citation con lai. "
-                "Neu loi lien quan config, he thong chi dung file config duoc index va khong doc .env that."
+                f"Start debugging at {first.file_path}:{first.start_line}-{first.end_line}, then inspect the remaining citations. "
+                "For configuration issues, the system uses only indexed configuration files and never reads a real .env file."
             )
         if question_type == "architecture_overview":
             return (
-                "Kien truc duoc tom tat tu file source, README/docs va metadata parser. "
-                f"Evidence manh nhat hien tai la {first.file_path}:{first.start_line}-{first.end_line}."
+                "The architecture summary is derived from source files, README/docs, and parser metadata. "
+                f"The strongest current evidence is {first.file_path}:{first.start_line}-{first.end_line}."
             )
         return (
-            f"He thong tim thay evidence lien quan cho cau hoi '{message}'. "
-            f"Ket luan chinh duoc neo vao {first.file_path}:{first.start_line}-{first.end_line} va cac citation kem theo."
+            f"The system found evidence related to the question '{message}'. "
+            f"The main conclusion is anchored to {first.file_path}:{first.start_line}-{first.end_line} and the accompanying citations."
         )

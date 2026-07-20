@@ -50,6 +50,77 @@ describe('App routing', () => {
     )
   })
 
+  it('shows and sends the exact Code Explorer context, then lets the user remove it', async () => {
+    renderApp(['/repositories/repo-1/code?path=src%2Fauth.ts&line=2'])
+
+    const contextChip = await screen.findByLabelText('Assistant workspace context')
+    expect(contextChip.textContent).toContain('src/auth.ts · line 2 · login')
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/chat'))).toBe(true))
+    const contextualCall = vi.mocked(fetch).mock.calls.find(([input]) => String(input).endsWith('/chat'))
+    const contextualBody = JSON.parse(String((contextualCall?.[1] as RequestInit | undefined)?.body))
+    expect(contextualBody.context).toEqual({
+      page: 'code',
+      file_path: 'src/auth.ts',
+      start_line: 2,
+      end_line: 2,
+      symbol_name: 'login',
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove assistant context' }))
+    expect(screen.queryByLabelText('Assistant workspace context')).toBeNull()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Message AI Assistant' }), { target: { value: 'Explain without context' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([input]) => String(input).endsWith('/chat'))).toHaveLength(2))
+    const plainCall = vi.mocked(fetch).mock.calls.filter(([input]) => String(input).endsWith('/chat'))[1]
+    const plainBody = JSON.parse(String((plainCall[1] as RequestInit | undefined)?.body))
+    expect(plainBody).not.toHaveProperty('context')
+  })
+
+  it('sends page-only context from Overview without claiming file context', async () => {
+    renderApp(['/repositories/repo-1/overview'])
+
+    const contextChip = await screen.findByLabelText('Assistant workspace context')
+    expect(contextChip.textContent).toContain('OverviewCurrent workspace page')
+    expect(contextChip.textContent).not.toContain('src/')
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/chat'))).toBe(true))
+    const chatCall = vi.mocked(fetch).mock.calls.find(([input]) => String(input).endsWith('/chat'))
+    const body = JSON.parse(String((chatCall?.[1] as RequestInit | undefined)?.body))
+    expect(body.context).toEqual({ page: 'overview' })
+  })
+
+  it('replays a deep-linked conversation and retains its identity for follow-up turns', async () => {
+    renderApp(['/repositories/repo-1/assistant/conversation_test'])
+
+    expect(await screen.findByText('Previously grounded answer')).toBeTruthy()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Message AI Assistant' }), {
+      target: { value: 'Where is that called?' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/chat'))).toBe(true))
+    const chatCall = vi.mocked(fetch).mock.calls.find(([input]) => String(input).endsWith('/chat'))
+    const body = JSON.parse(String((chatCall?.[1] as RequestInit | undefined)?.body))
+    expect(body.conversation_id).toBe('conversation_test')
+    expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/assistant/conversation_test')
+
+    fireEvent.click(screen.getByRole('button', { name: 'New Chat' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/assistant'))
+  })
+
+  it('closes the identifier chooser by removing its selected line from the URL', async () => {
+    renderApp(['/repositories/repo-1/code?path=src%2Fauth.ts&line=2'])
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Close identifier chooser' }))
+
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/repositories/repo-1/code?path=src%2Fauth.ts'))
+    expect(screen.queryByLabelText('Trace value from selected source line')).toBeNull()
+  })
+
   it('loads evidence only from the repository and evidence identities in a direct URL', async () => {
     renderApp(['/repositories/repo-1/evidence/evidence%2F9'])
 
@@ -282,7 +353,7 @@ function responseFor(url: string) {
       language: 'typescript',
       content: 'export function login() {}\nconst token = login()',
       lines: ['export function login() {}', 'const token = login()'],
-      symbols: [],
+      symbols: [{ evidence_id: 'symbol-login', file_path: 'src/auth.ts', symbol_name: 'login', start_line: 1, end_line: 2 }],
     })
   }
   if (url.endsWith('/evidence/evidence%2F9')) {
@@ -328,6 +399,64 @@ function responseFor(url: string) {
     })
   }
   if (url.endsWith('/api/endpoints')) return jsonResponse({ items: apiEndpoints, next_cursor: null })
+  if (url.includes('/conversations?')) {
+    return jsonResponse({
+      items: [{
+        conversation_id: 'conversation_test',
+        title: 'How does login work?',
+        status: 'active',
+        message_count: 2,
+        latest_index_version: 7,
+        is_stale: false,
+        created_at: '2026-07-16T00:00:00Z',
+        updated_at: '2026-07-16T00:00:00Z',
+      }],
+    })
+  }
+  if (url.includes('/conversations/conversation_test?')) {
+    return jsonResponse({
+      conversation: {
+        conversation_id: 'conversation_test',
+        title: 'Test conversation',
+        status: 'active',
+        message_count: 2,
+        latest_index_version: 1,
+        is_stale: false,
+        created_at: '2026-07-16T00:00:00Z',
+        updated_at: '2026-07-16T00:00:00Z',
+      },
+      messages: [
+        {
+          message_id: 'message_user',
+          role: 'user',
+          content: 'How does login work?',
+          index_version: 7,
+          created_at: '2026-07-16T00:00:00Z',
+          citations: [],
+        },
+        {
+          message_id: 'message_assistant',
+          role: 'assistant',
+          content: 'Previously grounded answer',
+          index_version: 7,
+          created_at: '2026-07-16T00:00:01Z',
+          citations: [],
+          evidence_sufficient: true,
+        },
+      ],
+    })
+  }
+  if (url.endsWith('/chat')) {
+    return jsonResponse({
+      conversation_id: 'conversation_test',
+      message_id: 'message_test',
+      question_type: 'code_question',
+      answer: 'Grounded answer',
+      citations: [],
+      evidence_sufficient: false,
+      missing_evidence: ['fixture'],
+    })
+  }
   if (url.includes('/graph/')) return jsonResponse({ nodes: [], edges: [] })
   if (url.endsWith('/files/tree')) return jsonResponse([])
   return jsonResponse({})

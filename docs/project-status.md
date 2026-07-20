@@ -2,7 +2,7 @@
 
 Status: Accepted project control document  
 Owner: Project maintainer  
-Last verified: 2026-07-14
+Last verified: 2026-07-17
 
 This page is the operational front door. It reports verified progress; it does not replace product contracts, architecture, tasks, or release evidence.
 
@@ -13,8 +13,8 @@ This page is the operational front door. It reports verified progress; it does n
 | Target | Release L3: single-node self-hosted production |
 | Current maturity | L1 capabilities exist, but the L1 evidence set is incomplete |
 | Active delivery phase | Phase 7 has verified SEC-001 and SEC-002; operations delivery remains open |
-| Active task | SEC-002 is complete locally and awaiting PR review/merge |
-| Next task candidate | Authorize OPS-001 structured telemetry and readiness after SEC-002 merge |
+| Active task | BUG-002 indexing/chat persistence hotfix completed locally |
+| Next task candidate | Continue the operations sequence after owner reconciliation |
 | Production readiness | Not ready |
 
 ## Verified strengths
@@ -42,7 +42,15 @@ This page is the operational front door. It reports verified progress; it does n
 - Assistant routing now uses immutable versioned workflow/tool contracts and an explicit exact/hybrid allowlist. Exact hits avoid hybrid/semantic work, exact misses fall back once, multi-step types route directly to hybrid, and call/time/context/cancellation/deduplication boundaries emit safe observations. The AGT-001 routing/tool matrix passes.
 - Assistant sufficiency now requires question-specific strong support/source/endpoint/graph coverage, permits only one controlled budgeted repair, validates claims against selected current citation IDs/scope and rejects optional provider output without valid declarations. The AGT-002 positive/refusal/repair/citation matrix passes.
 - Completed assistant turns now persist atomically as redacted conversation messages, claims, citations, budget summaries and controlled ordered trace events. Local SQLite replay enforces repository ownership, production mapping targets the accepted PostgreSQL schema, and persistence failure prevents a successful response. The AGT-003 privacy/rollback/replay matrix passes.
+- Optional provider calls now receive exact whole selected evidence spans rather than citation metadata alone. Current owner/index/source/hash/range/blocked/budget checks fail closed, imported source is delimited as untrusted data, and provider failure preserves deterministic fallback. The AGT-004 provider-context matrix and canonical-LF full backend gate pass; real-provider quality remains unverified.
+- Assistant requests now optionally include visible removable workspace context. Code Explorer sends the current file, selected line and containing parsed symbol; Overview sends page-only context. The backend verifies current repository ownership, source hash, line bounds and symbol membership before retrieval anchoring, returns stable 422 context errors before retrieval, and preserves context-free behavior. AGT-005 passes 81 focused backend/API regressions, 113 frontend tests and a 347-pass canonical-LF full backend gate.
+- Assistant conversations now expose repository-owned bounded history/replay, retain the server-issued identity across follow-ups, and restore deep-linked transcripts after refresh. A deterministic eight-message/1,000-token projection helps resolve follow-up intent without becoming evidence; stale assistant text is excluded and current-index citation gates remain authoritative. AGT-006 passes 61 focused backend/API regressions, 114 frontend tests and a 354-pass canonical-LF full backend gate.
+- Optional chat now has a dependency-free native Ollama adapter restricted to a validated loopback HTTP origin, installed model identity, bounded timeout and response size. Readiness never pulls or mutates models; non-streaming JSON receives only validated AGT-004 evidence context, and outage/malformed/invalid-citation cases preserve deterministic fallback. AGT-007 passes 36 focused tests, 151 combined regressions and a 373-pass canonical-LF full backend gate; live-model quality remains unverified.
 - Retrieval evaluation now validates a content-addressed six-case synthetic dataset and compares exact/keyword, deterministic semantic-fixture and hybrid methods on identical inputs with reviewed formulas, negative/ambiguous coverage and reproducible checksums. The EVA-001 clean targeted, compatibility and full local-profile gates pass; real provider quality, accepted thresholds and load evidence remain open.
+- A real three-repetition local `embeddinggemma` benchmark now compares sparse, dense and weighted-RRF hybrid retrieval on the exact EVA-001 inputs. Hybrid Recall@3 improves from 0.6667 to 1.0 and reciprocal rank from 0.8 to 0.9; query p95 is 334.5 ms, maximum corpus embedding is 1.37 s and observed model memory is 680,379,023 bytes. All reviewed RET-004 adoption checks pass, authorizing RET-005 prototyping without claiming production-scale or answer-quality qualification.
+- A canonical immutable dense artifact now binds repository/index ownership, resolved model digest, dimension, preprocessing and chunk hashes. Its explicit semantic adapter rechecks provider identity and fails back to sparse for missing, stale, corrupt, malformed or unavailable dense state. RET-005 passes 10 focused tests, 81 canonical-LF evaluation/retrieval regressions and a 394-pass canonical-LF full backend gate; production worker composition, automatic activation and ANN-scale qualification remain open.
+- Assistant messages now disclose only server-declared generation/provider/retrieval outcomes. Ollama/provider, deterministic, fallback and sparse/hybrid labels are distinct; historical messages without declarations remain unlabeled. UI-024 passes 65 backend assistant tests, frontend lint, 115 frontend tests and the production build.
+- BUG-002 prevents repeated Python definitions from colliding at SQLite publication and commits a candidate index before activating it in memory. Failed publication now retains the previous active version, preventing the index-version drift that caused chat persistence HTTP 500 responses.
 - A named EVA-002 CI job now combines existing graph/readiness, incremental/equivalence, assistant and evaluation suites with a content-addressed fail-closed smoke policy. Its local clean gate and GitHub-hosted named checks pass; the policy remains explicitly non-release.
 - React Router now owns the accepted canonical management/workspace URLs, browser history and reloadable repository/source/line/evidence identity. Missing, unusable, malformed and unsafe contexts fail closed into recovery; the UI-001 targeted/full/lint/typecheck/clean-build and HTTP deep-link gates pass.
 - TanStack Query now owns current frontend repository/workspace reads, mutation results, import previews and scoped chat transcripts. Repository/index-version keys, cancellation, bounded classified retry, terminal/hidden polling, scoped invalidation, cached refresh retention and explicit recovery states pass the UI-002 targeted/full/lint/typecheck/clean-build gates.
@@ -63,8 +71,8 @@ The detailed and source-verified account is maintained in `14-implementation-bas
 
 ## Immediate sequence
 
-1. Review and merge the completed SEC-002 pull request without inferring Phase 7 or L3 completion.
-2. Select and authorize OPS-001 or another dependency-valid candidate under a separate `ready` task.
+1. Reconcile the remaining Phase 6 `in_progress` task metadata before selecting unrelated implementation work.
+2. Promote UI-024 only with separate authorization; RET-005 now supplies the provider/index readiness facts that UI work may disclose.
 
 ## Status update rule
 

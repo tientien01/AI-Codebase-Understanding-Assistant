@@ -16,7 +16,7 @@ type ImportControllerDeps = {
 
 export function useImportController({ setSelectedRepositoryId, setPage, setApiError }: ImportControllerDeps) {
   const queryClient = useQueryClient()
-  const [projectName, setProjectName] = useState('fastapi-react-sample')
+  const [projectName, setProjectName] = useState('')
   const [githubUrl, setGithubUrlState] = useState('')
   const [importMode, setImportMode] = useState<ImportMode>('folder')
   const [folderFiles, setFolderFiles] = useState<File[]>([])
@@ -89,6 +89,10 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
 
   async function submitImport(event: FormEvent) {
     event.preventDefault()
+    if (!projectName.trim()) {
+      setApiError('Enter a project name before preparing an import.')
+      return
+    }
     if (importSessionId && previewQuery.data) {
       await confirmImportSession(importSessionId)
       return
@@ -105,7 +109,7 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
     }
     const formData = new FormData()
     formData.append('file', zipFile)
-    formData.append('name', projectName || zipFile.name.replace(/\.zip$/i, ''))
+    formData.append('name', projectName.trim())
     await createPreviewFromUpload(`${API_V1}/import-sessions/upload-zip`, formData)
   }
 
@@ -121,7 +125,7 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
     let activeSessionId = ''
     try {
       setApiError('')
-      const session = await serverApi.startFolderImport(projectName || folderRootName(folderFiles), folderFiles.length, totalBytes)
+      const session = await serverApi.startFolderImport(projectName.trim(), folderFiles.length, totalBytes)
       activeSessionId = session.import_session_id
       setImportSessionId(session.import_session_id)
       let uploadedBytes = 0
@@ -169,7 +173,7 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
     setUploadProgress(0)
     try {
       setApiError('')
-      const session = await githubSession.mutateAsync({ url: githubUrl.trim(), name: projectName || undefined })
+      const session = await githubSession.mutateAsync({ url: githubUrl.trim(), name: projectName.trim() })
       setAcquisitionStartedAt(Date.now())
       setImportSessionId(session.import_session_id)
     } catch (error) {
@@ -194,7 +198,7 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
   async function confirmImportSession(sessionId: string) {
     try {
       setApiError('')
-      await confirmSession.mutateAsync({ sessionId, name: projectName })
+      await confirmSession.mutateAsync({ sessionId, name: projectName.trim() })
       clearImportPreview()
       setPage('indexing')
     } catch (error) {
@@ -247,7 +251,7 @@ export function useImportController({ setSelectedRepositoryId, setPage, setApiEr
     elapsedSeconds,
     isConfirming: confirmSession.isPending,
     isPreviewLoading: githubSession.isPending || uploadSession.isPending || isPreparingUpload || Boolean(importSessionId && !previewQuery.data && !statusQuery.isError && !previewQuery.isError && statusQuery.data?.status !== 'failed' && statusQuery.data?.status !== 'cancelled'),
-    canPreparePreview: importMode === 'github' ? isValidGithubUrl(githubUrl) : importMode === 'zip' ? Boolean(zipFile) : folderFiles.length > 0,
+    canPreparePreview: Boolean(projectName.trim()) && (importMode === 'github' ? isValidGithubUrl(githubUrl) : importMode === 'zip' ? Boolean(zipFile) : folderFiles.length > 0),
     asyncState,
     setProjectName,
     setGithubUrl: updateGithubUrl,
@@ -266,11 +270,6 @@ function isLocallyExcluded(file: File) {
   const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name
   const directoryParts = relativePath.replace(/\\/g, '/').split('/').slice(1, -1)
   return directoryParts.some((part) => LOCAL_EXCLUDED_DIRECTORIES.has(part.toLowerCase()))
-}
-
-function folderRootName(files: File[]) {
-  const first = files[0] as (File & { webkitRelativePath?: string }) | undefined
-  return first?.webkitRelativePath?.replace(/\\/g, '/').split('/')[0] || first?.name || 'Imported folder'
 }
 
 function fileBatches(files: File[], batchSize: number) {

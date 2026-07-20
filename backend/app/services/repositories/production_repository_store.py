@@ -13,7 +13,12 @@ from app.core.config import settings
 from app.db.production_base import ProductionBase
 import app.db.production_models  # noqa: F401 - register production tables
 from app.db.production_session import create_production_engine, create_production_session_factory
-from app.schemas.api import EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
+from app.schemas.api import CitationDTO, EvidenceDTO, GraphEdgeDTO, GraphNodeDTO
+from app.services.chat.conversation_memory import (
+    ConversationMessageRecord,
+    ConversationSummaryRecord,
+    ConversationTranscriptRecord,
+)
 from app.services.chat.trace_persistence import (
     AssistantTraceReplay,
     PersistedAssistantTurn,
@@ -213,9 +218,15 @@ class ProductionRepositoryStore:
                         id=turn.conversation_id,
                         principal_id="principal_local_operator",
                         repository_id=turn.repository_id,
-                        title=turn.question_type,
+                        title=turn.operator_message[:80],
                         status="active",
                     )
+                )
+            else:
+                session.execute(
+                    update(conversations)
+                    .where(conversations.c.id == turn.conversation_id)
+                    .values(updated_at=func.now())
                 )
             messages = self.t["messages"]
             session.execute(
@@ -307,6 +318,161 @@ class ProductionRepositoryStore:
                     for event in turn.events
                 ],
             )
+
+    def list_conversations(
+        self, repository_id: str, limit: int
+    ) -> tuple[ConversationSummaryRecord, ...]:
+        conversations, traces = self.t["conversations"], self.t["agent_traces"]
+        with self.Session() as session:
+            ids = session.scalars(
+                select(conversations.c.id)
+                .join(traces, traces.c.conversation_id == conversations.c.id)
+                .where(
+                    conversations.c.repository_id == repository_id,
+                    conversations.c.principal_id == "principal_local_operator",
+                    conversations.c.status != "deleted",
+                )
+                .group_by(conversations.c.id)
+                .order_by(func.max(traces.c.started_at).desc(), conversations.c.id.desc())
+                .limit(limit)
+            ).all()
+            return tuple(self._conversation_summary(session, repository_id, item) for item in ids)
+
+    def get_conversation_transcript(
+        self, repository_id: str, conversation_id: str, limit: int
+    ) -> ConversationTranscriptRecord | None:
+        conversations, messages = self.t["conversations"], self.t["messages"]
+        versions = self.t["index_versions"]
+        with self.Session() as session:
+            owned = session.scalar(
+                select(conversations.c.id).where(
+                    conversations.c.id == conversation_id,
+                    conversations.c.repository_id == repository_id,
+                    conversations.c.principal_id == "principal_local_operator",
+                    conversations.c.status != "deleted",
+                )
+            )
+            if not owned:
+                return None
+            rows = session.execute(
+                select(messages, versions.c.version_number)
+                .outerjoin(
+                    versions,
+                    and_(
+                        versions.c.repository_id == messages.c.repository_id,
+                        versions.c.id == messages.c.index_version_id,
+                    ),
+                )
+                .where(
+                    messages.c.repository_id == repository_id,
+                    messages.c.conversation_id == conversation_id,
+                )
+                .order_by(messages.c.created_at.desc(), messages.c.id.desc())
+                .limit(limit)
+            ).mappings().all()
+            rows.reverse()
+            replay: list[ConversationMessageRecord] = []
+            for row in rows:
+                citations: tuple[CitationDTO, ...] = ()
+                if row["role"] == "assistant":
+                    evidence_ids = session.scalars(
+                        select(self.t["citations"].c.evidence_id)
+                        .join(
+                            self.t["claims"],
+                            self.t["claims"].c.id == self.t["citations"].c.claim_id,
+                        )
+                        .where(self.t["claims"].c.message_id == row["id"])
+                        .order_by(self.t["citations"].c.evidence_id)
+                    ).all()
+                    citations = tuple(
+                        CitationDTO(
+                            evidence_id=item.evidence_id,
+                            file_path=item.file_path,
+                            symbol_name=item.symbol_name,
+                            start_line=item.start_line,
+                            end_line=item.end_line,
+                            index_version=item.index_version,
+                            is_stale=item.is_stale,
+                        )
+                        for evidence_id in evidence_ids
+                        if (item := self._evidence_dto_in_session(session, evidence_id)) is not None
+                    )
+                replay.append(
+                    ConversationMessageRecord(
+                        row["id"],
+                        "user" if row["role"] == "operator" else row["role"],
+                        row["content"],
+                        int(row["version_number"] or 0),
+                        row["created_at"].isoformat(),
+                        citations,
+                        row["assistant_outcome"] == "answered" if row["role"] == "assistant" else None,
+                    )
+                )
+            return ConversationTranscriptRecord(
+                self._conversation_summary(session, repository_id, conversation_id), tuple(replay)
+            )
+
+    def delete_conversation(self, repository_id: str, conversation_id: str) -> bool:
+        """Soft-delete an owned operator conversation without discarding audit evidence."""
+        conversations = self.t["conversations"]
+        with self.Session.begin() as session:
+            result = session.execute(
+                update(conversations)
+                .where(
+                    conversations.c.id == conversation_id,
+                    conversations.c.repository_id == repository_id,
+                    conversations.c.principal_id == "principal_local_operator",
+                    conversations.c.status != "deleted",
+                )
+                .values(status="deleted", updated_at=datetime.now(UTC))
+            )
+            return bool(result.rowcount)
+
+    def _conversation_summary(
+        self, session, repository_id: str, conversation_id: str
+    ) -> ConversationSummaryRecord:
+        conversations, messages, versions = (
+            self.t["conversations"], self.t["messages"], self.t["index_versions"]
+        )
+        conversation = session.execute(
+            select(conversations).where(
+                conversations.c.id == conversation_id,
+                conversations.c.repository_id == repository_id,
+                conversations.c.principal_id == "principal_local_operator",
+            )
+        ).mappings().one()
+        message_count, created_at, updated_at = session.execute(
+            select(func.count(messages.c.id), func.min(messages.c.created_at), func.max(messages.c.created_at)).where(
+                messages.c.repository_id == repository_id,
+                messages.c.conversation_id == conversation_id,
+            )
+        ).one()
+        latest_index = session.scalar(
+            select(func.max(versions.c.version_number))
+            .select_from(messages)
+            .join(
+                versions,
+                and_(
+                    versions.c.repository_id == messages.c.repository_id,
+                    versions.c.id == messages.c.index_version_id,
+                ),
+            )
+            .where(
+                messages.c.repository_id == repository_id,
+                messages.c.conversation_id == conversation_id,
+            )
+        ) or 0
+        first = created_at or conversation["created_at"]
+        last = updated_at or conversation["updated_at"] or first
+        return ConversationSummaryRecord(
+            conversation_id,
+            conversation["title"],
+            conversation["status"],
+            int(message_count or 0),
+            int(latest_index),
+            first.isoformat(),
+            last.isoformat(),
+        )
 
     def get_agent_trace(
         self, repository_id: str, trace_id: str

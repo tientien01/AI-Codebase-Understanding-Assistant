@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 SETTINGS_ENV_FILE = None if os.environ.get("APP_ENV") == "test" else BACKEND_ROOT / ".env"
+MAX_OLLAMA_TIMEOUT_SECONDS = 900
 
 
 class Settings(BaseSettings):
@@ -36,6 +37,8 @@ class Settings(BaseSettings):
     llm_provider: str = "fake"
     llm_model: str = "fake-chat-model"
     llm_api_key: str = ""
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_timeout_seconds: float = 30.0
     embedding_provider: str = "fake"
     embedding_model: str = "fake-embedding-model"
     embedding_api_key: str = ""
@@ -103,6 +106,11 @@ class Settings(BaseSettings):
             raise ValueError("Operator access and audit lifetimes must be positive")
         if self.session_idle_seconds > self.session_absolute_seconds:
             raise ValueError("SESSION_IDLE_SECONDS cannot exceed SESSION_ABSOLUTE_SECONDS")
+        if not 0 < self.ollama_timeout_seconds <= MAX_OLLAMA_TIMEOUT_SECONDS:
+            raise ValueError(
+                f"OLLAMA_TIMEOUT_SECONDS must be greater than zero and at most "
+                f"{MAX_OLLAMA_TIMEOUT_SECONDS}"
+            )
         if self.app_env == "production" and self.api_auth_token.strip():
             raise ValueError("Production profile forbids the shared API_AUTH_TOKEN")
         required_access_settings = {

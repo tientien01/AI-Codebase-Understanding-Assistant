@@ -115,6 +115,7 @@ class ToolInput:
     question_type: str
     limit: int
     round_number: int
+    classification_query: str | None = None
     schema_version: str = "assistant-tool-input/v1"
 
     def __post_init__(self) -> None:
@@ -126,7 +127,11 @@ class ToolInput:
             raise ValueError("tool name and version must be controlled")
         if not self.repository_id.strip() or not self.index_version_id.startswith("idx_"):
             raise ValueError("tool input ownership is required")
-        if not self.query.strip() or self.question_type not in CONTROLLED_QUESTION_TYPES:
+        if (
+            not self.query.strip()
+            or (self.classification_query is not None and not self.classification_query.strip())
+            or self.question_type not in CONTROLLED_QUESTION_TYPES
+        ):
             raise ValueError("tool query and question type are required")
         if self.limit <= 0 or self.round_number <= 0:
             raise ValueError("tool limit and round must be positive")
@@ -139,6 +144,7 @@ class ToolInput:
             self.repository_id,
             self.index_version_id,
             " ".join(self.query.lower().split()),
+            " ".join((self.classification_query or self.query).lower().split()),
             self.question_type,
             str(self.limit),
         )

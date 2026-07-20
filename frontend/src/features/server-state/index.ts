@@ -5,6 +5,7 @@ export { useDebouncedValue } from './useDebouncedValue'
 export { useServerMutations } from './mutations'
 export {
   useChatTranscriptQuery,
+  useConversationListQuery,
   useEvidenceQuery,
   useFileContentQuery,
   useFileTreeQuery,

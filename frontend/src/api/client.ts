@@ -24,10 +24,14 @@ export class ApiError extends Error {
   }
 }
 
-export async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
+export async function requestJson<T>(
+  url: string,
+  options?: RequestInit,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<T> {
   const controller = options?.signal ? null : new AbortController()
   const timeout = controller
-    ? window.setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
+    ? window.setTimeout(() => controller.abort(), timeoutMs)
     : null
   try {
     const response = await fetch(url, { ...options, signal: options?.signal ?? controller?.signal })

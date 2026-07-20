@@ -9,6 +9,7 @@ from app.services.chunking_service import ChunkingService
 from app.services.index_models import FileRecord, RepositoryState
 from app.services.parsing.debug_output_service import ParseDebugOutputService
 from app.services.parsing.parser_service import ParserService
+from app.services.parsing.javascript_parser import JavaScriptTypeScriptParser
 from app.services.enrichment.semantic_enrichment_service import SemanticEnrichmentService
 from app.services.retrieval.retrieval_service import RetrievalService
 from app.services.graph.graph_projection_service import GraphProjectionService
@@ -89,6 +90,49 @@ def test_python_symbol_id_is_stable_when_lines_shift(tmp_path: Path) -> None:
     assert first_login.id == second_login.id
     assert first_login.start_line == 1
     assert second_login.start_line == 3
+
+
+def test_redefined_python_symbols_receive_unique_repeatable_ids(tmp_path: Path) -> None:
+    source = (
+        "def resolve(value):\n    return value\n\n"
+        "def resolve(value):\n    return value + 1\n"
+    )
+
+    first = parse_python_source(tmp_path, source)
+    second = parse_python_source(tmp_path, source)
+    first_ids = [item.id for item in first.symbols if item.name == "resolve"]
+    second_ids = [item.id for item in second.symbols if item.name == "resolve"]
+
+    assert len(first_ids) == 2
+    assert len(set(first_ids)) == 2
+    assert first_ids == second_ids
+
+
+def test_redefined_javascript_symbols_receive_unique_repeatable_ids(
+    tmp_path: Path,
+) -> None:
+    source = "const resolve = () => 1\nconst resolve = () => 2\n"
+
+    def parse() -> list[str]:
+        repository = RepositoryState(
+            id="repo_javascript_duplicates",
+            name="javascript-duplicates",
+            source_type="upload_folder",
+            source_uri=None,
+            source_path=tmp_path,
+        )
+        file_record = FileRecord(
+            "sample.ts", tmp_path / "sample.ts", "typescript", "source", len(source), "hash"
+        )
+        JavaScriptTypeScriptParser(ChunkingService()).parse(
+            repository, file_record, source
+        )
+        return [item.id for item in repository.symbols]
+
+    first_ids = parse()
+    assert len(first_ids) == 2
+    assert len(set(first_ids)) == 2
+    assert first_ids == parse()
 
 
 def test_python_code_analysis_emits_cfg_for_branch(tmp_path: Path) -> None:

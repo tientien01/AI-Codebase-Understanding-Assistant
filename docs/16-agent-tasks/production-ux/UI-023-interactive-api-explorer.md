@@ -71,6 +71,7 @@ Deliver an evidence-backed API browsing workflow from endpoint discovery through
 - Regenerate the committed OpenAPI artifact without weakening its drift gate.
 - Load API endpoints through the owned endpoint-list query.
 - Add text and method filters, selected-row state, URL persistence, and useful empty results.
+- Let the endpoint list consume the full primary workspace column without a nested empty grid track.
 - Bind API Detail to the selected endpoint with source and API-flow actions.
 - Stop treating generic TanStack Query cache eligibility as user-visible stale repository data.
 - Add focused backend/frontend regressions and production evidence.
@@ -128,6 +129,7 @@ git diff --check
 - Source and request-flow actions retain repository and endpoint context.
 - Unsupported auth/schema information is not represented as an interactive filter or asserted fact.
 - Query `isStale` alone does not create a global "Cached data" banner.
+- The endpoint table uses the full primary workspace width while API Detail remains in the contextual side column.
 - All required verification passes and is recorded in the evidence report.
 
 ## Rollback

@@ -1,6 +1,6 @@
 # Phase 5 — Bounded Assistant Workflow
 
-Status: Approved; AGT-001 through AGT-003 and the deterministic EVA-002 assistant/evaluation CI smoke gate are verified, while Phase 5 exit/release qualification remains blocked by accepted evaluation thresholds and later security/auth retention policy delivery
+Status: Approved; AGT-001 through AGT-007 and the deterministic EVA-002 assistant/evaluation CI smoke gate are verified, while Phase 5 exit/release qualification remains blocked by real-provider quality qualification, accepted evaluation thresholds and later retention policy delivery
 
 ## Outcome
 
@@ -8,7 +8,7 @@ The assistant selects typed tools, checks evidence sufficiency, performs bounded
 
 ## Tasks
 
-`AGT-001` through `AGT-003`, followed by `EVA-002` agent gates.
+`AGT-001` through `AGT-006`, with `EVA-002` deterministic agent gates.
 
 ## Entry
 
@@ -31,5 +31,19 @@ Tool-selection report, repair ablation, hallucination/refusal benchmark, provide
 `AGT-002` adds deterministic question-specific sufficiency, one controlled budgeted repair, structural claim-to-selected-current-citation validation and provider fail-closed acceptance. It does not add persistent trace/conversation storage, semantic entailment qualification or accepted agent evaluation thresholds.
 
 `AGT-003` atomically persists redacted conversation messages, claims, citations and an allowlisted ordered trace across local SQLite and the accepted PostgreSQL schema. Internal replay enforces repository ownership and deterministic ordering. Public history endpoints, retention scheduling, authenticated-principal delivery and accepted agent evaluation thresholds remain outside this task.
+
+`AGT-004` projects only whole selected/current evidence spans into an internal provider context, revalidates saved evidence against active source/hash/range/blocked policy, preserves the existing context-token budget and delimits imported source as untrusted data. Provider failure or invalid citation declarations retain deterministic fallback. It does not add frontend entity context, provider qualification or source modification.
+
+`AGT-005` adds an optional bounded workspace-context request contract. Code Explorer visibly derives current file/line/symbol identifiers, Overview supplies page-only context, and either chip can be removed without changing navigation. The backend validates file ownership, active source hash, range and symbol membership before appending canonical identifiers to retrieval; raw source remains excluded from the request and evidence/citation gates remain authoritative. It does not add history replay, multi-turn memory, graph/API context or provider adoption.
+
+`AGT-006` exposes bounded repository-owned conversation list/replay, requires supplied conversation ownership, retains server-issued identity in the frontend and restores deep-linked transcripts after refresh. Follow-ups project at most eight recent messages under a deterministic 1,000-token estimate into untrusted intent context; conversation text cannot become evidence, and stale assistant text is excluded. Ollama/provider adoption, dense embeddings, retention execution and accepted agent thresholds remain outside this task.
+
+`AGT-007` adds a dependency-free native Ollama chat adapter restricted to a
+validated loopback HTTP origin, validated model identity, a bounded timeout and a
+one-MiB response limit. Readiness checks the configured model without mutating the
+daemon; non-streaming JSON chat receives only AGT-004 grounded context and remains
+subject to citation validation. Outage, missing model and malformed output retain
+deterministic fallback. Real-model answer quality, latency and resource adoption
+remain RET-004 scope.
 
 `EVA-002` adds a named CI job combining the existing assistant, graph/readiness, incremental/equivalence and versioned retrieval evaluation suites with a content-addressed synthetic smoke policy. Its metric floors are classified `ci_regression_only`; they are not accepted agent, provider, latency, cost or release thresholds.

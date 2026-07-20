@@ -23,6 +23,8 @@ UI-004 browser qualification lives under `frontend/e2e/`: deterministic owned fi
 
 UI-005 replaces the remaining fabricated Evaluation/Settings content. Settings reads only the existing non-secret allowlist and effective ignore patterns; Evaluation preserves repository/index context while explicitly disclosing that interactive dataset/run/result APIs are unavailable. The UI never presents offline CI evidence as a user-triggered run or exposes a control for an unsupported settings mutation.
 
+UI-025 adds an optimistic user turn and visible evidence-checking state while a chat request is pending, a line-numbered wrapping Evidence Viewer, and confirmed per-conversation removal backed by repository-owned soft deletion. The generic Evidence “in development” card is removed. Impact, Search, and Evaluation keep their canonical deep links but are intentionally omitted from workspace navigation until the owner resumes those surfaces. Grounded provider prompts now request direct natural-language explanations in the question's language; citation validation and deterministic fallback remain unchanged.
+
 ## Quality
 
 Keyboard navigation, color contrast, focus management, accessible status messages, virtualization for large lists/code, performance budgets, error boundaries, and critical Playwright flows are release requirements.

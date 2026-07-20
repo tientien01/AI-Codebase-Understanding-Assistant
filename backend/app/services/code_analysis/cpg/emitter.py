@@ -13,7 +13,7 @@ from app.services.code_analysis.models import (
     ResolvedReference,
     canonical_symbol_key,
 )
-from app.services.code_analysis.stable_ids import stable_node_id, stable_symbol_id
+from app.services.code_analysis.stable_ids import stable_node_id, stable_symbol_id, unique_definition_id
 from app.services.index_models import EndpointRecord, RepositoryState, SymbolRecord
 from app.services.text_utils import node_id
 
@@ -113,9 +113,15 @@ class CPGEmitter:
         symbol_type: str,
         signature: str,
     ) -> None:
+        base_id = stable_symbol_id(
+            repository.id, node.file_path, qualified_name, symbol_type
+        )
+        symbol_id = unique_definition_id(
+            base_id, (item.id for item in repository.symbols)
+        )
         repository.symbols.append(
             SymbolRecord(
-                id=stable_symbol_id(repository.id, node.file_path, qualified_name, symbol_type),
+                id=symbol_id,
                 name=name,
                 symbol_type=symbol_type,
                 file_path=node.file_path,

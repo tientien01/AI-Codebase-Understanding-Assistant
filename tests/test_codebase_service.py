@@ -267,6 +267,68 @@ def test_force_reindex_replaces_index_records_without_duplicates() -> None:
     assert second_status.index_version == first_status.index_version + 1
 
 
+def test_failed_reindex_persistence_keeps_previous_active_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-failed-publish-test")
+    service.start_indexing(created.repository_id, force_reindex=True)
+    repository, job, control, previous_status = service.indexing._prepare_indexing_job(
+        created.repository_id
+    )
+    active_version = repository.current_index_version
+
+    def fail_candidate_publish(_repository) -> None:
+        raise ValueError("duplicate symbol IDs")
+
+    monkeypatch.setattr(
+        service.repositories_service, "persist_repository", fail_candidate_publish
+    )
+    service.indexing._execute_indexing(
+        repository,
+        job,
+        control,
+        previous_status,
+        raise_errors=False,
+        force_reindex=True,
+    )
+
+    assert repository.current_index_version == active_version
+    assert repository.status == previous_status
+    assert repository.current_step == "index_failed_previous_index_retained"
+    assert service.store.get_indexing_job(repository.id, job.id).status == "failed"
+
+
+def test_repository_persistence_rejects_duplicate_symbol_ids_before_write() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-duplicate-symbol-guard-test")
+    service.start_indexing(created.repository_id, force_reindex=True)
+    repository = service.repositories[created.repository_id]
+    repository.symbols.append(repository.symbols[0])
+
+    with pytest.raises(ValueError, match="duplicate symbol IDs"):
+        service.repositories_service.persist_repository(repository)
+
+
+def test_status_repairs_completed_but_unpublished_candidate_for_retry() -> None:
+    service = CodebaseService()
+    created = import_fixture_folder(service, "fixture-unpublished-candidate-recovery")
+    service.start_indexing(created.repository_id, force_reindex=True)
+    repository = service.repositories[created.repository_id]
+    repository.status = "indexing"
+    repository.current_index_version = 0
+    service.repositories_service.persist_repository_metadata(repository)
+
+    failed = service.get_index_status(repository.id)
+
+    assert failed.status == "failed"
+    assert failed.error_code == "INDEX_PUBLISH_FAILED"
+    assert repository.status == "failed"
+    retried = service.start_indexing(repository.id, force_reindex=True)
+    assert retried["status"] == "completed"
+    assert service.repositories[repository.id].current_index_version == 1
+
+
 def test_reindex_keeps_active_version_queryable_and_rejects_duplicate_attempt() -> None:
     service = CodebaseService()
     created = import_fixture_folder(service, "fixture-active-version-during-reindex-test")
@@ -517,9 +579,18 @@ def test_ask_with_selected_evidence_requires_valid_evidence() -> None:
     search = service.search(created.repository_id, "login")
     evidence_id = search.results[0].evidence_id
 
-    answer = service.ask_with_evidence(created.repository_id, "Explain this login evidence.", [evidence_id], "conv_test")
+    answer = service.ask_with_evidence(
+        created.repository_id, "Explain this login evidence.", [evidence_id]
+    )
+    follow_up = service.ask_with_evidence(
+        created.repository_id,
+        "Where is that login evidence used?",
+        [evidence_id],
+        answer.conversation_id,
+    )
 
-    assert answer.conversation_id == "conv_test"
+    assert answer.conversation_id.startswith("conversation_")
+    assert follow_up.conversation_id == answer.conversation_id
     assert answer.evidence_sufficient
     assert answer.citations[0].evidence_id == evidence_id
 

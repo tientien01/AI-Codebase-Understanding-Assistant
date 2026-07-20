@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from app.services.chunking_service import ChunkingService
-from app.services.code_analysis.stable_ids import stable_symbol_id
+from app.services.code_analysis.stable_ids import stable_symbol_id, unique_definition_id
 from app.services.index_models import FileRecord, RepositoryState, SymbolRecord
 from app.services.parsing.base import LanguageParser
 
@@ -46,7 +46,10 @@ class SourceFallbackParser(LanguageParser):
             end_line = self._block_end_line(lines, index)
             repository.symbols.append(
                 SymbolRecord(
-                    id=stable_symbol_id(repository.id, file_record.path, name, "function"),
+                    id=unique_definition_id(
+                        stable_symbol_id(repository.id, file_record.path, name, "function"),
+                        (item.id for item in repository.symbols),
+                    ),
                     name=name,
                     symbol_type="function",
                     file_path=file_record.path,

@@ -131,6 +131,32 @@ def test_local_turn_is_atomic_owned_redacted_and_replayable(local_store) -> None
         assert session.scalars(select(MessageORM).order_by(MessageORM.role)).all()
 
 
+def test_local_conversation_history_is_owned_bounded_and_replayable(local_store) -> None:
+    store, _ = local_store
+    first = build_persisted_turn("repo_trace", 1, "Where is the service?", response(), None)
+    store.save_assistant_turn(first)
+    follow_up_response = response(sufficient=False)
+    follow_up_response.message_id = "message_trace_follow_up"
+    second = build_persisted_turn(
+        "repo_trace", 1, "What calls it?", follow_up_response, None
+    )
+    store.save_assistant_turn(second)
+
+    summaries = store.list_conversations("repo_trace", 10)
+    transcript = store.get_conversation_transcript("repo_trace", "conversation_trace", 200)
+
+    assert len(summaries) == 1
+    assert summaries[0].message_count == 4
+    assert summaries[0].title == "Where is the service?"
+    assert transcript is not None
+    assert [item.content for item in transcript.messages[::2]] == [
+        "Where is the service?",
+        "What calls it?",
+    ]
+    assert transcript.messages[1].citations[0].evidence_id == "evidence_trace"
+    assert store.get_conversation_transcript("repo_other", "conversation_trace", 200) is None
+
+
 def test_failed_citation_rolls_back_the_entire_local_turn(local_store) -> None:
     store, session_factory = local_store
     bad_response = response()

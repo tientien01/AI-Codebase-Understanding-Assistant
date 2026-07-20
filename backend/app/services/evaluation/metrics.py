@@ -54,9 +54,14 @@ def score_retrieval(
     if k <= 0:
         raise ValueError("metric k must be positive")
     top = list(ranked[:k])
-    relevant_positions = [
-        index for index, item in enumerate(top, start=1) if item.entity_key in relevant_entity_keys
-    ]
+    # Expected relevance is entity-based. Multiple spans for the same entity are
+    # useful evidence candidates but must not inflate entity recall or nDCG above 1.
+    seen_relevant: set[str] = set()
+    relevant_positions: list[int] = []
+    for index, item in enumerate(top, start=1):
+        if item.entity_key in relevant_entity_keys and item.entity_key not in seen_relevant:
+            seen_relevant.add(item.entity_key)
+            relevant_positions.append(index)
     if relevant_entity_keys:
         hit_count = len({item.entity_key for item in top if item.entity_key in relevant_entity_keys})
         recall = _rounded(hit_count / len(relevant_entity_keys))

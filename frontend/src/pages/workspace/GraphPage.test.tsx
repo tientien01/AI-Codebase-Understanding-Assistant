@@ -417,10 +417,10 @@ describe('GraphPage focused call-flow UX', () => {
 })
 
 describe('GraphPage progressive value-flow UX', () => {
-  it('embeds the trace beside source and offers explicit close and full-graph actions', () => {
+  it('embeds a collapsible trace alongside source and offers explicit close and full-graph actions', () => {
     const onCloseEmbedded = vi.fn()
     const onOpenFullGraph = vi.fn()
-    render(
+    const { container } = render(
       <ValueTracePanel
         graph={valueSeedGraph()}
         projection={valueProjection}
@@ -435,10 +435,39 @@ describe('GraphPage progressive value-flow UX', () => {
 
     expect(screen.getByRole('heading', { name: 'Value Trace' })).toBeTruthy()
     expect(screen.queryByLabelText('Relationship views')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse embedded value trace' }))
+    expect(container.querySelector('.embedded-value-trace.embedded-collapsed')).not.toBeNull()
+    expect(screen.getByText('3 visible values · 0 relations')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Expand embedded value trace' }))
+    expect(container.querySelector('.embedded-value-trace.embedded-collapsed')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /Open full graph/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Close embedded value trace' }))
     expect(onOpenFullGraph).toHaveBeenCalledOnce()
     expect(onCloseEmbedded).toHaveBeenCalledOnce()
+  })
+
+  it('keeps embedded selected-value details in flow and closes them explicitly', async () => {
+    const onExpandNode = vi.fn().mockResolvedValue(valueExpansionGraph('both'))
+    render(
+      <ValueTracePanel
+        graph={valueSeedGraph()}
+        projection={valueProjection}
+        overview={null}
+        onGraphView={vi.fn()}
+        onProjection={vi.fn()}
+        onAnalyzeArea={vi.fn()}
+        onExpandNode={onExpandNode}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Definition subtotal' }))
+    await waitFor(() => expect(onExpandNode).toHaveBeenCalledOnce())
+    fireEvent.click(within(screen.getByLabelText('Value flow nodes')).getByRole('button', { name: 'Definition subtotal' }))
+
+    const inspector = screen.getByLabelText('Selected value flow entity')
+    expect(inspector.parentElement?.getAttribute('aria-label')).toBe('Progressive value flow graph')
+    fireEvent.click(screen.getByRole('button', { name: 'Close selected value' }))
+    expect(screen.queryByLabelText('Selected value flow entity')).toBeNull()
   })
 
   it('returns a full value graph to its source context', () => {

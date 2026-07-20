@@ -9,6 +9,13 @@ import { endpointKeyFor } from '../../utils/apiEndpoint'
 afterEach(cleanup)
 
 describe('ApiExplorerPage', () => {
+  it('lets the endpoint panel fill the primary workspace column', () => {
+    const { container } = render(<ApiExplorerPage endpoints={endpoints} onSelectEndpoint={vi.fn()} />)
+
+    expect(container.querySelector('.api-explorer-page > .panel')).not.toBeNull()
+    expect(container.querySelector('.api-layout')).toBeNull()
+  })
+
   it('filters by every detected method and by path, handler, or source file', () => {
     render(<ApiExplorerPage endpoints={endpoints} onSelectEndpoint={vi.fn()} />)
 

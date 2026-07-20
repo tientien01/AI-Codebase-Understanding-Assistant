@@ -5,9 +5,14 @@ this stable surface until their boundaries are migrated by later tasks.
 """
 
 from app.schemas.assistant import (
+    AssistantRequestContext,
     ChatRequest,
     ChatResponse,
     CitationDTO,
+    ConversationListResponse,
+    ConversationMessageDTO,
+    ConversationSummaryDTO,
+    ConversationTranscriptResponse,
     EvidenceDTO,
     EvidenceValidationItemDTO,
     EvidenceValidationRequest,
@@ -89,12 +94,17 @@ from app.schemas.settings import IgnorePatternsResponse, SettingsResponse
 
 __all__ = [
     "AccessOperationResponse",
+    "AssistantRequestContext",
     "ApiTokenCreateRequest",
     "ApiTokenIssuedResponse",
     "BootstrapRequest",
     "ChatRequest",
     "ChatResponse",
     "CitationDTO",
+    "ConversationListResponse",
+    "ConversationMessageDTO",
+    "ConversationSummaryDTO",
+    "ConversationTranscriptResponse",
     "EndpointDTO",
     "EndpointListResponse",
     "EvidenceDTO",

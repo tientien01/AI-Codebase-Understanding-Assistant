@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import UploadFile
 
 from app.schemas.api import (
+    AssistantRequestContext,
     ChatResponse,
     EndpointListResponse,
     EvidenceDTO,
@@ -136,11 +137,26 @@ class AssistantUseCases:
         self.chat_service = chat
         self.evidence = evidence
 
-    def chat(self, repository_id: str, message: str, conversation_id: str | None = None) -> ChatResponse:
-        return self.chat_service.chat(repository_id, message, conversation_id)
+    def chat(
+        self,
+        repository_id: str,
+        message: str,
+        conversation_id: str | None = None,
+        context: AssistantRequestContext | None = None,
+    ) -> ChatResponse:
+        return self.chat_service.chat(repository_id, message, conversation_id, context)
 
     def get_evidence(self, repository_id: str, evidence_id: str) -> EvidenceDTO:
         return self.evidence.get_evidence(repository_id, evidence_id)
+
+    def list_conversations(self, repository_id: str, limit: int):
+        return self.chat_service.list_conversations(repository_id, limit)
+
+    def get_conversation(self, repository_id: str, conversation_id: str, limit: int):
+        return self.chat_service.get_conversation(repository_id, conversation_id, limit)
+
+    def delete_conversation(self, repository_id: str, conversation_id: str) -> None:
+        self.chat_service.delete_conversation(repository_id, conversation_id)
 
     def validate_evidence(self, repository_id: str, evidence_ids: list[str]) -> EvidenceValidationResponse:
         repository = self.repositories.get_repository(repository_id)

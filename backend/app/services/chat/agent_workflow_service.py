@@ -11,6 +11,10 @@ from app.services.chat.citation_validation import (
     ClaimCitationValidator,
     ClaimSupportLevel,
 )
+from app.services.chat.provider_context import (
+    ProviderEvidenceContext,
+    ProviderEvidenceContextBuilder,
+)
 from app.services.chat.sufficiency import (
     SufficiencyAction,
     SufficiencyDecision,
@@ -56,6 +60,7 @@ class AgentWorkflowResult:
     diagnostics: WorkflowDiagnostics | None = None
     sufficiency: SufficiencyDecision | None = None
     citation_validation: CitationValidationResult | None = None
+    provider_context: ProviderEvidenceContext | None = None
 
 
 class AgentWorkflowService:
@@ -69,6 +74,7 @@ class AgentWorkflowService:
         registry: ToolRegistry | None = None,
         sufficiency: SufficiencyPolicy | None = None,
         citation_validator: ClaimCitationValidator | None = None,
+        provider_context_builder: ProviderEvidenceContextBuilder | None = None,
         clock: Callable[[], float] = monotonic,
     ) -> None:
         self.retrieval = retrieval
@@ -79,6 +85,9 @@ class AgentWorkflowService:
         self.registry = registry or ToolRegistry.default(retrieval)
         self.sufficiency = sufficiency or SufficiencyPolicy()
         self.citation_validator = citation_validator or ClaimCitationValidator(evidence)
+        self.provider_context_builder = (
+            provider_context_builder or ProviderEvidenceContextBuilder()
+        )
         self.clock = clock
 
     def answer(
@@ -86,13 +95,15 @@ class AgentWorkflowService:
         repository: RepositoryState,
         message: str,
         is_cancelled: Callable[[], bool] | None = None,
+        context_anchor: str | None = None,
     ) -> AgentWorkflowResult:
         started = self.clock()
         question_type = self.retrieval.classify_question(message)
+        retrieval_query = self._retrieval_query(message, context_anchor)
         workflow_request = WorkflowRequest(
             repository_id=repository.id,
             index_version_id=f"idx_compat_{max(repository.current_index_version, 0)}",
-            question=message,
+            question=retrieval_query,
             question_type=question_type,
         )
         typed_plan = self._plan(workflow_request)
@@ -134,6 +145,7 @@ class AgentWorkflowService:
                     self.configuration.max_selected_evidence,
                 ),
                 round_number=1,
+                classification_query=message if context_anchor else None,
             )
             if tool_input.equivalence_key in seen_calls:
                 observations.append(
@@ -264,13 +276,14 @@ class AgentWorkflowService:
                     tool_version="1",
                     repository_id=workflow_request.repository_id,
                     index_version_id=workflow_request.index_version_id,
-                    query=decision.repair_query or message,
+                    query=self._retrieval_query(decision.repair_query or message, context_anchor),
                     question_type=workflow_request.question_type,
                     limit=min(
                         self.configuration.max_candidates_per_tool,
                         self.configuration.max_selected_evidence,
                     ),
                     round_number=2,
+                    classification_query=message if context_anchor else None,
                 )
                 tool_calls_used += 1
                 try:
@@ -358,7 +371,7 @@ class AgentWorkflowService:
             )
             return AgentWorkflowResult(
                 question_type=plan.question_type,
-                answer="Chua du bang chung de tra loi chac chan. He thong khong tim thay file, symbol hoac relation phu hop trong index hien tai.",
+                answer="There is not enough evidence to answer confidently. The current index does not contain a matching file, symbol, or relation.",
                 citations=[],
                 evidence_sufficient=False,
                 missing_evidence=list(context.missing_requirements) or ["Expected code or document evidence"],
@@ -408,6 +421,14 @@ class AgentWorkflowService:
             context.used_tokens,
             elapsed_ms,
         )
+        provider_context = self.provider_context_builder.from_selected(
+            repository,
+            context.selected,
+            min(
+                self.configuration.context_token_budget,
+                self.retrieval.ranking_configuration.context_token_budget,
+            ),
+        )
         return AgentWorkflowResult(
             question_type=plan.question_type,
             answer=answer,
@@ -418,6 +439,7 @@ class AgentWorkflowService:
             diagnostics=diagnostics,
             sufficiency=decision,
             citation_validation=citation_validation,
+            provider_context=provider_context,
         )
 
     def answer_from_citations(
@@ -459,6 +481,12 @@ class AgentWorkflowService:
             citations,
             tuple(citation.evidence_id for citation in citations),
         )
+
+    @staticmethod
+    def _retrieval_query(message: str, context_anchor: str | None) -> str:
+        if not context_anchor:
+            return message
+        return f"{message}\n{context_anchor}"
 
     def _plan(self, request: WorkflowRequest) -> WorkflowPlan:
         multi_step_types = {
@@ -563,7 +591,7 @@ class AgentWorkflowService:
         )
         return AgentWorkflowResult(
             question_type=plan.question_type,
-            answer="Yeu cau khong the tiep tuc trong gioi han workflow hien tai.",
+            answer="The request could not continue within the current workflow limits.",
             citations=[],
             evidence_sufficient=False,
             missing_evidence=list(reasons),

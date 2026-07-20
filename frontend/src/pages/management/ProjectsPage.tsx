@@ -5,7 +5,7 @@ import type { IconName, Repository } from '../../types/api'
 import { isRepositoryUsable } from '../../utils/repository'
 
 type ProjectFilter = 'all' | 'indexed' | 'indexing' | 'needs_index' | 'failed' | 'stale'
-type ProjectSort = 'last_indexed' | 'name' | 'status'
+type ProjectSort = 'last_indexed' | 'name' | 'status' | 'files' | 'source'
 type ProjectView = 'grid' | 'list'
 
 export function ProjectsPage({
@@ -16,6 +16,7 @@ export function ProjectsPage({
   onDelete,
   onDeleteAll,
   onViewIndexJobs,
+  searchQuery = '',
 }: {
   repositories: Repository[]
   onNewProject: () => void
@@ -24,6 +25,7 @@ export function ProjectsPage({
   onDelete: (id: string) => void
   onDeleteAll: () => void
   onViewIndexJobs: () => void
+  searchQuery?: string
 }) {
   const [activeFilter, setActiveFilter] = useState<ProjectFilter>('all')
   const [sortBy, setSortBy] = useState<ProjectSort>('last_indexed')
@@ -33,10 +35,14 @@ export function ProjectsPage({
   const failed = repositories.filter((repository) => repository.status === 'failed').length
   const stale = repositories.filter((repository) => repository.status === 'stale').length
   const notIndexed = repositories.filter((repository) => isNeedsIndex(repository)).length
-  const visibleRepositories = useMemo(
-    () => sortProjects(repositories.filter((repository) => matchesFilter(repository, activeFilter)), sortBy),
-    [repositories, activeFilter, sortBy],
+  const filteredRepositories = useMemo(
+    () => repositories.filter((repository) => matchesFilter(repository, activeFilter) && matchesProjectSearch(repository, searchQuery)),
+    [repositories, activeFilter, searchQuery],
   )
+  const visibleRepositories = useMemo(() => sortProjects(filteredRepositories, sortBy), [filteredRepositories, sortBy])
+  const [page, setPage] = useState(1)
+  const pageCount = Math.max(1, Math.ceil(visibleRepositories.length / PROJECTS_PER_PAGE))
+  const pagedRepositories = visibleRepositories.slice((page - 1) * PROJECTS_PER_PAGE, page * PROJECTS_PER_PAGE)
   const nextActions = buildNextActions({ indexed, indexing, notIndexed, stale, failed }, setActiveFilter, onViewIndexJobs)
   const filterTabs: { key: ProjectFilter; label: string; count: number }[] = [
     { key: 'all', label: 'All', count: repositories.length },
@@ -55,7 +61,7 @@ export function ProjectsPage({
           <div className="projects-toolbar">
             <div className="project-filter-tabs" aria-label="Project filters">
               {filterTabs.map((tab) => (
-                <button key={tab.key} className={activeFilter === tab.key ? 'active' : ''} onClick={() => setActiveFilter(tab.key)}>
+                <button key={tab.key} className={activeFilter === tab.key ? 'active' : ''} onClick={() => { setActiveFilter(tab.key); setPage(1) }}>
                   {tab.label}
                   <span>{tab.count}</span>
                 </button>
@@ -68,6 +74,8 @@ export function ProjectsPage({
                   <option value="last_indexed">Last indexed</option>
                   <option value="name">Name</option>
                   <option value="status">Status</option>
+                  <option value="files">Most files</option>
+                  <option value="source">Source type</option>
                 </select>
               </label>
               <button className={`tool-button ${view === 'grid' ? 'active' : ''}`} aria-label="Grid view" onClick={() => setView('grid')}><Icon name="grid" /></button>
@@ -77,10 +85,11 @@ export function ProjectsPage({
           {repositories.length === 0 ? (
             <EmptyState title="No projects yet" description="Import a repository to start codebase analysis." action="New Project" onAction={onNewProject} />
           ) : visibleRepositories.length === 0 ? (
-            <EmptyState title="No projects match this filter" description="Choose another status filter or import a new repository." />
+            <EmptyState title="No projects match this view" description={searchQuery ? `No project matches “${searchQuery}”. Try another name, source, or status.` : 'Choose another status filter or import a new repository.'} />
           ) : (
+            <>
             <div className={`project-grid ${view === 'list' ? 'list-view' : ''}`}>
-              {visibleRepositories.map((repository) => {
+              {pagedRepositories.map((repository) => {
                 const action = primaryActionFor(repository)
                 const status = projectStatus(repository)
                 return (
@@ -132,6 +141,15 @@ export function ProjectsPage({
                 <span>Upload a folder, upload a zip, or connect GitHub when available.</span>
               </button>
             </div>
+            {visibleRepositories.length > PROJECTS_PER_PAGE ? (
+              <nav className="project-pagination" aria-label="Project pages">
+                <span>Showing {(page - 1) * PROJECTS_PER_PAGE + 1}–{Math.min(page * PROJECTS_PER_PAGE, visibleRepositories.length)} of {visibleRepositories.length}</span>
+                <button type="button" className="secondary" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>Previous</button>
+                <strong>Page {page} of {pageCount}</strong>
+                <button type="button" className="secondary" disabled={page === pageCount} onClick={() => setPage((current) => current + 1)}>Next</button>
+              </nav>
+            ) : null}
+            </>
           )}
         </div>
         <aside className="right-stack">
@@ -165,6 +183,8 @@ export function ProjectsPage({
   )
 }
 
+const PROJECTS_PER_PAGE = 25
+
 function ProjectStat({ icon, label, value }: { icon: IconName; label: string; value?: string | number }) {
   return (
     <div className="project-stat-cell">
@@ -184,10 +204,20 @@ function matchesFilter(repository: Repository, filter: ProjectFilter) {
   return true
 }
 
+function matchesProjectSearch(repository: Repository, query: string) {
+  const normalized = query.trim().toLocaleLowerCase()
+  if (!normalized) return true
+  return [repository.name, repository.source_label, repository.source_uri, repository.source_type, ...repository.detected_stack]
+    .filter((value): value is string => Boolean(value))
+    .some((value) => value.toLocaleLowerCase().includes(normalized))
+}
+
 function sortProjects(repositories: Repository[], sortBy: ProjectSort) {
   return [...repositories].sort((left, right) => {
     if (sortBy === 'name') return left.name.localeCompare(right.name)
     if (sortBy === 'status') return left.status.localeCompare(right.status) || left.name.localeCompare(right.name)
+    if (sortBy === 'files') return right.indexed_files - left.indexed_files || left.name.localeCompare(right.name)
+    if (sortBy === 'source') return formatRepositorySource(left).localeCompare(formatRepositorySource(right)) || left.name.localeCompare(right.name)
     return timestamp(right.last_indexed_at) - timestamp(left.last_indexed_at) || left.name.localeCompare(right.name)
   })
 }

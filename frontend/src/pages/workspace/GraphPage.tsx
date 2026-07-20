@@ -125,7 +125,6 @@ type GraphPageProps = {
   onAnalyzeArea: (scopePath: string) => void
   onExpandNode?: (nodeId: string, direction: GraphProjectionInput['direction'], neighborOffset?: number) => Promise<GraphData | null>
   onOpenSource?: (node: GraphNode) => void
-  onOpenImpact?: (node: GraphNode) => void
   onTraceValue?: (context: ValueTraceContext) => void
   embedded?: boolean
   onCloseEmbedded?: () => void
@@ -175,7 +174,6 @@ function LegacyGraphPage({
   onProjection,
   onAnalyzeArea,
   onOpenSource,
-  onOpenImpact,
 }: GraphPageProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string>()
   const [zoom, setZoom] = useState(0.9)
@@ -514,7 +512,6 @@ function LegacyGraphPage({
                   <div className="graph-inspector-actions">
                     <button className="primary wide" type="button" disabled={!activeNode.file_path} onClick={() => onOpenSource?.(activeNode)}>Open Source</button>
                     <button type="button" onClick={() => applyFocus(activeNode.id)}>Focus relationships</button>
-                    <button type="button" onClick={() => onOpenImpact?.(activeNode)}>Analyze Impact</button>
                     {activeNode.coverage !== 'deep_indexed' && activeNode.coverage !== 'skipped' ? (
                       <button type="button" onClick={() => onAnalyzeArea(activeNode.scope_path || activeNode.file_path || '')}>Analyze area</button>
                     ) : null}
@@ -549,7 +546,6 @@ function ProgressiveDependencyGraph({
   onAnalyzeArea,
   onExpandNode,
   onOpenSource,
-  onOpenImpact,
 }: GraphPageProps) {
   const [visibleGraph, setVisibleGraph] = useState<GraphData | null>(graph)
   const [selectedNodeId, setSelectedNodeId] = useState<string>()
@@ -803,7 +799,6 @@ function ProgressiveDependencyGraph({
             <div className="graph-inspector-actions">
               <button className="primary wide" type="button" disabled={!activeNode.file_path} onClick={() => onOpenSource?.(activeNode)}>Open Source</button>
               {canContinueExpansion(activeNode.id, direction, seedById.get(activeNode.id), expansionByKey[expansionKey(activeNode.id)]) ? <button type="button" onClick={() => { void selectAndExpand(activeNode.id) }}>{expansionByKey[expansionKey(activeNode.id)]?.next_neighbor_offset != null ? `Load ${expansionByKey[expansionKey(activeNode.id)]?.remaining_neighbors} more` : `Show ${direction === 'incoming' ? 'dependents' : direction === 'outgoing' ? 'dependencies' : 'both directions'}`}</button> : <button type="button" disabled>No more relations</button>}
-              <button type="button" onClick={() => onOpenImpact?.(activeNode)}>Analyze Impact</button>
               {activeNode.coverage !== 'deep_indexed' && activeNode.coverage !== 'skipped' ? <button type="button" onClick={() => onAnalyzeArea(activeNode.scope_path || activeNode.file_path || '')}>Analyze area</button> : null}
             </div>
           </aside>
@@ -1413,6 +1408,7 @@ function ProgressiveValueFlow({
   const [searchValue, setSearchValue] = useState('')
   const [zoom, setZoom] = useState(0.9)
   const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [embeddedCollapsed, setEmbeddedCollapsed] = useState(false)
   const [expandingNodeId, setExpandingNodeId] = useState<string>()
   const [expansionByKey, setExpansionByKey] = useState<Record<string, GraphExpansion>>({})
   const [positionCache, setPositionCache] = useState(() => new Map<string, Position>())
@@ -1526,8 +1522,10 @@ function ProgressiveValueFlow({
     viewport.scrollTo?.({ top: 0, left: 0 })
   }
 
-  return <div className={`graph-explorer-page progressive-request-flow-page progressive-value-flow-page ${embedded ? 'embedded-value-trace' : ''} ${hasTraceContext ? '' : 'value-trace-no-context'}`}>
-    {embedded ? <div className="embedded-value-trace-header"><div><span>Source investigation</span><h2>Value Trace</h2></div><div><button type="button" onClick={onOpenFullGraph}><Icon name="expand" size={13} /> Open full graph</button><button type="button" aria-label="Close embedded value trace" onClick={onCloseEmbedded}>×</button></div></div> : <PageTitle title="Value Trace" subtitle="Investigate one source value or callable scope without browsing every indexed variable." />}
+  return <div className={`graph-explorer-page progressive-request-flow-page progressive-value-flow-page ${embedded ? 'embedded-value-trace' : ''} ${embeddedCollapsed ? 'embedded-collapsed' : ''} ${hasTraceContext ? '' : 'value-trace-no-context'}`}>
+    {embedded ? <div className="embedded-value-trace-header"><div><span>Source investigation</span><h2>Value Trace</h2></div><div><button type="button" aria-expanded={!embeddedCollapsed} aria-label={embeddedCollapsed ? 'Expand embedded value trace' : 'Collapse embedded value trace'} onClick={() => setEmbeddedCollapsed((value) => !value)}>{embeddedCollapsed ? 'Expand' : 'Minimize'}</button><button type="button" onClick={onOpenFullGraph}><Icon name="expand" size={13} /> Open full graph</button><button type="button" aria-label="Close embedded value trace" title="Close Value Trace" onClick={onCloseEmbedded}>×</button></div></div> : <PageTitle title="Value Trace" subtitle="Investigate one source value or callable scope without browsing every indexed variable." />}
+
+    {embedded && embeddedCollapsed ? <div className="embedded-value-trace-summary" role="status"><strong>{rootNode ? valueNodeName(rootNode) : hasTraceContext ? valueTraceContextLabel(traceContext) : 'No value selected'}</strong><span>{nodes.length} visible values · {edges.length} relations</span></div> : null}
 
     {!embedded ? <nav className="graph-view-nav graph-view-nav-compact" aria-label="Relationship views">
       <button type="button" className="graph-view-home" onClick={() => onGraphView('project-map')}><Icon name="grid" size={15} /> Choose question</button>
