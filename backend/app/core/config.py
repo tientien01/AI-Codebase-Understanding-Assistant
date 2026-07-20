@@ -11,6 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 SETTINGS_ENV_FILE = None if os.environ.get("APP_ENV") == "test" else BACKEND_ROOT / ".env"
 MAX_OLLAMA_TIMEOUT_SECONDS = 900
+MAX_ASSISTANT_RETRIEVAL_TIMEOUT_SECONDS = 300
 
 
 class Settings(BaseSettings):
@@ -39,6 +40,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_timeout_seconds: float = 30.0
+    assistant_retrieval_timeout_seconds: float = 90.0
     embedding_provider: str = "fake"
     embedding_model: str = "fake-embedding-model"
     embedding_api_key: str = ""
@@ -110,6 +112,15 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"OLLAMA_TIMEOUT_SECONDS must be greater than zero and at most "
                 f"{MAX_OLLAMA_TIMEOUT_SECONDS}"
+            )
+        if not (
+            0
+            < self.assistant_retrieval_timeout_seconds
+            <= MAX_ASSISTANT_RETRIEVAL_TIMEOUT_SECONDS
+        ):
+            raise ValueError(
+                "ASSISTANT_RETRIEVAL_TIMEOUT_SECONDS must be greater than zero and at most "
+                f"{MAX_ASSISTANT_RETRIEVAL_TIMEOUT_SECONDS}"
             )
         if self.app_env == "production" and self.api_auth_token.strip():
             raise ValueError("Production profile forbids the shared API_AUTH_TOKEN")

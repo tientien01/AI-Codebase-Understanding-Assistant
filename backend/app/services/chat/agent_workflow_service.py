@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from time import monotonic
 from typing import Callable
 
+from app.core.errors import DomainError
 from app.schemas.api import CitationDTO
 from app.services.chat.citation_validation import (
     AnswerClaim,
@@ -429,6 +430,15 @@ class AgentWorkflowService:
                 self.retrieval.ranking_configuration.context_token_budget,
             ),
         )
+        if provider_context is None:
+            provider_context = self._provider_context_from_saved_evidence(
+                repository,
+                citations,
+                min(
+                    self.configuration.context_token_budget,
+                    self.retrieval.ranking_configuration.context_token_budget,
+                ),
+            )
         return AgentWorkflowResult(
             question_type=plan.question_type,
             answer=answer,
@@ -440,6 +450,32 @@ class AgentWorkflowService:
             sufficiency=decision,
             citation_validation=citation_validation,
             provider_context=provider_context,
+        )
+
+    def _provider_context_from_saved_evidence(
+        self,
+        repository: RepositoryState,
+        citations: list[CitationDTO],
+        token_budget: int,
+    ) -> ProviderEvidenceContext | None:
+        """Rebuild whole source spans when selected previews are intentionally compact.
+
+        The saved-evidence path retains the same repository, index, source-hash,
+        blocked-path, line-range, and token-budget checks as direct selection. It
+        avoids treating a shortened retrieval preview as the complete cited span.
+        """
+
+        try:
+            evidences = [
+                self.evidence.get_evidence(repository.id, citation.evidence_id)
+                for citation in citations
+            ]
+        except DomainError:
+            return None
+        return self.provider_context_builder.from_saved(
+            repository,
+            evidences,
+            token_budget,
         )
 
     def answer_from_citations(
